@@ -1,0 +1,80 @@
+.category-page {
+  padding-top: 50px;
+  padding-bottom: 50px;
+}
+
+.category-page .grid2 {
+  margin-top: 40px;
+}
+
+.category-page-section {
+    padding-top: 50px;
+}
+
+.filter-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Search Control */
+.search-control {
+    flex-grow: 1;
+    margin-right: 20px;
+    position: relative;
+}
+
+.search-control .fa-search {
+    position: absolute;
+    top: 50%;
+    left: 15px;
+    transform: translateY(-50%);
+    color: #aaa;
+}
+
+.search-control input {
+    width: 100%;
+    padding: 12px 15px 12px 45px; /* Add padding for icon */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.search-control input:focus {
+    outline: none;
+    border-color: #1eb2a6;
+}
+
+/* Sort Control */
+.sort-control select {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    background-color: #fff;
+    cursor: pointer;
+    min-width: 220px;
+}
+
+.sort-control select:focus {
+    outline: none;
+    border-color: #1eb2a6;
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+    .filter-controls {
+        flex-direction: column;
+        gap: 20px;
+        align-items: stretch;
+    }
+    .search-control {
+        margin-right: 0;
+    }
+} 

@@ -1,0 +1,12 @@
+.video-call-wrapper {
+  background-image: url("/public/images/bg.webp");
+  background-size: cover;
+  background-position: center;
+  min-height: 100vh;
+  padding: 40px 0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+} 
