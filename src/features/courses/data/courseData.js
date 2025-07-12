@@ -78,7 +78,30 @@ export const courses = [
       {
         title: "Chương 1: Giới thiệu",
         lectures: [
-          { title: "Bài 1: Bảng chữ cái ký hiệu", videoUrl: "https://www.youtube.com/embed/0kKvhyjhrN4?si=aix9PY9rfebJYQit" },
+          {
+            title: "Bài 1: Bảng chữ cái ký hiệu",
+            videoUrl: "https://www.youtube.com/embed/0kKvhyjhrN4?si=aix9PY9rfebJYQit",
+            assignment: {
+              id: 1,
+              title: "Bài tập: Thực hành bảng chữ cái ký hiệu",
+              description: "Quay một video ngắn (1-3 phút) trong đó bạn trình bày trọn vẹn bảng chữ cái ký hiệu. Hãy đảm bảo video rõ nét và nhìn thấy toàn bộ cử chỉ tay.",
+              dueDate: "2024-07-31",
+              maxScore: 10,
+              submissions: [], // Danh sách bài nộp của học viên
+              comments: [], // Bình luận của học viên
+              score: null, // Điểm sẽ được giáo viên cập nhật
+              attachments: [
+                {
+                  name: "Sample_decision_table_test.xlsx",
+                  url: "#"
+                },
+                {
+                  name: "Sample_Test Cases.xlsx",
+                  url: "#"
+                }
+              ]
+            }
+          },
           { title: "Bài 2: Các câu chào hỏi thông dụng", videoUrl: "https://www.youtube.com/embed/GZWQ6I-4x2s?si=ETpZgfyk0MU2isy4" }
         ]
       },
