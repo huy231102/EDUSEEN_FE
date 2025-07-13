@@ -29,7 +29,7 @@ import {
   Menu,
   MenuItem
 } from '@material-ui/core';
-import { Alert } from '@material-ui/lab';
+
 import {
   PlayArrow,
   Schedule,
@@ -1124,11 +1124,8 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+        message={snackbar.message}
+      />
 
     </div>
   );

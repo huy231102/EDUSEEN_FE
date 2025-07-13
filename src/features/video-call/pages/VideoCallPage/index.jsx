@@ -17,6 +17,9 @@ import EventIcon from '@material-ui/icons/Event';
 import VideoPlayer from '../../components/VideoPlayer';
 import Sidebar from '../../components/Sidebar';
 import Notifications from '../../components/Notifications';
+import PastSessions from '../../components/PastSessions';
+import PersonalCalendar from '../../components/PersonalCalendar';
+import { SessionsProvider } from '../../contexts/SessionsContext';
 import './style.css';
 
 const useStyles = makeStyles((theme) => ({
@@ -151,25 +154,70 @@ const VideoCallPage = () => {
   };
 
   return (
-    <div className={`${classes.wrapper} video-call-wrapper`}>
-      <Button
-        component={Link}
-        to="/courses"
-        variant="contained"
-        color="primary"
-        className={classes.backButton}
-        startIcon={<ArrowBackIcon />}
-      >
-        Về trang khóa học
-      </Button>
-      <AppBar className={classes.appBar} position="static" color="inherit">
-        <Typography variant="h4" align="center">Trò chuyện video</Typography>
-      </AppBar>
-      <VideoPlayer />
-      <Sidebar>
-        <Notifications />
-      </Sidebar>
-    </div>
+    <SessionsProvider>
+      <div className={`${classes.wrapper} video-call-wrapper`}>
+        <Button
+          component={Link}
+          to="/courses"
+          variant="contained"
+          color="primary"
+          className={classes.backButton}
+          startIcon={<ArrowBackIcon />}
+        >
+          Về trang khóa học
+        </Button>
+        
+        <div className={classes.tabsContainer}>
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            className={classes.tabs}
+            indicatorColor="primary"
+            textColor="primary"
+            centered
+          >
+            <Tab 
+              icon={<VideoCallIcon />} 
+              label="Video Call" 
+              id="video-tab-0"
+              aria-controls="video-tabpanel-0"
+            />
+            <Tab 
+              icon={<HistoryIcon />} 
+              label="Lịch sử" 
+              id="video-tab-1"
+              aria-controls="video-tabpanel-1"
+            />
+            <Tab 
+              icon={<EventIcon />} 
+              label="Lịch cá nhân" 
+              id="video-tab-2"
+              aria-controls="video-tabpanel-2"
+            />
+          </Tabs>
+
+          <TabPanel value={tabValue} index={0} className={classes.tabPanel}>
+            <div className={classes.videoCallContent}>
+              <AppBar className={classes.appBar} position="static" color="inherit">
+                <Typography variant="h4" align="center">Trò chuyện video</Typography>
+              </AppBar>
+              <VideoPlayer />
+              <Sidebar>
+                <Notifications />
+              </Sidebar>
+            </div>
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={1} className={classes.tabPanel}>
+            <PastSessions />
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={2} className={classes.tabPanel}>
+            <PersonalCalendar onSwitchToVideoCall={() => setTabValue(0)} />
+          </TabPanel>
+        </div>
+      </div>
+    </SessionsProvider>
   );
 };
 
