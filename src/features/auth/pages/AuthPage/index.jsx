@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import LoginForm from '../../components/Login';
-import RegisterForm from '../../components/Register';
-import ForgotPasswordForm from '../../components/ForgotPassword';
-import './style.css';
-import Heading from '../../../../components/common/Heading';
+import LoginForm from 'features/auth/components/Login';
+import RegisterForm from 'features/auth/components/Register';
+import ForgotPasswordForm from 'features/auth/components/ForgotPassword';
+import './style.css'
+import Heading from 'components/common/Heading';
 
 const AuthPage = () => {
   const [activeView, setActiveView] = useState('login');

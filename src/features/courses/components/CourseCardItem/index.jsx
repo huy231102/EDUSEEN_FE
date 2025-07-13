@@ -34,6 +34,9 @@ const CourseCardItem = ({ course }) => {
 
   return (
     <div className='items' key={course.id}>
+      {course.isFavorite && (
+        <i className='fa fa-star favorite-icon' />
+      )}
       <div className='content flex'>
         <div className='left'>
           <div className='img'>

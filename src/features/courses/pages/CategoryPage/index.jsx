@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { courses, categories } from '../../data/courseData';
-import Heading from '../../../../components/common/Heading';
-import CoursesList from '../../components/CoursesList';
-import './style.css';
+import { courses, categories } from 'features/courses/data/courseData';
+import Heading from 'components/common/Heading';
+import CoursesList from 'features/courses/components/CoursesList';
+import './style.css'
 
 const CategoryPage = () => {
   const { categorySlug } = useParams();

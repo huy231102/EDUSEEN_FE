@@ -1,6 +1,6 @@
 import React from "react"
-import Heading from "../../../../components/common/Heading"
-import "./style.css"
+import Heading from 'components/common/Heading';
+import './style.css'
 
 const StarRating = ({ rating }) => {
   const stars = [];

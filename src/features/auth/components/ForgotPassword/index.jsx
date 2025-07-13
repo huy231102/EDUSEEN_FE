@@ -1,5 +1,5 @@
 import React from 'react';
-import '../common/style.css';
+import '../common/style.css'
 
 const ForgotPasswordForm = ({ onBackToLogin }) => {
   return (

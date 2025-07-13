@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { courses } from '../../data/courseData';
-import './style.css';
+import { courses } from 'features/courses/data/courseData';
+import { useMyCourses } from 'features/courses/contexts/MyCoursesContext';
+import './style.css'
 
 const CourseContentPage = () => {
   const { courseId } = useParams();
   const course = courses.find((c) => c.id === parseInt(courseId));
+  const { markLectureCompleted, enrollCourse } = useMyCourses();
 
   const [currentLecture, setCurrentLecture] = useState(null);
   const [openSections, setOpenSections] = useState([]);
@@ -15,6 +17,8 @@ const CourseContentPage = () => {
     if (course?.sections?.[0]?.lectures?.[0]) {
       setCurrentLecture(course.sections[0].lectures[0]);
       setOpenSections([0]); // Mở section đầu tiên
+      enrollCourse(course.id); // đảm bảo đã đăng ký
+      markLectureCompleted(course.id, course.sections[0].lectures[0].title);
     }
   }, [course]);
 
@@ -24,6 +28,7 @@ const CourseContentPage = () => {
 
   const handleLectureSelect = (lecture, sectionIndex) => {
     setCurrentLecture(lecture);
+    markLectureCompleted(course.id, lecture.title);
     // Đảm bảo section của bài giảng được chọn luôn mở
     if (!openSections.includes(sectionIndex)) {
       setOpenSections([...openSections, sectionIndex]);

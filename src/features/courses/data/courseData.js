@@ -56,6 +56,7 @@ export const courses = [
     categorySlug: "ngon-ngu",
     description: "Khóa học này cung cấp một nền tảng vững chắc về Ngôn ngữ Ký hiệu, bao gồm các ký hiệu cơ bản, cấu trúc ngữ pháp và kỹ năng giao tiếp trong các tình huống hàng ngày. Học viên sẽ được thực hành qua các bài tập tương tác và video hướng dẫn chi tiết.",
     rating: 4.8,
+    defaultEnrolled: true,
     reviews: [
       {
         id: 1,
@@ -105,6 +106,7 @@ export const courses = [
     categorySlug: "ky-nang-mem",
     description: "Phát triển kỹ năng giao tiếp hiệu quả trong môi trường làm việc chuyên nghiệp. Khóa học tập trung vào cách trình bày ý tưởng, lắng nghe tích cực và xây dựng mối quan hệ tốt với đồng nghiệp thông qua các phương pháp phù hợp với người khiếm thính.",
     rating: 4.7,
+    defaultEnrolled: true,
     sections: [
       {
         title: "Chương 1: Kỹ năng lắng nghe",
@@ -151,6 +153,7 @@ export const courses = [
     categorySlug: "thiet-ke-ui-ux",
     description: "Khóa học này được thiết kế đặc biệt để giới thiệu về thế giới lập trình web cho người khiếm thính. Bạn sẽ học các khái niệm cơ bản về HTML, CSS và JavaScript qua các ví dụ thực tế và dự án nhỏ.",
     rating: 3.3,
+    isFavorite: true,
     sections: [
       {
         title: "Chương 1: Giới thiệu HTML",
@@ -244,6 +247,7 @@ export const courses = [
     categorySlug: "thiet-ke-ui-ux",
     description: "Học cách tạo ra các sản phẩm kỹ thuật số đẹp mắt và dễ sử dụng. Khóa học này sẽ hướng dẫn bạn qua quy trình thiết kế UI/UX, từ nghiên cứu người dùng, tạo wireframe đến thiết kế giao diện hoàn chỉnh.",
     rating: 5.0,
+    isFavorite: true,
     sections: [
       {
         title: "Chương 1: Giới thiệu UI/UX",
@@ -267,6 +271,7 @@ export const courses = [
     categorySlug: "kinh-doanh",
     description: "Bắt đầu hành trình kinh doanh trực tuyến của riêng bạn. Khóa học cung cấp kiến thức toàn diện về việc lựa chọn sản phẩm, xây dựng cửa hàng, marketing và quản lý đơn hàng hiệu quả.",
     rating: 4.7,
+    defaultEnrolled: true,
     sections: [
       {
         title: "Chương 1: Bắt đầu",

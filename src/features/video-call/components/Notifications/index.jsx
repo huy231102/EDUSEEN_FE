@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Button, Typography, makeStyles } from '@material-ui/core';
 
-import { SocketContext } from '../../contexts/SocketContext';
+import { SocketContext } from 'features/video-call/contexts/SocketContext';
 
 const useStyles = makeStyles(() => ({
   container: {

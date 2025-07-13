@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../auth/contexts/AuthContext';
-import './style.css';
+import api from 'services/api';
+import { useToast } from 'components/common/Toast';
+import './style.css'
 
 const ProfilePage = () => {
   const { user, login, logout } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    username: '',
     first_name: '',
     last_name: '',
     avatar_url: '',
@@ -17,10 +19,9 @@ const ProfilePage = () => {
   useEffect(() => {
     if (user) {
       setFormData({
-        username: user.username,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        avatar_url: user.avatar_url,
+        first_name: user.firstName,
+        last_name: user.lastName,
+        avatar_url: user.avatarUrl,
       });
     } else {
       navigate('/auth');
@@ -32,11 +33,34 @@ const ProfilePage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveChanges = (e) => {
+  const handleSaveChanges = async (e) => {
     e.preventDefault();
-    const updatedUser = { ...user, ...formData };
-    login(updatedUser); // Update user data in context
-    alert('Profile updated successfully!');
+
+    try {
+      // Map formData sang định dạng BE yêu cầu
+      const body = {
+        // Chỉ gửi các trường cho phép cập nhật
+        firstName: formData.first_name,
+        lastName: formData.last_name,
+        avatarUrl: formData.avatar_url,
+      };
+
+      await api.put('/api/profile', body);
+
+      // Cập nhật context với dữ liệu mới
+      const updatedUser = {
+        ...user,
+        firstName: formData.first_name,
+        lastName: formData.last_name,
+        avatarUrl: formData.avatar_url,
+      };
+      login(null, updatedUser);
+
+      showToast('Cập nhật hồ sơ thành công', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Cập nhật hồ sơ thất bại', 'error');
+    }
   };
 
   const handleLogout = () => {
@@ -66,7 +90,10 @@ const ProfilePage = () => {
             <h2>
               {formData.first_name} {formData.last_name}
             </h2>
-            <p>@{formData.username}</p>
+            <p>@{user.username}</p>
+            <Link to="/my-courses" className="primary-btn" style={{ marginBottom: '10px' }}>
+              Khóa học của tôi
+            </Link>
             <button
               onClick={handleLogout}
               className="primary-btn logout-button"
@@ -107,15 +134,9 @@ const ProfilePage = () => {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="form-field">
-                <label htmlFor="username">Username</label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                />
+              <div className="form-field static">
+                <label>Username</label>
+                <span>{user.username}</span>
               </div>
               <div className="form-field static">
                 <label>Email</label>
@@ -123,7 +144,7 @@ const ProfilePage = () => {
               </div>
               <div className="form-field static">
                 <label>Role</label>
-                <span>{user.role_id === 1 ? 'Admin' : 'User'}</span>
+                <span>{user.roleName}</span>
               </div>
               <div className="form-actions">
                 <button type="submit" className="primary-btn save-btn">

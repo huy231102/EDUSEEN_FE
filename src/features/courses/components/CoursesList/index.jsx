@@ -1,7 +1,7 @@
 import React from "react"
-import "./style.css"
-import { courses as allCourses } from "../../data/courseData"
-import Heading from "../../../../components/common/Heading"
+import './style.css'
+import { courses as allCourses } from 'features/courses/data/courseData';
+import Heading from 'components/common/Heading';
 import CourseCardItem from "../CourseCardItem"
 
 const CoursesList = ({ 

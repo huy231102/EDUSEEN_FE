@@ -1,0 +1,6 @@
+@import url('../CoursesList/style.css');
+/* thêm tùy chỉnh nếu cần */
+/* override bottom padding */
+.my-courses {
+  padding-bottom: 0;
+} 

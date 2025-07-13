@@ -1,7 +1,7 @@
 import React from "react"
-import "./style.css"
-import { blog } from "../../data/courseData"
-import Heading from "../../../../components/common/Heading"
+import './style.css'
+import { blog } from 'features/courses/data/courseData';
+import Heading from 'components/common/Heading';
 
 const Hblog = () => {
   return (
