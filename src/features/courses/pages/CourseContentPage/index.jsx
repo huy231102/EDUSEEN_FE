@@ -11,6 +11,10 @@ const CourseContentPage = () => {
   const [currentLecture, setCurrentLecture] = useState(null);
   const [openSections, setOpenSections] = useState([]);
 
+  // Điều khiển thứ tự bài giảng
+  const flattenedLectures = course ? course.sections.flatMap((s) => s.lectures) : [];
+  const [allowedIndex, setAllowedIndex] = useState(0); // chỉ số lecture tối đa được phép học
+
   // Trạng thái liên quan tới video & bài tập
   const [videoCompleted, setVideoCompleted] = useState(false);
   const [assignmentFile, setAssignmentFile] = useState(null);
@@ -24,6 +28,7 @@ const CourseContentPage = () => {
     if (course?.sections?.[0]?.lectures?.[0]) {
       setCurrentLecture(course.sections[0].lectures[0]);
       setOpenSections([0]); // Mở section đầu tiên
+      setAllowedIndex(0);
     }
   }, [course]);
 
@@ -41,7 +46,8 @@ const CourseContentPage = () => {
     return <div>Đang tải...</div>;
   }
 
-  const handleLectureSelect = (lecture, sectionIndex) => {
+  const handleLectureSelect = (lecture, sectionIndex, globalIndex) => {
+    if (globalIndex > allowedIndex) return; // chưa được phép
     setCurrentLecture(lecture);
     // Đảm bảo section của bài giảng được chọn luôn mở
     if (!openSections.includes(sectionIndex)) {
@@ -85,8 +91,8 @@ const CourseContentPage = () => {
                   {section.lectures.map((lecture, lectureIndex) => (
                     <li 
                       key={lectureIndex}
-                      className={`lecture-item ${currentLecture?.title === lecture.title ? 'active' : ''}`}
-                      onClick={() => handleLectureSelect(lecture, sectionIndex)}
+                      className={`lecture-item ${currentLecture?.title === lecture.title ? 'active' : ''} ${flattenedLectures.findIndex(l=>l.title===lecture.title) > allowedIndex ? 'disabled': ''}`}
+                      onClick={() => handleLectureSelect(lecture, sectionIndex, flattenedLectures.findIndex(l => l.title===lecture.title))}
                     >
                       <i className="fa fa-play-circle"></i> {lecture.title}
                     </li>
@@ -138,7 +144,15 @@ const CourseContentPage = () => {
                         autoplay: 0,
                       },
                     }}
-                    onEnd={() => setVideoCompleted(true)}
+                    onEnd={() => {
+                      setVideoCompleted(true);
+                      if (!currentLecture.assignment) {
+                        const currentIdx = flattenedLectures.findIndex(l => l.title === currentLecture.title);
+                        if (currentIdx === allowedIndex) {
+                          setAllowedIndex(allowedIndex + 1);
+                        }
+                      }
+                    }}
                   />
                 </div>
               </>
@@ -293,6 +307,10 @@ const CourseContentPage = () => {
                           onClick={() => {
                             if (!assignmentFile) return;
                             setSubmitted(true);
+                            const currentIdx = flattenedLectures.findIndex(l=>l.title===currentLecture.title);
+                            if (currentIdx === allowedIndex) {
+                              setAllowedIndex(allowedIndex + 1);
+                            }
                           }}
                         >
                           <i className="fa fa-paper-plane"></i> Nộp bài

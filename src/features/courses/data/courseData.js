@@ -474,3 +474,80 @@ export const blog = [
     url: "/blog/6",
   },
 ]
+
+export const notifications = [
+  {
+    id: 1,
+    type: "assignment",
+    title: "Bài tập mới được giao",
+    message: "Bạn có bài tập mới trong khóa 'Ngôn ngữ Ký hiệu Cho Người Mới Bắt Đầu'",
+    courseId: 1,
+    courseName: "Ngôn ngữ Ký hiệu Cho Người Mới Bắt Đầu",
+    timestamp: "2024-01-15T10:30:00Z",
+    isRead: false,
+    icon: "fa-clipboard-list",
+    priority: "high"
+  },
+  {
+    id: 2,
+    type: "grade",
+    title: "Điểm bài tập đã được cập nhật",
+    message: "Bài tập 'Thực hành bảng chữ cái ký hiệu' đã được chấm điểm: 9/10",
+    courseId: 1,
+    courseName: "Ngôn ngữ Ký hiệu Cho Người Mới Bắt Đầu",
+    timestamp: "2024-01-14T14:20:00Z",
+    isRead: false,
+    icon: "fa-star",
+    priority: "medium",
+    score: 9,
+    maxScore: 10
+  },
+  {
+    id: 3,
+    type: "comment",
+    title: "Bình luận mới từ giảng viên",
+    message: "Trần Minh Anh đã trả lời bình luận của bạn trong bài 'Bảng chữ cái ký hiệu'",
+    courseId: 1,
+    courseName: "Ngôn ngữ Ký hiệu Cho Người Mới Bắt Đầu",
+    timestamp: "2024-01-13T16:45:00Z",
+    isRead: true,
+    icon: "fa-comment",
+    priority: "low",
+    author: "Trần Minh Anh"
+  },
+  {
+    id: 4,
+    type: "course",
+    title: "Khóa học mới được thêm",
+    message: "Khóa học 'Thiết kế UI/UX nâng cao' đã được thêm vào danh sách của bạn",
+    courseId: 8,
+    courseName: "Thiết kế UI/UX cho Sản phẩm Số",
+    timestamp: "2024-01-12T09:15:00Z",
+    isRead: true,
+    icon: "fa-book",
+    priority: "medium"
+  },
+  {
+    id: 5,
+    type: "reminder",
+    title: "Nhắc nhở hạn nộp bài",
+    message: "Bài tập 'Thực hành bảng chữ cái ký hiệu' sẽ hết hạn vào ngày mai",
+    courseId: 1,
+    courseName: "Ngôn ngữ Ký hiệu Cho Người Mới Bắt Đầu",
+    timestamp: "2024-01-11T08:00:00Z",
+    isRead: false,
+    icon: "fa-clock",
+    priority: "high",
+    dueDate: "2024-01-16T23:59:00Z"
+  },
+  {
+    id: 6,
+    type: "system",
+    title: "Cập nhật hệ thống",
+    message: "Hệ thống đã được cập nhật với các tính năng mới. Hãy khám phá ngay!",
+    timestamp: "2024-01-10T12:00:00Z",
+    isRead: true,
+    icon: "fa-cog",
+    priority: "low"
+  }
+]

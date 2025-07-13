@@ -128,6 +128,12 @@
     color: #fff;
 }
 
+.lecture-item.disabled {
+   opacity: 0.3;
+   cursor: not-allowed;
+   pointer-events: auto; /* vẫn nhận hover để hiển thị mờ nhưng không cho click */
+ }
+
 
 /* Main Content (Right Column) */
 .content-main {
