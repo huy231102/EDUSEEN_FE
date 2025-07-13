@@ -1,0 +1,65 @@
+.mycourses-container {
+  padding: 40px 0;
+}
+
+.mycourses-container h1 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.mycourses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 0 20px;
+}
+
+.mycourse-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mycourse-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.mycourse-info {
+  padding: 15px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.progress-bar-wrapper {
+  width: 100%;
+  background: #f0f0f0;
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #4caf50;
+}
+
+.continue-btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.mycourses-empty {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.mycourses-empty h2 {
+  margin-bottom: 20px;
+} 

@@ -4,10 +4,10 @@ import { makeStyles } from '@material-ui/core/styles';
 import { Link } from 'react-router-dom';
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 
-import VideoPlayer from '../../components/VideoPlayer';
-import Sidebar from '../../components/Sidebar';
-import Notifications from '../../components/Notifications';
-import './style.css';
+import VideoPlayer from 'features/video-call/components/VideoPlayer';
+import Sidebar from 'features/video-call/components/Sidebar';
+import Notifications from 'features/video-call/components/Notifications';
+import './style.css'
 
 const useStyles = makeStyles((theme) => ({
   appBar: {
@@ -53,7 +53,7 @@ const VideoCallPage = () => {
   const classes = useStyles();
 
   return (
-    <div className={`${classes.wrapper} video-call-wrapper`}>
+    <div className={`${classes.wrapper} videoCallWrapper`}>
       <Button
         component={Link}
         to="/courses"

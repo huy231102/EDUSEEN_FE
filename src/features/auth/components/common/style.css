@@ -65,4 +65,21 @@
 
 .back-to-login a:hover {
   text-decoration: underline;
+}
+
+.form-group.password-group {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #888;
+}
+
+.toggle-password:hover {
+  color: #1eb2a6;
 } 

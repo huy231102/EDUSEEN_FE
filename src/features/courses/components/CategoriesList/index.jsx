@@ -1,7 +1,7 @@
 import React from "react"
-import "./style.css"
-import { categories } from "../../data/courseData"
-import Heading from "../../../../components/common/Heading"
+import './style.css'
+import { categories } from 'features/courses/data/courseData';
+import Heading from 'components/common/Heading';
 import { Link } from "react-router-dom"
 
 const CategoriesList = () => {

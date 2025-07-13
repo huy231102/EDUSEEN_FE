@@ -4,7 +4,7 @@ import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { Assignment, Phone, PhoneDisabled } from '@material-ui/icons';
 import { makeStyles } from '@material-ui/core/styles';
 
-import { SocketContext } from '../../contexts/SocketContext';
+import { SocketContext } from 'features/video-call/contexts/SocketContext';
 
 const useStyles = makeStyles((theme) => ({
   root: {

@@ -1,7 +1,7 @@
 import React from "react"
-import Heading from "../../../../components/common/Heading"
-import "./style.css"
-import { homeAbout } from "../../data/courseData"
+import Heading from 'components/common/Heading';
+import './style.css'
+import { homeAbout } from 'features/courses/data/courseData';
 import Awrapper from "../Awrapper"
 
 const AboutCard = () => {

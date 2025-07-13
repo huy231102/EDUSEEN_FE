@@ -1,13 +1,13 @@
 import React from "react"
 import { Link, useNavigate } from "react-router-dom"
 import Heading from "../Heading"
-import "./style.css"
+import './style.css'
 
 const Hero = () => {
   const navigate = useNavigate()
   return (
     <>
-      <section className='hero'>
+      <section className="hero">
         <div className='container'>
           <div className='row'>
             <Heading subtitle='WELCOME TO EDUSEEN' title='Phá Vỡ Rào Cản, Vươn Tới Tương Lai' />
@@ -18,7 +18,7 @@ const Hero = () => {
           </div>
         </div>
       </section>
-      <div className='margin'></div>
+      <div className="margin"></div>
     </>
   )
 }

@@ -1,39 +1,74 @@
 import React from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import '../common/style.css';
+import { useAuth } from 'features/auth/contexts/AuthContext';
+import { useToast } from 'components/common/Toast';
+import api from 'services/api';
+import '../common/style.css'
 
 const LoginForm = ({ onForgotPassword }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { showToast } = useToast();
 
-  const handleLogin = (e) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  // Không còn dùng error state để hiển thị ra UI
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulate API call and get user data based on the new schema
-    const userData = {
-      user_id: 1,
-      username: 'johndoe',
-      email: 'john.doe@example.com',
-      first_name: 'John',
-      last_name: 'Doe',
-      avatar_url: 'https://i.pravatar.cc/150?u=johndoe',
-      role_id: 2,
-    };
-    login(userData);
-    navigate('/');
+    // reset bất cứ trạng thái nội bộ nếu cần
+    try {
+      const res = await api.post('/api/auth/login', { email, password });
+      // API trả về { Message, Token: { AccessToken, RefreshToken }, User }
+      const tokenObj = res.token || res.Token || {};
+      const accessToken = tokenObj.accessToken || tokenObj.AccessToken;
+      if (!accessToken) throw new Error('Không nhận được access token');
+
+      // Lấy thông tin người dùng
+      const userObj = res.user || res.User || null;
+
+      // Lưu token và user vào context
+      login(accessToken, userObj);
+      showToast('Đăng nhập thành công', 'success');
+      console.log('tokenObj', tokenObj)
+      console.log('accessToken', accessToken);
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+      showToast('Đăng nhập thất bại', 'error');
+    }
   };
 
   return (
     <form className="auth-form" onSubmit={handleLogin}>
       <div className="form-group">
-        <input type="email" placeholder="Email" required />
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
       </div>
-      <div className="form-group">
-        <input type="password" placeholder="Mật khẩu" required />
+      <div className="form-group password-group">
+        <input
+          type={showPassword ? 'text' : 'password'}
+          placeholder="Mật khẩu"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <i
+          className={`fa ${showPassword ? 'fa-eye-slash' : 'fa-eye'} toggle-password`}
+          onClick={() => setShowPassword(!showPassword)}
+        ></i>
       </div>
       <button type="submit" className="primary-btn">
         Đăng nhập
       </button>
+      {/* Ẩn hiển thị lỗi chi tiết trên UI */}
       <p className="forgot-password">
         <a
           href="#!"

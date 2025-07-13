@@ -1,4 +1,4 @@
-.video-call-wrapper {
+.videoCallWrapper {
   background-image: url("/public/images/bg.webp");
   background-size: cover;
   background-position: center;
@@ -6,7 +6,7 @@
   padding: 40px 0;
 }
 
-* {
+:global(*) {
   margin: 0;
   padding: 0;
 } 

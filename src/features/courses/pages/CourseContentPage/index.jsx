@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { courses } from '../../data/courseData';
+import { courses } from 'features/courses/data/courseData';
 import './style.css';
 import YouTube from 'react-youtube';
 
 const CourseContentPage = () => {
   const { courseId } = useParams();
   const course = courses.find((c) => c.id === parseInt(courseId));
+  const { markLectureCompleted, enrollCourse } = useMyCourses();
 
   const [currentLecture, setCurrentLecture] = useState(null);
   const [openSections, setOpenSections] = useState([]);
@@ -49,6 +50,7 @@ const CourseContentPage = () => {
   const handleLectureSelect = (lecture, sectionIndex, globalIndex) => {
     if (globalIndex > allowedIndex) return; // chưa được phép
     setCurrentLecture(lecture);
+    markLectureCompleted(course.id, lecture.title);
     // Đảm bảo section của bài giảng được chọn luôn mở
     if (!openSections.includes(sectionIndex)) {
       setOpenSections([...openSections, sectionIndex]);

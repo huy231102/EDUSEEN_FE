@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import Hero from '../../../../components/common/Hero';
-import AboutCard from '../../components/AboutCard';
-import CoursesList from '../../components/CoursesList';
-import CategoriesList from '../../components/CategoriesList';
-import Testimonal from '../../components/Testimonal';
-import Hblog from '../../components/Hblog';
-import { courses as allCourses, testimonal } from '../../data/courseData';
+import Hero from 'components/common/Hero';
+import AboutCard from 'features/courses/components/AboutCard';
+import CoursesList from 'features/courses/components/CoursesList';
+import CategoriesList from 'features/courses/components/CategoriesList';
+import Testimonal from 'features/courses/components/Testimonal';
+import Hblog from 'features/courses/components/Hblog';
+import { courses as allCourses, testimonal } from 'features/courses/data/courseData';
 
 const CourseListPage = () => {
   const location = useLocation();

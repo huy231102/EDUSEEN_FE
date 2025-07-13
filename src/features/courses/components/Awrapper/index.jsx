@@ -1,6 +1,6 @@
 import React from "react"
-import { awrapper } from "../../data/courseData"
-import './style.css';
+import { awrapper } from 'features/courses/data/courseData';
+import './style.css'
 
 const Awrapper = () => {
   return (

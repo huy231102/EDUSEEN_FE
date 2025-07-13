@@ -1,12 +1,12 @@
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import Header from '../../common/Header';
-import Footer from '../../common/Footer';
+import Header from 'components/common/Header';
+import Footer from 'components/common/Footer';
 
 const MainLayout = () => {
   const location = useLocation();
-  // Kiểm tra cả trang category và trang course detail
-  const hasHeaderBg = location.pathname.startsWith('/category') || location.pathname.startsWith('/courses/');
+  // Thêm nền cho tất cả trang trừ trang chủ
+  const hasHeaderBg = location.pathname !== '/';
 
   return (
     <>

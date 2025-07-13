@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import Head from "../Head"
-import "./style.css"
+import './style.css'
 
 const Header = () => {
   const [click, setClick] = useState(false)

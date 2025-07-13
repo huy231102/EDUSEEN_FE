@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import { Link } from "react-router-dom"
-import { useAuth } from "../../../features/auth/contexts/AuthContext"
-import { notifications } from "../../../features/courses/data/courseData"
+import { useAuth } from 'features/auth/contexts/AuthContext';
+import { notifications } from "features/courses/data/courseData"
 import "./style.css"
 
 const Head = () => {
