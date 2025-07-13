@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { courses } from 'features/courses/data/courseData';
 import './style.css';
 import YouTube from 'react-youtube';
+import { useMyCourses } from 'features/courses/contexts/MyCoursesContext';
 
 const CourseContentPage = () => {
   const { courseId } = useParams();
