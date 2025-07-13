@@ -48,7 +48,8 @@ import {
 import { makeStyles } from '@material-ui/core/styles';
 import './style.css';
 // Đã xóa hoàn toàn dòng import { DatePicker, TimePicker } from '@material-ui/pickers';
-import { useAuth } from '../../../auth/contexts/AuthContext';
+import { useAuth } from 'features/auth/contexts/AuthContext';
+import api from 'services/api';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -419,95 +420,27 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
     setNewSession((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleCreateSession = () => {
-    // Kiểm tra ngày hợp lệ
-    if (!newSession.date || !newSession.startTime || !newSession.endTime) {
-      setSnackbar({
-        open: true,
-        message: 'Vui lòng nhập đầy đủ ngày và thời gian!',
-        severity: 'error'
-      });
-      return;
+  // Hàm gọi API đặt lịch
+  const bookSchedule = async (scheduleData) => {
+    try {
+      const res = await api.post('/api/schedule/set', scheduleData);
+      showToast(res.message || 'Đặt lịch thành công!', 'success');
+      // TODO: reload lại danh sách lịch nếu cần
+    } catch (err) {
+      showToast(err.message || 'Đặt lịch thất bại!', 'error');
     }
+  };
 
-    // Kiểm tra ngày không được trong quá khứ
-    const selectedDate = new Date(newSession.date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (selectedDate < today) {
-      setSnackbar({
-        open: true,
-        message: 'Không thể đặt lịch cho ngày trong quá khứ!',
-        severity: 'error'
-      });
-      return;
-    }
-
-    // Kiểm tra thời gian bắt đầu và kết thúc
-    const start = new Date(`${newSession.date}T${newSession.startTime}`);
-    const end = new Date(`${newSession.date}T${newSession.endTime}`);
-    
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      setSnackbar({
-        open: true,
-        message: 'Thời gian không hợp lệ!',
-        severity: 'error'
-      });
-      return;
-    }
-
-    if (start >= end) {
-      setSnackbar({
-        open: true,
-        message: 'Thời gian kết thúc phải sau thời gian bắt đầu!',
-        severity: 'error'
-      });
-      return;
-    }
-
-    // Tính duration
-    const diffMs = end - start;
-    const diffMins = Math.floor(diffMs / 60000);
-    const hours = Math.floor(diffMins / 60);
-    const mins = diffMins % 60;
-    const duration = `${hours > 0 ? hours + ' giờ ' : ''}${mins > 0 ? mins + ' phút' : ''}`;
-    const autoMeetingLink = `https://meet.google.com/${Math.random().toString(36).substring(2, 5)}-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`;
-    
-    const newSessionData = {
-      ...newSession,
-      id: Date.now(),
-      duration,
-      meetingLink: autoMeetingLink,
-      status: 'scheduled',
-      participants: [
-        { name: newSession.caller, role: 'Người tạo', email: newSession.callerEmail },
-        { name: '', role: '', email: newSession.calleeEmail }
-      ]
+  const handleCreateSession = async () => {
+    const scheduleData = {
+      SenderEmail: user?.email || '', // Email người đặt lịch (user hiện tại)
+      ReceiverEmail: newSession.calleeEmail, // Email người nhận
+      ScheduledTime: `${newSession.date}T${newSession.startTime}`,
+      Duration: newSession.duration,
+      CourseId: newSession.subject
     };
-    
-    const updatedSessions = [...upcomingSessions, newSessionData].sort((a, b) => {
-      const dateA = new Date(`${a.date}T${a.startTime}`);
-      const dateB = new Date(`${b.date}T${b.startTime}`);
-      return dateA - dateB;
-    });
-    
-    setUpcomingSessions(updatedSessions);
+    await bookSchedule(scheduleData);
     setOpenCreateDialog(false);
-    setNewSession({
-      title: '',
-      date: '',
-      startTime: '',
-      endTime: '',
-      duration: '',
-      caller: '',
-      callerEmail: '',
-      calleeEmail: '',
-      subject: '',
-      notes: '',
-      meetingLink: '',
-      reminder: '15 phút trước',
-    });
   };
 
   const formatDate = (dateString) => {
@@ -631,7 +564,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
         <Grid item xs={12} sm={4}>
           <div className={classes.statCard}>
             <Schedule className={classes.statIcon} />
-            <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#1eb2a6' }}>
+            <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#222' }}>
               {statistics.totalScheduled}
             </Typography>
             <Typography variant="body2" color="textSecondary" style={{ fontWeight: 500 }}>
@@ -642,7 +575,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
         <Grid item xs={12} sm={4}>
           <div className={classes.statCard}>
             <CalendarToday className={classes.statIcon} />
-            <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#ff9800' }}>
+            <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#222' }}>
               {statistics.todaySessions}
             </Typography>
             <Typography variant="body2" color="textSecondary" style={{ fontWeight: 500 }}>
@@ -653,7 +586,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
         <Grid item xs={12} sm={4}>
           <div className={classes.statCard}>
             <Notifications className={classes.statIcon} />
-            <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#2196f3' }}>
+            <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#222' }}>
               {statistics.thisWeekSessions}
             </Typography>
             <Typography variant="body2" color="textSecondary" style={{ fontWeight: 500 }}>
