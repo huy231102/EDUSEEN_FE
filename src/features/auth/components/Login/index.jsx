@@ -50,6 +50,7 @@ const LoginForm = ({ onForgotPassword }) => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          autoComplete="off"
         />
       </div>
       <div className="form-group password-group">
@@ -59,6 +60,7 @@ const LoginForm = ({ onForgotPassword }) => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          autoComplete="current-password"
         />
         <i
           className={`fa ${showPassword ? 'fa-eye-slash' : 'fa-eye'} toggle-password`}

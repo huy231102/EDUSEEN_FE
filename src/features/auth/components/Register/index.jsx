@@ -12,6 +12,7 @@ const RegisterForm = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
 
   const handleRegister = async (e) => {
@@ -24,7 +25,7 @@ const RegisterForm = () => {
         Password: password,
       });
       showToast('Đăng ký thành công! Vui lòng kiểm tra email để xác thực OTP.', 'success');
-      navigate('/auth');
+      navigate('/auth/verify-otp', { state: { email } });
     } catch (err) {
       console.error(err);
       setError(err.message || 'Đăng ký thất bại');
@@ -41,6 +42,7 @@ const RegisterForm = () => {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
+          autoComplete="off"
         />
       </div>
       <div className="form-group">
@@ -50,16 +52,22 @@ const RegisterForm = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          autoComplete="off"
         />
       </div>
-      <div className="form-group">
+      <div className="form-group password-group">
         <input
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           placeholder="Mật khẩu"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          autoComplete="new-password"
         />
+        <i
+          className={`fa ${showPassword ? 'fa-eye-slash' : 'fa-eye'} toggle-password`}
+          onClick={() => setShowPassword(!showPassword)}
+        ></i>
       </div>
       <button type="submit" className="primary-btn">
         Đăng ký
