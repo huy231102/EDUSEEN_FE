@@ -103,14 +103,71 @@ export const courses = [
               ]
             }
           },
-          { title: "Bài 2: Các câu chào hỏi thông dụng", videoUrl: "https://www.youtube.com/embed/GZWQ6I-4x2s?si=ETpZgfyk0MU2isy4" }
+          {
+            title: "Bài 2: Các câu chào hỏi thông dụng",
+            videoUrl: "https://www.youtube.com/embed/GZWQ6I-4x2s?si=ETpZgfyk0MU2isy4",
+            assignment: {
+              id: 4,
+              title: "Bài tập: Thực hành câu chào hỏi",
+              description: "Quay video (1 phút) trong đó bạn thực hành 5 câu chào hỏi phổ biến bằng ngôn ngữ ký hiệu.",
+              dueDate: "2024-08-01",
+              maxScore: 8,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          }
         ]
       },
       {
         title: "Chương 2: Giao tiếp cơ bản",
         lectures: [
-          { title: "Bài 3: Giới thiệu bản thân", videoUrl: "https://www.youtube.com/embed/S2tovL9-eng" },
-          { title: "Bài 4: Đặt câu hỏi đơn giản", videoUrl: "https://www.youtube.com/embed/S2tovL9-eng" }
+          {
+            title: "Bài 3: Giới thiệu bản thân",
+            videoUrl: "https://www.youtube.com/embed/S2tovL9-eng",
+            assignment: {
+              id: 5,
+              title: "Bài tập: Video tự giới thiệu",
+              description: "Quay video (1-2 phút) tự giới thiệu bản thân (tên, sở thích, nghề nghiệp) bằng ngôn ngữ ký hiệu.",
+              dueDate: "2024-08-03",
+              maxScore: 10,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          },
+          {
+            title: "Bài 4: Đặt câu hỏi đơn giản",
+            videoUrl: "https://www.youtube.com/embed/S2tovL9-eng",
+            assignment: {
+              id: 6,
+              title: "Bài tập: Thực hành đặt câu hỏi",
+              description: "Gửi một đoạn video (1 phút) trong đó bạn đặt tối thiểu 3 câu hỏi đơn giản bằng ngôn ngữ ký hiệu.",
+              dueDate: "2024-08-04",
+              maxScore: 10,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          },
+          {
+            title: "Bài 5: Hội thoại thực tế",
+            videoUrl: "https://www.youtube.com/embed/S2tovL9-eng",
+            assignment: {
+              id: 7,
+              title: "Bài tập: Hội thoại ngắn",
+              description: "Cặp đôi với một bạn học và quay video (2-3 phút) trao đổi hội thoại hằng ngày bằng ngôn ngữ ký hiệu.",
+              dueDate: "2024-08-06",
+              maxScore: 12,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          }
         ]
       }
     ]
@@ -134,7 +191,21 @@ export const courses = [
       {
         title: "Chương 1: Kỹ năng lắng nghe",
         lectures: [
-          { title: "Bài 1: Lắng nghe chủ động", videoUrl: "https://www.youtube.com/embed/S2tovL9-eng" }
+          {
+            title: "Bài 1: Lắng nghe chủ động",
+            videoUrl: "https://www.youtube.com/embed/S2tovL9-eng",
+            assignment: {
+              id: 2,
+              title: "Bài tập: Ghi âm cuộc hội thoại",
+              description: "Ghi âm (hoặc quay video) một đoạn hội thoại ngắn (1-2 phút) trong đó bạn áp dụng kỹ thuật lắng nghe chủ động. Hãy thể hiện rõ ngôn ngữ cơ thể và phản hồi phù hợp.",
+              dueDate: "2024-08-05",
+              maxScore: 10,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          }
         ]
       }
     ]
@@ -157,7 +228,21 @@ export const courses = [
       {
         title: "Chương 1: Microsoft Word",
         lectures: [
-          { title: "Bài 1: Định dạng văn bản", videoUrl: "https://www.youtube.com/embed/S2tovL9-eng" }
+          {
+            title: "Bài 1: Định dạng văn bản",
+            videoUrl: "https://www.youtube.com/embed/S2tovL9-eng",
+            assignment: {
+              id: 3,
+              title: "Bài tập: Tạo tài liệu chuẩn",
+              description: "Tải lên một tài liệu Word 2-3 trang, trong đó bạn áp dụng các kỹ thuật định dạng (heading, bullet, numbering, style) đã học.",
+              dueDate: "2024-08-10",
+              maxScore: 15,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          }
         ]
       }
     ]
