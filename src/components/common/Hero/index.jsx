@@ -1,10 +1,24 @@
 import React from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import Heading from "../Heading"
+import { useAuth } from 'features/auth/contexts/AuthContext';
 import './style.css'
 
 const Hero = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
+
+  const handleButtonClick = () => {
+    if (isLoggedIn) {
+      const coursesSection = document.getElementById('courses-section');
+      if (coursesSection) {
+        coursesSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      navigate('/auth');
+    }
+  };
+
   return (
     <>
       <section className="hero">
@@ -12,8 +26,8 @@ const Hero = () => {
           <div className='row'>
             <Heading subtitle='WELCOME TO EDUSEEN' title='Phá Vỡ Rào Cản, Vươn Tới Tương Lai' />
             <p>Nền tảng học trực tuyến dành riêng cho người khiếm thính, với các khóa học được thiết kế đặc biệt cùng ngôn ngữ ký hiệu và phụ đề chi tiết.</p>
-            <button className='primary-btn' onClick={() => navigate('/auth')}>
-              REGISTER NOW <i className='fa fa-long-arrow-alt-right'></i>
+            <button className='primary-btn' onClick={handleButtonClick}>
+              {isLoggedIn ? 'HỌC NGAY' : 'REGISTER NOW'} <i className='fa fa-long-arrow-alt-right'></i>
             </button>
           </div>
         </div>

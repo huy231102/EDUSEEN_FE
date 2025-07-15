@@ -73,17 +73,41 @@
 
 .logout-button {
   background-color: #ff4d4f !important;
-  width: 100%;
 }
 
 .logout-button:hover {
   background-color: #d9363e !important;
 }
 
+.change-password-btn {
+  background-color: #007bff !important;
+}
+
+.change-password-btn:hover {
+  background-color: #0056b3 !important;
+}
+
 .profile-card-left .primary-btn {
   width: 100%;
   display: block;
-  margin-bottom: 10px;
+  margin: 20px 0; /* Increased gap */
+  color: white;
+  text-decoration: none;
+  text-align: center;
+  /* Matching global styles */
+  padding: 17px 30px;
+  font-family: inherit; /* Ensure consistent font */
+  font-weight: 600;
+  font-size: 16px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: 0 24px 36px -11px rgb(0 0 0 / 9%);
+  transition: 0.5s;
+}
+
+.profile-card-left .primary-btn:hover {
+  box-shadow: none;
 }
 
 /* Right Side */

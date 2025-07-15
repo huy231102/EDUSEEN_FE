@@ -13,6 +13,8 @@ const CategoryPage = lazy(() => import('./features/courses/pages/CategoryPage'))
 const CourseContentPage = lazy(() => import('./features/courses/pages/CourseContentPage'));
 const MyCoursesPage = lazy(() => import('./features/courses/pages/MyCoursesPage'));
 const AuthPage = lazy(() => import('./features/auth/pages/AuthPage'));
+const VerifyOTPPage = lazy(() => import('./features/auth/pages/VerifyOTPPage'));
+const ResetPasswordPage = lazy(() => import('./features/auth/pages/ResetPasswordPage'));
 const ProfilePage = lazy(() => import('./features/profile/pages/ProfilePage'));
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
@@ -58,6 +60,8 @@ const App = () => {
             }
           />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/verify-otp" element={<VerifyOTPPage />} />
+          <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

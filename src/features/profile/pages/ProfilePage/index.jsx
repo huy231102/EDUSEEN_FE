@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../auth/contexts/AuthContext';
 import api from 'services/api';
 import { useToast } from 'components/common/Toast';
+import ChangePasswordForm from '../../components/ChangePasswordForm';
 import './style.css'
 
 const ProfilePage = () => {
   const { user, login, logout } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -95,6 +97,14 @@ const ProfilePage = () => {
               Khóa học của tôi
             </Link>
             <button
+              type="button"
+              className="primary-btn change-password-btn"
+              style={{ marginBottom: '10px' }}
+              onClick={() => setShowChangePassword(true)}
+            >
+              Đổi mật khẩu
+            </button>
+            <button
               onClick={handleLogout}
               className="primary-btn logout-button"
             >
@@ -154,6 +164,7 @@ const ProfilePage = () => {
             </form>
           </div>
         </div>
+        {showChangePassword && <ChangePasswordForm onClose={() => setShowChangePassword(false)} />}
       </div>
     </div>
   );
