@@ -5,7 +5,7 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useLocalStorage('authToken', null);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useLocalStorage('authUser', null);
 
   /**
    * Lưu token (và tuỳ ý dữ liệu người dùng) sau khi đăng nhập thành công

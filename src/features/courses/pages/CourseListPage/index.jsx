@@ -61,13 +61,15 @@ const CourseListPage = () => {
     <>
       <Hero />
       <AboutCard />
-      <CoursesList 
-        courses={displayCourses}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        sortOption={sortOption}
-        setSortOption={setSortOption}
-      />
+      <div id="courses-section">
+        <CoursesList 
+          courses={displayCourses}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
+        />
+      </div>
       <CategoriesList />
       <Testimonal items={testimonal} subtitle='ĐÁNH GIÁ TỪ HỌC VIÊN' title='Những Gương Mặt Tiêu Biểu' />
       <Hblog />
