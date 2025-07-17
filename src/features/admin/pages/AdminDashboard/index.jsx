@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, AppBar, Toolbar, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, TextField, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Select, FormControl, InputLabel, Switch, FormControlLabel, TablePagination, Avatar, Grid, InputAdornment, Chip, Collapse } from "@material-ui/core";
 import { People, Dashboard, Assignment, School, ExitToApp, Add, Edit, Delete, GetApp, PictureAsPdf, Search, Info, Star, BarChart, PersonAdd, RateReview, Lock, LockOpen, Refresh, Settings, ExpandLess, ExpandMore, Tune } from "@material-ui/icons";
 import './style.css';
@@ -28,6 +28,8 @@ import EmojiObjectsIcon from '@material-ui/icons/EmojiObjects';
 import BookIcon from '@material-ui/icons/Book';
 import LanguageIcon from '@material-ui/icons/Language';
 import { BarChart as BarChartIcon } from '@material-ui/icons';
+import api from "services/api";
+
 
 ChartJS.register(
   CategoryScale,
@@ -40,150 +42,7 @@ ChartJS.register(
   ChartDataLabels
 );
 
-const mockUsers = [
-  {
-    id: 1,
-    avatar: '',
-    name: 'Nguyễn Văn A',
-    email: 'a@gmail.com',
-    username: 'nguyenvana',
-    status: 'Hoạt động',
-    role: 'Admin',
-    joined: '2023-03-12',
-    lastActive: '1 phút trước',
-  },
-  {
-    id: 2,
-    avatar: '',
-    name: 'Trần Thị B',
-    email: 'b@gmail.com',
-    username: 'tranthib',
-    status: 'Không hoạt động',
-    role: 'Giáo viên',
-    joined: '2022-06-27',
-    lastActive: '1 tháng trước',
-  },
-  {
-    id: 3,
-    avatar: '',
-    name: 'Lê Văn C',
-    email: 'c@gmail.com',
-    username: 'levanc',
-    status: 'Đã khóa',
-    role: 'Học sinh',
-    joined: '2024-01-08',
-    lastActive: '4 ngày trước',
-  },
-  {
-    id: 4,
-    avatar: '',
-    name: 'Phạm Thị D',
-    email: 'd@gmail.com',
-    username: 'phamthid',
-    status: 'Chờ duyệt',
-    role: 'Học sinh',
-    joined: '2021-10-05',
-    lastActive: '10 ngày trước',
-  },
-  {
-    id: 5,
-    avatar: '',
-    name: 'Ngô Văn E',
-    email: 'e@gmail.com',
-    username: 'ngovane',
-    status: 'Tạm ngưng',
-    role: 'Giáo viên',
-    joined: '2023-02-19',
-    lastActive: '3 tháng trước',
-  },
-  {
-    id: 6,
-    avatar: '',
-    name: 'Đỗ Thị F',
-    email: 'f@gmail.com',
-    username: 'dothif',
-    status: 'Hoạt động',
-    role: 'Giáo viên',
-    joined: '2022-08-30',
-    lastActive: '1 tuần trước',
-  },
-  {
-    id: 7,
-    avatar: '',
-    name: 'Phan Văn G',
-    email: 'g@gmail.com',
-    username: 'phanvang',
-    status: 'Hoạt động',
-    role: 'Học sinh',
-    joined: '2024-04-23',
-    lastActive: '4 giờ trước',
-  },
-  {
-    id: 8,
-    avatar: '',
-    name: 'Bùi Thị H',
-    email: 'h@gmail.com',
-    username: 'buithih',
-    status: 'Đã khóa',
-    role: 'Học sinh',
-    joined: '2020-11-14',
-    lastActive: '2 tháng trước',
-  },
-  {
-    id: 9,
-    avatar: '',
-    name: 'Lý Văn I',
-    email: 'i@gmail.com',
-    username: 'lyvani',
-    status: 'Tạm ngưng',
-    role: 'Giáo viên',
-    joined: '2023-07-06',
-    lastActive: '3 giờ trước',
-  },
-  {
-    id: 10,
-    avatar: '',
-    name: 'Trịnh Thị K',
-    email: 'k@gmail.com',
-    username: 'trinhthik',
-    status: 'Không hoạt động',
-    role: 'Học sinh',
-    joined: '2021-12-31',
-    lastActive: '4 tháng trước',
-  },
-  {
-    id: 11,
-    avatar: '',
-    name: 'Noemi Villan',
-    email: 'noemi@gmail.com',
-    username: 'noemi',
-    status: 'Hoạt động',
-    role: 'Admin',
-    joined: '2024-08-10',
-    lastActive: '15 phút trước',
-  },
-];
-
-const statusColor = {
-  'Hoạt động': '#4caf50',
-  'Không hoạt động': '#9e9e9e',
-  'Đã khóa': '#f44336',
-  'Chờ duyệt': '#1a237e',
-  'Tạm ngưng': '#ff9800',
-};
-
-const menuItems = [
-  { text: "Bảng điều khiển", icon: <Dashboard /> },
-  { text: "Quản lý người dùng", icon: <People /> },
-  { text: "Quản lý khóa học", icon: <School /> },
-  // Bỏ Cài đặt hệ thống ở đây, sẽ thêm dropdown phía dưới
-  { text: "Đăng xuất", icon: <ExitToApp /> },
-];
-
-const roleOptions = ["Admin", "Giáo viên", "Học sinh"];
-
-// Mock data cho khóa học và học sinh
-const mockCourses = [
+const fallbackCourses = [
   {
     id: 1,
     name: 'Toán 12 Nâng cao',
@@ -209,8 +68,45 @@ const mockCourses = [
   }
 ];
 
+// Mock dữ liệu user mẫu để tránh lỗi khi chưa có API hoặc khi pendingUsers cần dữ liệu mẫu
+const mockUsers = [
+  {
+    id: 1,
+    name: "Nguyễn Văn A",
+    email: "a@gmail.com",
+    username: "nguyenvana",
+    role: "Học sinh",
+    status: "Hoạt động",
+    joined: "2023-01-10",
+    lastActive: "2023-07-01",
+    avatar: "",
+  },
+  {
+    id: 2,
+    name: "Trần Thị B",
+    email: "b@gmail.com",
+    username: "tranthib",
+    role: "Quản trị viên",
+    status: "Chờ duyệt",
+    joined: "2023-02-15",
+    lastActive: "2023-07-02",
+    avatar: "",
+  },
+  // ... Thêm các user mẫu khác nếu cần
+];
+
+// Bảng màu cho các trạng thái user/course
+const statusColor = {
+  "Hoạt động": "#4caf50",
+  "Đã khóa": "#f44336",
+  "Tạm ngưng": "#ff9800",
+  "Chờ duyệt": "#1a237e",
+  "Không hoạt động": "#9e9e9e",
+  "Đã duyệt": "#1eb2a6",
+};
+
 function AdminDashboard(props) {
-  const [courses, setCourses] = useState(mockCourses);
+  const [courses, setCourses] = useState(fallbackCourses);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [openCourseDetail, setOpenCourseDetail] = useState(false);
   const [openAddStudent, setOpenAddStudent] = useState(false);
@@ -222,6 +118,7 @@ function AdminDashboard(props) {
   const [courseRowsPerPage, setCourseRowsPerPage] = useState(5);
   const [courseStatusFilter, setCourseStatusFilter] = useState("");
   const [courseDateFilter, setCourseDateFilter] = useState("");
+  const [loadingCourses, setLoadingCourses] = useState(true);
 
   const handleOpenCourseDetail = (course) => {
     setSelectedCourse(course);
@@ -320,7 +217,8 @@ function AdminDashboard(props) {
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [openDetail, setOpenDetail] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
@@ -335,12 +233,78 @@ function AdminDashboard(props) {
   );
   const [openSetting, setOpenSetting] = useState(false);
 
+  useEffect(() => {
+    const roleMapById = {
+      1: "Học sinh",        // User
+      2: "Quản trị viên",   // Admin
+      3: "Giáo viên"        // Teacher
+    };
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get("/api/users");
+        const data = Array.isArray(res) ? res : res.data;
+        setUsers(
+          data.map(u => ({
+            id: u.userId,
+            name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+            email: u.email,
+            username: u.username,
+            role: roleMapById[u.roleId] || u.roleName,
+            status: u.isActive ? "Hoạt động" : "Đã khóa",
+            joined: u.createdAt,
+            lastActive: u.updatedAt,
+            avatar: u.avatarUrl,
+          }))
+        );
+      } catch (err) {
+        setUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  // Mapping từ CourseDto (BE) sang format FE
+  const mapCourseDtoToFE = (dto) => ({
+    id: dto.courseId,
+    name: dto.title,
+    code: '', // BE chưa trả về, có thể bỏ qua hoặc bổ sung ở BE
+    teacher: dto.teacherName,
+    createdAt: dto.createdAt,
+    status: '', // BE chưa trả về, có thể để mặc định hoặc bổ sung ở BE
+    students: [], // BE chưa trả về, có thể để rỗng hoặc bổ sung ở BE
+    description: dto.description,
+    category: dto.categoryName,
+    level: dto.level,
+  });
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setLoadingCourses(true);
+      try {
+        const res = await api.get("/api/courses");
+        if (Array.isArray(res)) {
+          setCourses(res.map(mapCourseDtoToFE));
+        } else {
+          setCourses(fallbackCourses);
+        }
+      } catch (err) {
+        setCourses(fallbackCourses);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+    fetchCourses();
+  }, []);
+
   // Lọc theo tên, email, username, role, trạng thái, ngày tham gia
   const filteredUsers = users.filter(u => {
     const searchMatch =
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()) ||
-      u.username.toLowerCase().includes(search.toLowerCase());
+      ((u.name || '').toLowerCase().includes(search.toLowerCase())) ||
+      ((u.email || '').toLowerCase().includes(search.toLowerCase())) ||
+      ((u.username || '').toLowerCase().includes(search.toLowerCase()));
     const roleMatch = roleFilter ? u.role === roleFilter : true;
     const statusMatch = statusFilter ? u.status === statusFilter : true;
     const dateMatch = dateFilter ? u.joined === dateFilter : true;
@@ -359,6 +323,7 @@ function AdminDashboard(props) {
   };
 
   const handleOpenDetail = (user) => {
+    console.log("Chi tiết user:", user); // Thêm dòng này
     setSelectedUser(user);
     setOpenDetail(true);
   };
@@ -395,14 +360,14 @@ function AdminDashboard(props) {
   };
 
   // Thống kê số liệu dashboard
-  const totalUsers = mockUsers.length;
+  const totalUsers = users.length;
   const totalCourses = courses.length;
   const totalCourseRegistrations = courses.reduce((sum, c) => sum + c.students.length, 0);
   // Giả lập số đánh giá (nếu có trường reviews)
   const totalCourseReviews = courses.reduce((sum, c) => sum + (c.reviews ? c.reviews.length : 0), 0);
   // Số user mới trong tháng này
   const now = new Date();
-  const usersThisMonth = mockUsers.filter(u => {
+  const usersThisMonth = users.filter(u => {
     const joined = new Date(u.joined);
     return joined.getMonth() === now.getMonth() && joined.getFullYear() === now.getFullYear();
   }).length;
@@ -524,11 +489,11 @@ function AdminDashboard(props) {
 
   // Pie chart trạng thái user
   const userStatusCounts = {
-    'Hoạt động': mockUsers.filter(u => u.status === 'Hoạt động').length,
-    'Đã khóa': mockUsers.filter(u => u.status === 'Đã khóa').length,
-    'Tạm ngưng': mockUsers.filter(u => u.status === 'Tạm ngưng').length,
-    'Chờ duyệt': mockUsers.filter(u => u.status === 'Chờ duyệt').length,
-    'Không hoạt động': mockUsers.filter(u => u.status === 'Không hoạt động').length,
+    'Hoạt động': users.filter(u => u.status === 'Hoạt động').length,
+    'Đã khóa': users.filter(u => u.status === 'Đã khóa').length,
+    'Tạm ngưng': users.filter(u => u.status === 'Tạm ngưng').length,
+    'Chờ duyệt': users.filter(u => u.status === 'Chờ duyệt').length,
+    'Không hoạt động': users.filter(u => u.status === 'Không hoạt động').length,
   };
   const pieStatusData = {
     labels: Object.keys(userStatusCounts),
@@ -651,6 +616,14 @@ function AdminDashboard(props) {
     const found = iconOptions.find(i => i.value === type);
     return found ? found.icon : <FolderIcon style={{ color: '#1eb2a6' }} />;
   };
+
+  // Menu sidebar cho admin dashboard
+  const menuItems = [
+    { text: "Bảng điều khiển", icon: <Dashboard /> },
+    { text: "Quản lý người dùng", icon: <People /> },
+    { text: "Quản lý khóa học", icon: <School /> },
+    { text: "Đăng xuất", icon: <ExitToApp /> },
+  ];
 
   return (
     <Box sx={{ background: '#f7fafc', minHeight: '100vh' }}>
@@ -787,7 +760,7 @@ function AdminDashboard(props) {
                 >
                   <span style={{ ...statIconStyle, width: 60, height: 60, fontSize: 38 }}><FaUserAlt /></span>
                   <div>
-                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={mockUsers.length} duration={1.2} /></div>
+                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={users.length} duration={1.2} /></div>
                     <div style={{ ...statLabelStyle, fontSize: 18 }}>Người dùng</div>
                   </div>
                 </motion.div>
@@ -823,7 +796,7 @@ function AdminDashboard(props) {
                 <motion.div whileHover={{ scale: 1.07, boxShadow: '0 12px 32px rgba(30,178,166,0.18)' }} style={{ ...statCardStyle, minWidth: 260, minHeight: 120, padding: 32 }}>
                   <span style={{ ...statIconStyle, background: 'linear-gradient(135deg, #1eb2a6 60%, #184d47 100%)', width: 60, height: 60, fontSize: 38 }}><FaUserGraduate /></span>
                   <div>
-                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={0} duration={1.2} /></div>
+                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={usersThisMonth} duration={1.2} /></div>
                     <div style={{ ...statLabelStyle, fontSize: 18 }}>User mới tháng này</div>
                   </div>
                 </motion.div>
@@ -832,7 +805,7 @@ function AdminDashboard(props) {
                 <motion.div whileHover={{ scale: 1.07, boxShadow: '0 12px 32px rgba(24,77,71,0.18)' }} style={{ ...statCardStyle, minWidth: 260, minHeight: 120, padding: 32 }}>
                   <span style={{ ...statIconStyle, background: 'linear-gradient(135deg, #184d47 60%, #1eb2a6 100%)', width: 60, height: 60, fontSize: 38 }}><FaBookOpen /></span>
                   <div>
-                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={0} duration={1.2} /></div>
+                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={coursesThisMonth} duration={1.2} /></div>
                     <div style={{ ...statLabelStyle, fontSize: 18 }}>Khóa học mới tháng này</div>
                   </div>
                 </motion.div>
@@ -841,7 +814,7 @@ function AdminDashboard(props) {
                 <motion.div whileHover={{ scale: 1.07, boxShadow: '0 12px 32px rgba(255,112,67,0.18)' }} style={{ ...statCardStyle, background: 'linear-gradient(135deg, #fff3e0 0%, #fff 100%)', minWidth: 260, minHeight: 120, padding: 32 }}>
                   <span style={{ ...statIconStyle, background: 'linear-gradient(135deg, #ff7043 60%, #ffb300 100%)', width: 60, height: 60, fontSize: 38 }}><FaClipboardList /></span>
                   <div>
-                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={1} duration={1.2} /></div>
+                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={coursesPending} duration={1.2} /></div>
                     <div style={{ ...statLabelStyle, fontSize: 18 }}>Khóa học chờ duyệt</div>
                   </div>
                 </motion.div>
@@ -944,45 +917,55 @@ function AdminDashboard(props) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {pagedUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <Avatar alt={user.name} src={user.avatar} sx={{ width: 40, height: 40 }} />
-                        </TableCell>
-                        <TableCell>{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.role}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={user.status}
-                            style={{
-                              backgroundColor: statusColor[user.status],
-                              color: '#fff',
-                              fontWeight: 600,
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>{user.joined && !isNaN(new Date(user.joined)) ? format(new Date(user.joined), 'dd/MM/yyyy') : 'Không xác định'}</TableCell>
-                        <TableCell>
-                          <IconButton onClick={() => handleOpenDetail(user)}>
-                            <Info />
-                          </IconButton>
-                          <IconButton onClick={() => handleOpenEdit(user)}>
-                            <Edit />
-                          </IconButton>
-                          {user.status === 'Chờ duyệt' && (
-                            <>
-                              <IconButton onClick={() => handleApproveUser(user.id, 'Học sinh')}>
-                                <PersonAdd />
-                              </IconButton>
-                              <IconButton onClick={() => handleApproveUser(user.id, 'Giáo viên')}>
-                                <RateReview />
-                              </IconButton>
-                            </>
-                          )}
-                        </TableCell>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center">Đang tải dữ liệu...</TableCell>
                       </TableRow>
-                    ))}
+                    ) : filteredUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center">Không tìm thấy người dùng nào.</TableCell>
+                      </TableRow>
+                    ) : (
+                      pagedUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <Avatar alt={user.name} src={user.avatar} sx={{ width: 40, height: 40 }} />
+                          </TableCell>
+                          <TableCell>{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{user.role}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={user.status}
+                              style={{
+                                backgroundColor: statusColor[user.status],
+                                color: '#fff',
+                                fontWeight: 600,
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>{user.joined && !isNaN(new Date(user.joined)) ? format(new Date(user.joined), 'dd/MM/yyyy') : 'Không xác định'}</TableCell>
+                          <TableCell>
+                            <IconButton onClick={() => handleOpenDetail(user)}>
+                              <Info />
+                            </IconButton>
+                            <IconButton onClick={() => handleOpenEdit(user)}>
+                              <Edit />
+                            </IconButton>
+                            {user.status === 'Chờ duyệt' && (
+                              <>
+                                <IconButton onClick={() => handleApproveUser(user.id, 'Học sinh')}>
+                                  <PersonAdd />
+                                </IconButton>
+                                <IconButton onClick={() => handleApproveUser(user.id, 'Giáo viên')}>
+                                  <RateReview />
+                                </IconButton>
+                              </>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -1180,47 +1163,23 @@ function AdminDashboard(props) {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {courses.filter(c => c.name.toLowerCase().includes(courseSearch.toLowerCase())).map((course) => (
+                    {loadingCourses ? (
+                      <TableRow>
+                        <TableCell colSpan={6} align="center">
+                          Đang tải dữ liệu khóa học...
+                        </TableCell>
+                      </TableRow>
+                    ) : courses.filter(c => (c.name || '').toLowerCase().includes(courseSearch.toLowerCase())).map((course) => (
                       <TableRow key={course.id}>
                         <TableCell>{course.name}</TableCell>
-                        <TableCell>{course.code}</TableCell>
+                        <TableCell>{course.code || '-'}</TableCell>
                         <TableCell>{course.teacher}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={course.status}
-                            style={{
-                              backgroundColor: statusColor[course.status],
-                              color: '#fff',
-                              fontWeight: 600,
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>{course.students.length}</TableCell>
+                        <TableCell>{course.status || '-'}</TableCell>
+                        <TableCell>{course.students ? course.students.length : 0}</TableCell>
                         <TableCell>
                           <IconButton onClick={() => handleOpenCourseDetail(course)}>
                             <Info />
                           </IconButton>
-                          {course.status === 'Chờ duyệt' && (
-                            <>
-                              <IconButton onClick={() => handleApproveCourse(course.id)}>
-                                <PersonAdd />
-                              </IconButton>
-                            </>
-                          )}
-                          {course.status === 'Đã duyệt' && (
-                            <>
-                              <IconButton onClick={() => handleLockCourse(course.id)}>
-                                <Lock />
-                              </IconButton>
-                            </>
-                          )}
-                          {course.status === 'Đã khóa' && (
-                            <>
-                              <IconButton onClick={() => handleUnlockCourse(course.id)}>
-                                <LockOpen />
-                              </IconButton>
-                            </>
-                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1242,10 +1201,10 @@ function AdminDashboard(props) {
               <DialogContent>
                 <Typography variant="h6">Thông tin khóa học</Typography>
                 <Typography>Tên khóa học: {selectedCourse?.name}</Typography>
-                <Typography>Mã khóa học: {selectedCourse?.code}</Typography>
+                <Typography>Mã khóa học: {selectedCourse?.code || '-'}</Typography>
                 <Typography>Giáo viên: {selectedCourse?.teacher}</Typography>
-                <Typography>Trạng thái: {selectedCourse?.status}</Typography>
-                <Typography>Số học viên: {selectedCourse?.students.length}</Typography>
+                <Typography>Trạng thái: {selectedCourse?.status || '-'}</Typography>
+                <Typography>Số học viên: {selectedCourse?.students ? selectedCourse.students.length : 0}</Typography>
                 <Typography>
                   Ngày tạo: {selectedCourse?.createdAt && !isNaN(new Date(selectedCourse.createdAt))
                     ? format(new Date(selectedCourse.createdAt), 'dd/MM/yyyy')

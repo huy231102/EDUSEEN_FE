@@ -252,10 +252,183 @@
 }
 
 .table-container::-webkit-scrollbar-thumb {
-  background: #1eb2a6;
+  background: #c1c1c1;
   border-radius: 4px;
 }
 
 .table-container::-webkit-scrollbar-thumb:hover {
-  background: #15968d;
+  background: #a8a8a8;
+}
+
+/* Form Styles - Cải thiện style cho form elements */
+.form-dialog {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.form-dialog .MuiDialog-paper {
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.form-dialog .MuiDialogTitle-root {
+  background: linear-gradient(135deg, #1eb2a6 0%, #15968d 100%);
+  color: white;
+  padding: 20px 24px;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.form-dialog .MuiDialogContent-root {
+  padding: 24px;
+  background: #fafafa;
+}
+
+.form-dialog .MuiDialogActions-root {
+  padding: 16px 24px;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* TextField Styles */
+.form-dialog .MuiTextField-root {
+  margin-bottom: 8px;
+}
+
+.form-dialog .MuiTextField-root .MuiInputBase-root {
+  border-radius: 8px;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.form-dialog .MuiTextField-root .MuiInputBase-root:hover {
+  background: #f8f9fa;
+}
+
+.form-dialog .MuiTextField-root .MuiInputBase-root.Mui-focused {
+  background: white;
+  box-shadow: 0 0 0 2px rgba(30, 178, 166, 0.2);
+}
+
+.form-dialog .MuiTextField-root .MuiInputLabel-root {
+  color: #666;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.form-dialog .MuiTextField-root .MuiInputLabel-root.Mui-focused {
+  color: #1eb2a6;
+  font-weight: 600;
+}
+
+.form-dialog .MuiTextField-root .MuiInputBase-input {
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+.form-dialog .MuiTextField-root .MuiInputBase-input::placeholder {
+  color: #999;
+  opacity: 1;
+}
+
+/* Select Field Styles */
+.form-dialog .MuiTextField-root .MuiSelect-select {
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  color: #333;
+  background: white;
+  border-radius: 8px;
+}
+
+.form-dialog .MuiTextField-root .MuiSelect-select:focus {
+  background: white;
+}
+
+.form-dialog .MuiTextField-root .MuiSelect-icon {
+  color: #666;
+  right: 12px;
+}
+
+/* Button Styles */
+.form-dialog .MuiButton-root {
+  border-radius: 8px;
+  text-transform: none;
+  font-weight: 600;
+  padding: 10px 24px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.form-dialog .MuiButton-contained {
+  background: linear-gradient(135deg, #1eb2a6 0%, #15968d 100%);
+  box-shadow: 0 2px 8px rgba(30, 178, 166, 0.3);
+}
+
+.form-dialog .MuiButton-contained:hover {
+  background: linear-gradient(135deg, #15968d 0%, #0f7a73 100%);
+  box-shadow: 0 4px 12px rgba(30, 178, 166, 0.4);
+  transform: translateY(-1px);
+}
+
+.form-dialog .MuiButton-outlined {
+  border: 2px solid #e0e0e0;
+  color: #666;
+}
+
+.form-dialog .MuiButton-outlined:hover {
+  border-color: #1eb2a6;
+  color: #1eb2a6;
+  background: rgba(30, 178, 166, 0.04);
+}
+
+/* Grid Spacing */
+.form-dialog .MuiGrid-container {
+  margin: 0;
+}
+
+.form-dialog .MuiGrid-item {
+  padding: 8px;
+}
+
+/* Helper Text */
+.form-dialog .MuiFormHelperText-root {
+  margin: 4px 0 0 0;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* Disabled Field */
+.form-dialog .MuiTextField-root .Mui-disabled {
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.form-dialog .MuiTextField-root .Mui-disabled .MuiInputBase-input {
+  color: #999;
+}
+
+/* Responsive Form */
+@media (max-width: 600px) {
+  .form-dialog .MuiDialogContent-root {
+    padding: 16px;
+  }
+  
+  .form-dialog .MuiDialogTitle-root {
+    padding: 16px 20px;
+    font-size: 1.1rem;
+  }
+  
+  .form-dialog .MuiDialogActions-root {
+    padding: 12px 20px;
+  }
+  
+  .form-dialog .MuiTextField-root .MuiInputBase-input {
+    padding: 10px 14px;
+  }
+  
+  .form-dialog .MuiButton-root {
+    padding: 8px 20px;
+    font-size: 0.8rem;
+  }
 } 
