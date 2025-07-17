@@ -1,0 +1,117 @@
+.assignments-dashboard {
+  padding: 40px 0;
+  background: #f9f9f9;
+}
+
+.page-title {
+  margin: 20px 0 30px;
+  font-size: 28px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.assignments-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.assignments-table thead {
+  background: #fafafa;
+}
+
+.assignments-table th,
+.assignments-table td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 15px;
+}
+
+.assignments-table th {
+  font-weight: 600;
+  color: #333;
+}
+
+.assignments-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.submit-status {
+  font-weight: 500;
+  color: #1eb2a6;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actions-cell .btn.small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #1eb2a6;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.back-link i {
+  font-size: 14px;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eee;
+  color: #333;
+  border-radius: 5px;
+  padding: 10px 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.btn:hover {
+  background: #ddd;
+}
+
+.btn.small {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.btn.primary {
+  background: #1eb2a6;
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: #17a094;
+}
+
+.top-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+} 
