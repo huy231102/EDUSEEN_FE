@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../auth/contexts/AuthContext';
-import api from 'services/api';
+import userApi from 'services/userApi';
 import { useToast } from 'components/common/Toast';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
 import './style.css'
@@ -40,14 +40,11 @@ const ProfilePage = () => {
 
     try {
       // Map formData sang định dạng BE yêu cầu
-      const body = {
-        // Chỉ gửi các trường cho phép cập nhật
+      await userApi.updateProfile({
         firstName: formData.first_name,
         lastName: formData.last_name,
         avatarUrl: formData.avatar_url,
-      };
-
-      await api.put('/api/profile', body);
+      });
 
       // Cập nhật context với dữ liệu mới
       const updatedUser = {

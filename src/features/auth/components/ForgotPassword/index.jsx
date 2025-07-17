@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from 'services/api';
+import userApi from 'services/userApi';
 import { useToast } from 'components/common/Toast';
 import '../common/style.css';
 
@@ -10,7 +10,7 @@ const ForgotPasswordForm = ({ onBackToLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/api/auth/forgot-password', { Email: email });
+      await userApi.forgotPassword(email);
       showToast(
         'Nếu email của bạn tồn tại, một liên kết đặt lại mật khẩu đã được gửi.',
         'success'

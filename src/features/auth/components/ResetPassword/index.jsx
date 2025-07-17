@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import api from 'services/api';
+import userApi from 'services/userApi';
 import { useToast } from 'components/common/Toast';
 import '../common/style.css';
 
@@ -31,11 +31,7 @@ const ResetPasswordForm = () => {
     }
 
     try {
-      await api.post('/api/auth/reset-password', {
-        token,
-        newPassword: password,
-        confirmPassword: confirmPassword,
-      });
+      await userApi.resetPassword(token, password, confirmPassword);
       showToast('Mật khẩu đã được đặt lại thành công!', 'success');
       navigate('/auth');
     } catch (error) {

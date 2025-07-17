@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
-import api from 'services/api';
+import userApi from 'services/userApi';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from 'components/common/Toast';
 import '../common/style.css'
@@ -19,11 +19,7 @@ const RegisterForm = () => {
     e.preventDefault();
     setError(null);
     try {
-      await api.post('/api/auth/register', {
-        Email: email,
-        UserName: username,
-        Password: password,
-      });
+      await userApi.register({ email, username, password });
       showToast('Đăng ký thành công! Vui lòng kiểm tra email để xác thực OTP.', 'success');
       navigate('/auth/verify-otp', { state: { email } });
     } catch (err) {
