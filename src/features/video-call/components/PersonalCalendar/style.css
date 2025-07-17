@@ -67,9 +67,9 @@
 }
 
 .stats-icon {
-  font-size: 1.8rem;
+  font-size: 2.5rem;
   color: #1eb2a6;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .table-container {
@@ -99,8 +99,8 @@
   background: #1eb2a6;
   color: white;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   transition: all 0.2s ease;
 }
 

@@ -19,6 +19,7 @@ import ProtectedRoute from './features/auth/components/ProtectedRoute';
 import ScrollToTop from './components/common/ScrollToTop';
 import Loader from 'components/common/Loader';
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const AdminDashboard = lazy(() => import('./features/admin/pages/AdminDashboard'));
 
 const App = () => {
   return (
@@ -54,6 +55,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole={2}>
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />

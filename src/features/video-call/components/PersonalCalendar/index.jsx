@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Card,
@@ -50,6 +50,8 @@ import './style.css';
 // Đã xóa hoàn toàn dòng import { DatePicker, TimePicker } from '@material-ui/pickers';
 import { useAuth } from 'features/auth/contexts/AuthContext';
 import api from 'services/api';
+import { useToast } from 'components/common/Toast';
+import { courses } from 'features/courses/data/courseData';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -228,10 +230,10 @@ const mockUpcomingSessions = [
 const PersonalCalendar = ({ onSwitchToVideoCall }) => {
   const classes = useStyles();
   const { user } = useAuth();
-  const [upcomingSessions, setUpcomingSessions] = useState(mockUpcomingSessions);
+  const [upcomingSessions, setUpcomingSessions] = useState([]); // bỏ mockUpcomingSessions
   const [selectedSession, setSelectedSession] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [newSession, setNewSession] = useState({
     title: '',
@@ -242,7 +244,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
     caller: '',
     callerEmail: '',
     calleeEmail: '',
-    subject: '',
+    courseId: '', // thay subject thành courseId
     notes: '',
     meetingLink: '',
     reminder: '15 phút trước',
@@ -256,6 +258,44 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
   const [selectedSessionForMenu, setSelectedSessionForMenu] = useState(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
+  const { showToast } = useToast();
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [cancelingSession, setCancelingSession] = useState(null);
+
+  // Đưa fetchMySchedules ra ngoài useEffect để có thể gọi lại sau khi đặt lịch
+  const fetchMySchedules = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/api/schedule/mySchedules');
+      // Map dữ liệu BE trả về sang format FE cần (dùng key thường)
+      const mapped = res.map(item => {
+        const startDate = new Date(item.scheduledTime);
+        const timeStart = startDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const endDate = new Date(startDate.getTime() + item.duration * 60000);
+        const timeEnd = endDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        return {
+          id: item.scheduleId,
+          date: startDate.toISOString().slice(0, 10),
+          startTime: timeStart,
+          endTime: timeEnd,
+          duration: `${Math.floor(item.duration/60) > 0 ? Math.floor(item.duration/60) + ' giờ ' : ''}${item.duration%60 > 0 ? item.duration%60 + ' phút' : ''}`.trim(),
+          subject: item.courseTitle || 'Tư vấn',
+          status: item.status,
+          partnerName: item.partnerName,
+          role: item.role,
+        };
+      });
+      setUpcomingSessions(mapped);
+    } catch (err) {
+      showToast('Lỗi tải lịch cá nhân!', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMySchedules();
+  }, []);
 
   const handleSessionClick = (session) => {
     setSelectedSession(session);
@@ -404,16 +444,31 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
 
   const handleCancelSession = () => {
     if (selectedSessionForMenu) {
-      const updatedSessions = upcomingSessions.filter(session => session.id !== selectedSessionForMenu.id);
-      setUpcomingSessions(updatedSessions);
-      
-      setSnackbar({
-        open: true,
-        message: 'Đã hủy lịch cuộc gọi thành công!',
-        severity: 'success'
-      });
+      setCancelingSession(selectedSessionForMenu);
+      setConfirmCancelOpen(true);
     }
     handleMenuClose();
+  };
+
+  const confirmCancel = async () => {
+    if (!cancelingSession) return;
+    try {
+      setLoading(true);
+      await api.delete(`/api/schedule/${cancelingSession.id}`);
+      showToast('Hủy lịch thành công và đã gửi email thông báo!', 'success');
+      await fetchMySchedules();
+    } catch (err) {
+      showToast('Hủy lịch thất bại!', 'error');
+    } finally {
+      setLoading(false);
+      setConfirmCancelOpen(false);
+      setCancelingSession(null);
+    }
+  };
+
+  const cancelCancel = () => {
+    setConfirmCancelOpen(false);
+    setCancelingSession(null);
   };
 
   const handleNewSessionChange = (field, value) => {
@@ -425,7 +480,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
     try {
       const res = await api.post('/api/schedule/set', scheduleData);
       showToast(res.message || 'Đặt lịch thành công!', 'success');
-      // TODO: reload lại danh sách lịch nếu cần
+      await fetchMySchedules(); // reload lại danh sách lịch sau khi đặt thành công
     } catch (err) {
       showToast(err.message || 'Đặt lịch thất bại!', 'error');
     }
@@ -436,8 +491,8 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
       SenderEmail: user?.email || '', // Email người đặt lịch (user hiện tại)
       ReceiverEmail: newSession.calleeEmail, // Email người nhận
       ScheduledTime: `${newSession.date}T${newSession.startTime}`,
-      Duration: newSession.duration,
-      CourseId: newSession.subject
+      Duration: parseInt(newSession.duration, 10),
+      CourseId: parseInt(newSession.courseId, 10),
     };
     await bookSchedule(scheduleData);
     setOpenCreateDialog(false);
@@ -617,7 +672,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
                   <Box display="flex" alignItems="center">
                     <Event style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '18px' }} />
                     <Typography variant="body2" style={{ fontWeight: 600 }}>
-                      Cuộc gọi với {session.participants.find(p => p.role !== 'Học sinh')?.role}
+                      Cuộc gọi với {session.partnerName} ({session.role})
                     </Typography>
                   </Box>
                 </TableCell>
@@ -692,7 +747,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
           <>
             <DialogTitle>
               <Typography variant="h6">
-                Chi tiết cuộc gọi: Cuộc gọi với {selectedSession.participants.find(p => p.role !== 'Học sinh')?.role}
+                Chi tiết cuộc gọi: Cuộc gọi với {selectedSession.partnerName} ({selectedSession.role})
               </Typography>
             </DialogTitle>
             <DialogContent>
@@ -751,15 +806,14 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
                     Người tham gia
                   </Typography>
                   <Box display="flex" flexWrap="wrap" gap={1}>
-                    {selectedSession.participants.map((participant, index) => (
-                      <Chip
-                        key={index}
-                        avatar={<Avatar>{participant.name.charAt(0)}</Avatar>}
-                        label={`${participant.name} (${participant.role})`}
-                        variant="outlined"
-                        size="small"
-                      />
-                    ))}
+                    {/* Mock data for participants, as the original mock data didn't have this */}
+                    {/* In a real scenario, you'd fetch participants from the API */}
+                    <Chip
+                      avatar={<Avatar>{selectedSession.partnerName.charAt(0)}</Avatar>}
+                      label={`${selectedSession.partnerName} (${selectedSession.role})`}
+                      variant="outlined"
+                      size="small"
+                    />
                   </Box>
                 </Grid>
                 <Grid item xs={12}>
@@ -881,21 +935,49 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
             </Grid>
             <Grid item xs={12}>
               <TextField
+                select
+                label="Khóa học"
+                fullWidth
+                value={newSession.courseId}
+                onChange={e => handleNewSessionChange('courseId', e.target.value)}
+                margin="dense"
+                SelectProps={{ native: true }}
+                required
+              >
+                <option value="">Chọn khóa học</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Thời lượng"
+                fullWidth
+                value={newSession.duration}
+                onChange={e => handleNewSessionChange('duration', e.target.value)}
+                margin="dense"
+                select
+                SelectProps={{ native: true }}
+              >
+                <option value="">Chọn thời lượng</option>
+                <option value={30}>30 phút</option>
+                <option value={45}>45 phút</option>
+                <option value={60}>1 giờ</option>
+                <option value={90}>1 giờ 30 phút</option>
+                <option value={120}>2 giờ</option>
+              </TextField>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
                 label="Nhắc nhở"
                 fullWidth
                 value={newSession.reminder}
                 onChange={e => handleNewSessionChange('reminder', e.target.value)}
                 margin="dense"
                 placeholder="15 phút trước, 30 phút trước..."
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Môn học"
-                fullWidth
-                value={newSession.subject}
-                onChange={e => handleNewSessionChange('subject', e.target.value)}
-                margin="dense"
               />
             </Grid>
             <Grid item xs={12}>
@@ -923,15 +1005,6 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
         <DialogContent>
           {editingSession && (
             <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  label="Tiêu đề cuộc gọi"
-                  fullWidth
-                  value={editingSession.title}
-                  onChange={e => handleEditSessionChange('title', e.target.value)}
-                  margin="dense"
-                />
-              </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Ngày"
@@ -965,65 +1038,42 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
                   margin="dense"
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Tên người gọi"
+                  select
+                  label="Khóa học"
                   fullWidth
-                  value={editingSession.caller}
-                  onChange={e => handleEditSessionChange('caller', e.target.value)}
+                  value={editingSession.courseTitle || ''}
+                  onChange={e => handleEditSessionChange('courseTitle', e.target.value)}
                   margin="dense"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Email người tạo cuộc gọi"
-                  fullWidth
-                  value={editingSession.callerEmail}
-                  margin="dense"
-                  type="email"
-                  disabled
-                  helperText="Email được lấy từ tài khoản đăng nhập"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Email người được mời"
-                  fullWidth
-                  value={editingSession.calleeEmail}
-                  onChange={e => handleEditSessionChange('calleeEmail', e.target.value)}
-                  margin="dense"
-                  type="email"
-                />
+                  SelectProps={{ native: true }}
+                  required
+                >
+                  <option value="">Chọn khóa học</option>
+                  {courses.map(course => (
+                    <option key={course.id} value={course.name}>
+                      {course.name}
+                    </option>
+                  ))}
+                </TextField>
               </Grid>
               <Grid item xs={12}>
                 <TextField
-                  label="Nhắc nhở"
+                  label="Thời lượng"
                   fullWidth
-                  value={editingSession.reminder}
-                  onChange={e => handleEditSessionChange('reminder', e.target.value)}
+                  value={editingSession.duration || ''}
+                  onChange={e => handleEditSessionChange('duration', e.target.value)}
                   margin="dense"
-                  placeholder="15 phút trước, 30 phút trước..."
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Môn học"
-                  fullWidth
-                  value={editingSession.subject}
-                  onChange={e => handleEditSessionChange('subject', e.target.value)}
-                  margin="dense"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Ghi chú"
-                  fullWidth
-                  multiline
-                  minRows={2}
-                  value={editingSession.notes}
-                  onChange={e => handleEditSessionChange('notes', e.target.value)}
-                  margin="dense"
-                />
+                  select
+                  SelectProps={{ native: true }}
+                >
+                  <option value="">Chọn thời lượng</option>
+                  <option value={30}>30 phút</option>
+                  <option value={45}>45 phút</option>
+                  <option value={60}>1 giờ</option>
+                  <option value={90}>1 giờ 30 phút</option>
+                  <option value={120}>2 giờ</option>
+                </TextField>
               </Grid>
             </Grid>
           )}
@@ -1050,6 +1100,18 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
           <Typography variant="body2" style={{ color: '#f44336' }}>Hủy lịch</Typography>
         </MenuItem>
       </Menu>
+
+      {/* Dialog xác nhận hủy lịch */}
+      <Dialog open={confirmCancelOpen} onClose={cancelCancel} maxWidth="xs" fullWidth>
+        <DialogTitle>Xác nhận hủy lịch</DialogTitle>
+        <DialogContent>
+          <Typography>Bạn có chắc chắn muốn hủy lịch này không?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelCancel} color="default">Không</Button>
+          <Button onClick={confirmCancel} color="secondary" variant="contained">Hủy lịch</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar thông báo lỗi */}
       <Snackbar
