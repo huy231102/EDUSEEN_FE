@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import api from 'services/api';
+import userApi from 'services/userApi';
 import { useToast } from 'components/common/Toast';
 import './style.css';
 
@@ -26,7 +26,7 @@ const ChangePasswordForm = ({ onClose }) => {
       return;
     }
     try {
-      await api.post('/api/auth/change-password', formData);
+      await userApi.changePassword(formData);
       showToast('Đổi mật khẩu thành công!', 'success');
       onClose();
     } catch (err) {
