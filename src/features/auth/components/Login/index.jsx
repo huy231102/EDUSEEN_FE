@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from 'features/auth/contexts/AuthContext';
 import { useToast } from 'components/common/Toast';
-import api from 'services/api';
+import userApi from 'services/userApi';
 import '../common/style.css'
 
 const LoginForm = ({ onForgotPassword }) => {
@@ -20,7 +20,7 @@ const LoginForm = ({ onForgotPassword }) => {
     e.preventDefault();
     // reset bất cứ trạng thái nội bộ nếu cần
     try {
-      const res = await api.post('/api/auth/login', { email, password });
+      const res = await userApi.login(email, password);
       // API trả về { Message, Token: { AccessToken, RefreshToken }, User }
       const tokenObj = res.token || res.Token || {};
       const accessToken = tokenObj.accessToken || tokenObj.AccessToken;
@@ -55,6 +55,7 @@ const LoginForm = ({ onForgotPassword }) => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          autoComplete="off"
         />
       </div>
       <div className="form-group password-group">
@@ -64,6 +65,7 @@ const LoginForm = ({ onForgotPassword }) => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          autoComplete="current-password"
         />
         <i
           className={`fa ${showPassword ? 'fa-eye-slash' : 'fa-eye'} toggle-password`}

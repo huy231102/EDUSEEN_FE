@@ -30,9 +30,6 @@
   color: grey;
   font-size: 14px;
 }
-.blog span:nth-last-child(1) label {
-  color: #1eb2a6;
-}
 .blog p {
   color: grey;
 } 
