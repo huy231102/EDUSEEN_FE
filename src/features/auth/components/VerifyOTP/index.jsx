@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import api from 'services/api';
+import userApi from 'services/userApi';
 import { useToast } from 'components/common/Toast';
 import '../common/style.css';
 
@@ -24,10 +24,7 @@ const VerifyOTPForm = () => {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/api/auth/verify-otp', {
-        Email: email,
-        Otp: otp,
-      });
+      await userApi.verifyOTP(email, otp);
       showToast('Xác thực OTP thành công! Vui lòng đăng nhập.', 'success');
       navigate('/auth');
     } catch (err) {
