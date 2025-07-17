@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Typography,
   Card,
@@ -50,6 +50,8 @@ import './style.css';
 // Đã xóa hoàn toàn dòng import { DatePicker, TimePicker } from '@material-ui/pickers';
 import { useAuth } from 'features/auth/contexts/AuthContext';
 import api from 'services/api';
+import { useToast } from 'components/common/Toast';
+import { courses } from 'features/courses/data/courseData';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -228,10 +230,10 @@ const mockUpcomingSessions = [
 const PersonalCalendar = ({ onSwitchToVideoCall }) => {
   const classes = useStyles();
   const { user } = useAuth();
-  const [upcomingSessions, setUpcomingSessions] = useState(mockUpcomingSessions);
+  const [upcomingSessions, setUpcomingSessions] = useState([]); // bỏ mockUpcomingSessions
   const [selectedSession, setSelectedSession] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [newSession, setNewSession] = useState({
     title: '',
@@ -242,10 +244,8 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
     caller: '',
     callerEmail: '',
     calleeEmail: '',
-    subject: '',
-    notes: '',
+    courseId: '', // thay subject thành courseId
     meetingLink: '',
-    reminder: '15 phút trước',
   });
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -256,6 +256,44 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
   const [selectedSessionForMenu, setSelectedSessionForMenu] = useState(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
+  const { showToast } = useToast();
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [cancelingSession, setCancelingSession] = useState(null);
+
+  // Đưa fetchMySchedules ra ngoài useEffect để có thể gọi lại sau khi đặt lịch
+  const fetchMySchedules = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/api/schedule/mySchedules');
+      // Map dữ liệu BE trả về sang format FE cần (dùng key thường)
+      const mapped = res.map(item => {
+        const startDate = new Date(item.scheduledTime);
+        const timeStart = startDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const endDate = new Date(startDate.getTime() + item.duration * 60000);
+        const timeEnd = endDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        return {
+          id: item.scheduleId,
+          date: startDate.toISOString().slice(0, 10),
+          startTime: timeStart,
+          endTime: timeEnd,
+          duration: `${Math.floor(item.duration/60) > 0 ? Math.floor(item.duration/60) + ' giờ ' : ''}${item.duration%60 > 0 ? item.duration%60 + ' phút' : ''}`.trim(),
+          subject: item.courseTitle || 'Tư vấn',
+          status: item.status,
+          partnerName: item.partnerName,
+          role: item.role,
+        };
+      });
+      setUpcomingSessions(mapped);
+    } catch (err) {
+      showToast('Lỗi tải lịch cá nhân!', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMySchedules();
+  }, []);
 
   const handleSessionClick = (session) => {
     setSelectedSession(session);
@@ -326,55 +364,112 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
   };
 
   const handleEditSessionChange = (field, value) => {
-    setEditingSession(prev => ({ ...prev, [field]: value }));
+    setEditingSession(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Tự động tính toán thời lượng khi thay đổi startTime hoặc endTime
+      if (field === 'startTime' || field === 'endTime') {
+        const duration = calculateDuration(updated.startTime, updated.endTime);
+        updated.duration = duration;
+      }
+      
+      return updated;
+    });
+  };
+
+  // Function validation cho chỉnh sửa lịch
+  const validateEditSession = () => {
+    const errors = [];
+
+    // 1. Kiểm tra thông tin bắt buộc
+    if (!editingSession.date) {
+      errors.push('Vui lòng chọn ngày');
+    }
+    
+    if (!editingSession.startTime) {
+      errors.push('Vui lòng chọn thời gian bắt đầu');
+    }
+    
+    if (!editingSession.endTime) {
+      errors.push('Vui lòng chọn thời gian kết thúc');
+    }
+    
+    if (!editingSession.courseTitle?.trim()) {
+      errors.push('Vui lòng chọn khóa học');
+    }
+
+    // 2. Kiểm tra ngày không được trong quá khứ
+    if (editingSession.date) {
+      const selectedDate = new Date(editingSession.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        errors.push('Không thể đặt lịch cho ngày trong quá khứ');
+      }
+    }
+
+    // 3. Kiểm tra thời gian hợp lệ
+    if (editingSession.startTime && editingSession.endTime) {
+      const start = new Date(`2000-01-01T${editingSession.startTime}`);
+      const end = new Date(`2000-01-01T${editingSession.endTime}`);
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        errors.push('Thời gian không hợp lệ');
+      } else if (start >= end) {
+        errors.push('Thời gian kết thúc phải sau thời gian bắt đầu');
+      } else {
+        const diffMs = end - start;
+        const durationMinutes = Math.floor(diffMs / (1000 * 60));
+        
+        if (durationMinutes < 15) {
+          errors.push('Thời lượng cuộc gọi phải ít nhất 15 phút');
+        }
+        
+        if (durationMinutes > 480) { // 8 giờ
+          errors.push('Thời lượng cuộc gọi không được quá 8 giờ');
+        }
+      }
+    }
+
+    // 4. Kiểm tra trùng lặp lịch (loại trừ session hiện tại)
+    if (editingSession.date && editingSession.startTime && editingSession.endTime) {
+      const newStart = new Date(`${editingSession.date}T${editingSession.startTime}`);
+      const newEnd = new Date(`${editingSession.date}T${editingSession.endTime}`);
+      
+      const hasConflict = upcomingSessions.some(session => {
+        if (session.id === editingSession.id) return false; // Bỏ qua session hiện tại
+        
+        const sessionStart = new Date(`${session.date}T${session.startTime}`);
+        const sessionEnd = new Date(`${session.date}T${session.endTime}`);
+        
+        return (newStart < sessionEnd && newEnd > sessionStart);
+      });
+      
+      if (hasConflict) {
+        errors.push('Thời gian này đã có lịch khác được đặt');
+      }
+    }
+
+    return errors;
   };
 
   const handleSaveEdit = () => {
-    // Validation tương tự như tạo mới
-    if (!editingSession.date || !editingSession.startTime || !editingSession.endTime) {
-      setSnackbar({
-        open: true,
-        message: 'Vui lòng nhập đầy đủ ngày và thời gian!',
-        severity: 'error'
-      });
-      return;
-    }
-
-    const selectedDate = new Date(editingSession.date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Validation toàn diện
+    const validationErrors = validateEditSession();
     
-    if (selectedDate < today) {
+    if (validationErrors.length > 0) {
       setSnackbar({
         open: true,
-        message: 'Không thể đặt lịch cho ngày trong quá khứ!',
-        severity: 'error'
-      });
-      return;
-    }
-
-    const start = new Date(`${editingSession.date}T${editingSession.startTime}`);
-    const end = new Date(`${editingSession.date}T${editingSession.endTime}`);
-    
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      setSnackbar({
-        open: true,
-        message: 'Thời gian không hợp lệ!',
-        severity: 'error'
-      });
-      return;
-    }
-
-    if (start >= end) {
-      setSnackbar({
-        open: true,
-        message: 'Thời gian kết thúc phải sau thời gian bắt đầu!',
+        message: validationErrors[0], // Hiển thị lỗi đầu tiên
         severity: 'error'
       });
       return;
     }
 
     // Tính lại duration
+    const start = new Date(`${editingSession.date}T${editingSession.startTime}`);
+    const end = new Date(`${editingSession.date}T${editingSession.endTime}`);
     const diffMs = end - start;
     const diffMins = Math.floor(diffMs / 60000);
     const hours = Math.floor(diffMins / 60);
@@ -404,20 +499,69 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
 
   const handleCancelSession = () => {
     if (selectedSessionForMenu) {
-      const updatedSessions = upcomingSessions.filter(session => session.id !== selectedSessionForMenu.id);
-      setUpcomingSessions(updatedSessions);
-      
-      setSnackbar({
-        open: true,
-        message: 'Đã hủy lịch cuộc gọi thành công!',
-        severity: 'success'
-      });
+      setCancelingSession(selectedSessionForMenu);
+      setConfirmCancelOpen(true);
     }
     handleMenuClose();
   };
 
+  const confirmCancel = async () => {
+    if (!cancelingSession) return;
+    try {
+      setLoading(true);
+      await api.delete(`/api/schedule/${cancelingSession.id}`);
+      showToast('Hủy lịch thành công và đã gửi email thông báo!', 'success');
+      await fetchMySchedules();
+    } catch (err) {
+      showToast('Hủy lịch thất bại!', 'error');
+    } finally {
+      setLoading(false);
+      setConfirmCancelOpen(false);
+      setCancelingSession(null);
+    }
+  };
+
+  const cancelCancel = () => {
+    setConfirmCancelOpen(false);
+    setCancelingSession(null);
+  };
+
+  // Function tính toán thời lượng từ startTime và endTime
+  const calculateDuration = (startTime, endTime) => {
+    if (!startTime || !endTime) return '';
+    
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    
+    if (end <= start) return 'Thời gian không hợp lệ';
+    
+    const diffMs = end - start;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
+    
+    if (hours > 0 && minutes > 0) {
+      return `${hours} giờ ${minutes} phút`;
+    } else if (hours > 0) {
+      return `${hours} giờ`;
+    } else {
+      return `${minutes} phút`;
+    }
+  };
+
   const handleNewSessionChange = (field, value) => {
-    setNewSession((prev) => ({ ...prev, [field]: value }));
+    setNewSession((prev) => {
+      const updated = { ...prev, [field]: value };
+      
+      // Tự động tính toán thời lượng khi thay đổi startTime hoặc endTime
+      if (field === 'startTime' || field === 'endTime') {
+        const duration = calculateDuration(updated.startTime, updated.endTime);
+        updated.duration = duration;
+      }
+      
+      return updated;
+    });
   };
 
   // Hàm gọi API đặt lịch
@@ -425,22 +569,153 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
     try {
       const res = await api.post('/api/schedule/set', scheduleData);
       showToast(res.message || 'Đặt lịch thành công!', 'success');
-      // TODO: reload lại danh sách lịch nếu cần
+      await fetchMySchedules(); // reload lại danh sách lịch sau khi đặt thành công
     } catch (err) {
       showToast(err.message || 'Đặt lịch thất bại!', 'error');
     }
   };
 
+  // Function validation toàn diện
+  const validateCreateSession = () => {
+    const errors = [];
+
+    // 1. Kiểm tra thông tin bắt buộc
+    if (!newSession.title?.trim()) {
+      errors.push('Tiêu đề cuộc gọi không được để trống');
+    }
+    
+    if (!newSession.date) {
+      errors.push('Vui lòng chọn ngày');
+    }
+    
+    if (!newSession.startTime) {
+      errors.push('Vui lòng chọn thời gian bắt đầu');
+    }
+    
+    if (!newSession.endTime) {
+      errors.push('Vui lòng chọn thời gian kết thúc');
+    }
+    
+    if (!newSession.caller?.trim()) {
+      errors.push('Tên người gọi không được để trống');
+    }
+    
+    if (!newSession.calleeEmail?.trim()) {
+      errors.push('Email người được mời không được để trống');
+    }
+    
+    if (!newSession.courseId) {
+      errors.push('Vui lòng chọn khóa học');
+    }
+
+    // 2. Kiểm tra định dạng email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (newSession.calleeEmail && !emailRegex.test(newSession.calleeEmail)) {
+      errors.push('Email người được mời không đúng định dạng');
+    }
+
+    // 3. Kiểm tra ngày không được trong quá khứ
+    if (newSession.date) {
+      const selectedDate = new Date(newSession.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        errors.push('Không thể đặt lịch cho ngày trong quá khứ');
+      }
+    }
+
+    // 4. Kiểm tra thời gian hợp lệ
+    if (newSession.startTime && newSession.endTime) {
+      const start = new Date(`2000-01-01T${newSession.startTime}`);
+      const end = new Date(`2000-01-01T${newSession.endTime}`);
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        errors.push('Thời gian không hợp lệ');
+      } else if (start >= end) {
+        errors.push('Thời gian kết thúc phải sau thời gian bắt đầu');
+      } else {
+        const diffMs = end - start;
+        const durationMinutes = Math.floor(diffMs / (1000 * 60));
+        
+        if (durationMinutes < 15) {
+          errors.push('Thời lượng cuộc gọi phải ít nhất 15 phút');
+        }
+        
+        if (durationMinutes > 480) { // 8 giờ
+          errors.push('Thời lượng cuộc gọi không được quá 8 giờ');
+        }
+      }
+    }
+
+    // 5. Kiểm tra trùng lặp lịch
+    if (newSession.date && newSession.startTime && newSession.endTime) {
+      const newStart = new Date(`${newSession.date}T${newSession.startTime}`);
+      const newEnd = new Date(`${newSession.date}T${newSession.endTime}`);
+      
+      const hasConflict = upcomingSessions.some(session => {
+        const sessionStart = new Date(`${session.date}T${session.startTime}`);
+        const sessionEnd = new Date(`${session.date}T${session.endTime}`);
+        
+        return (newStart < sessionEnd && newEnd > sessionStart);
+      });
+      
+      if (hasConflict) {
+        errors.push('Thời gian này đã có lịch khác được đặt');
+      }
+    }
+
+    return errors;
+  };
+
   const handleCreateSession = async () => {
+    // Validation toàn diện
+    const validationErrors = validateCreateSession();
+    
+    if (validationErrors.length > 0) {
+      setSnackbar({
+        open: true,
+        message: validationErrors[0], // Hiển thị lỗi đầu tiên
+        severity: 'error'
+      });
+      return;
+    }
+
+    // Tính toán duration từ startTime và endTime
+    const start = new Date(`2000-01-01T${newSession.startTime}`);
+    const end = new Date(`2000-01-01T${newSession.endTime}`);
+    const diffMs = end - start;
+    const durationMinutes = Math.floor(diffMs / (1000 * 60));
+    
     const scheduleData = {
-      SenderEmail: user?.email || '', // Email người đặt lịch (user hiện tại)
-      ReceiverEmail: newSession.calleeEmail, // Email người nhận
-      ScheduledTime: `${newSession.date}T${newSession.startTime}`,
-      Duration: newSession.duration,
-      CourseId: newSession.subject
+      dto: {
+        SenderEmail: user?.email || '', // Email người đặt lịch (user hiện tại)
+        ReceiverEmail: newSession.calleeEmail.trim(), // Email người nhận
+        ScheduledTime: `${newSession.date}T${newSession.startTime}`,
+        Duration: durationMinutes,
+        CourseId: parseInt(newSession.courseId, 10),
+      }
     };
-    await bookSchedule(scheduleData);
-    setOpenCreateDialog(false);
+    
+    try {
+      await bookSchedule(scheduleData);
+      setOpenCreateDialog(false);
+      // Reset form
+      setNewSession({
+        title: '',
+        date: '',
+        startTime: '',
+        endTime: '',
+        duration: '',
+        caller: '',
+        callerEmail: '',
+        calleeEmail: '',
+        courseId: '',
+        meetingLink: '',
+      });
+    } catch (error) {
+      // Error handling đã có trong bookSchedule
+    }
   };
 
   const formatDate = (dateString) => {
@@ -483,15 +758,23 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
     const totalScheduled = upcomingSessions.length;
     const todaySessions = upcomingSessions.filter(session => getDateStatus(session.date) === 'today').length;
     
-    // Tính cuộc gọi trong tuần này (từ hôm nay đến cuối tuần)
+    // Tính cuộc gọi trong tuần này (từ Thứ 2 đến Chủ nhật)
     const today = new Date();
-    const endOfWeek = new Date(today);
-    endOfWeek.setDate(today.getDate() + (7 - today.getDay())); // Cuối tuần (Chủ nhật)
+    // Lấy ngày đầu tuần (Thứ 2)
+    const startOfWeek = new Date(today);
+    const day = today.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1) - day; // Nếu Chủ nhật (0) thì lùi 6 ngày, còn lại lùi về Thứ 2
+    startOfWeek.setDate(today.getDate() + diffToMonday);
+    startOfWeek.setHours(0, 0, 0, 0);
+    // Ngày cuối tuần (Chủ nhật)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
     endOfWeek.setHours(23, 59, 59, 999);
-    
+
     const thisWeekSessions = upcomingSessions.filter(session => {
       const sessionDate = new Date(session.date);
-      return sessionDate >= today && sessionDate <= endOfWeek;
+      sessionDate.setHours(0, 0, 0, 0); // So sánh theo ngày
+      return sessionDate >= startOfWeek && sessionDate <= endOfWeek;
     }).length;
 
     return {
@@ -617,7 +900,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
                   <Box display="flex" alignItems="center">
                     <Event style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '18px' }} />
                     <Typography variant="body2" style={{ fontWeight: 600 }}>
-                      Cuộc gọi với {session.participants.find(p => p.role !== 'Học sinh')?.role}
+                      Cuộc gọi với {session.partnerName} ({session.role})
                     </Typography>
                   </Box>
                 </TableCell>
@@ -687,12 +970,13 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
         onClose={handleCloseDialog}
         maxWidth="md"
         fullWidth
+        className="form-dialog"
       >
         {selectedSession && (
           <>
             <DialogTitle>
               <Typography variant="h6">
-                Chi tiết cuộc gọi: Cuộc gọi với {selectedSession.participants.find(p => p.role !== 'Học sinh')?.role}
+                Chi tiết cuộc gọi: Cuộc gọi với {selectedSession.partnerName} ({selectedSession.role})
               </Typography>
             </DialogTitle>
             <DialogContent>
@@ -737,39 +1021,24 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
                     {getStatusChip(selectedSession.date)}
                   </Typography>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">
-                    Nhắc nhở
-                  </Typography>
-                  <Typography variant="body1" gutterBottom>
-                    {selectedSession.reminder}
-                  </Typography>
-                </Grid>
+
                 <Grid item xs={12}>
                   <Divider style={{ margin: '16px 0' }} />
                   <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                     Người tham gia
                   </Typography>
                   <Box display="flex" flexWrap="wrap" gap={1}>
-                    {selectedSession.participants.map((participant, index) => (
-                      <Chip
-                        key={index}
-                        avatar={<Avatar>{participant.name.charAt(0)}</Avatar>}
-                        label={`${participant.name} (${participant.role})`}
-                        variant="outlined"
-                        size="small"
-                      />
-                    ))}
+                    {/* Mock data for participants, as the original mock data didn't have this */}
+                    {/* In a real scenario, you'd fetch participants from the API */}
+                    <Chip
+                      avatar={<Avatar>{selectedSession.partnerName.charAt(0)}</Avatar>}
+                      label={`${selectedSession.partnerName} (${selectedSession.role})`}
+                      variant="outlined"
+                      size="small"
+                    />
                   </Box>
                 </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    Ghi chú
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedSession.notes}
-                  </Typography>
-                </Grid>
+
                 <Grid item xs={12}>
                   <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                     Link cuộc gọi
@@ -803,7 +1072,13 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
       </Dialog>
 
       {/* Dialog tạo mới lịch */}
-      <Dialog open={openCreateDialog} onClose={handleCloseCreateDialog} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={openCreateDialog} 
+        onClose={handleCloseCreateDialog} 
+        maxWidth="sm" 
+        fullWidth
+        className="form-dialog"
+      >
         <DialogTitle>Thêm lịch cuộc gọi mới</DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
@@ -814,6 +1089,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
                 value={newSession.title}
                 onChange={e => handleNewSessionChange('title', e.target.value)}
                 margin="dense"
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -856,6 +1132,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
                 value={newSession.caller}
                 onChange={e => handleNewSessionChange('caller', e.target.value)}
                 margin="dense"
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -867,6 +1144,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
                 type="email"
                 disabled
                 helperText="Email được lấy từ tài khoản đăng nhập"
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -877,38 +1155,42 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
                 onChange={e => handleNewSessionChange('calleeEmail', e.target.value)}
                 margin="dense"
                 type="email"
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
             <Grid item xs={12}>
               <TextField
-                label="Nhắc nhở"
+                select
+                label="Khóa học"
                 fullWidth
-                value={newSession.reminder}
-                onChange={e => handleNewSessionChange('reminder', e.target.value)}
+                value={newSession.courseId}
+                onChange={e => handleNewSessionChange('courseId', e.target.value)}
                 margin="dense"
-                placeholder="15 phút trước, 30 phút trước..."
-              />
+                SelectProps={{ native: true }}
+                required
+                InputLabelProps={{ shrink: true }}
+              >
+                <option value="">Chọn khóa học</option>
+                {courses.map(course => (
+                  <option key={course.id} value={course.id}>
+                    {course.name}
+                  </option>
+                ))}
+              </TextField>
             </Grid>
             <Grid item xs={12}>
               <TextField
-                label="Môn học"
+                label="Thời lượng"
                 fullWidth
-                value={newSession.subject}
-                onChange={e => handleNewSessionChange('subject', e.target.value)}
+                value={newSession.duration}
                 margin="dense"
+                disabled
+                helperText="Tự động tính toán từ thời gian bắt đầu và kết thúc"
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Ghi chú"
-                fullWidth
-                multiline
-                minRows={2}
-                value={newSession.notes}
-                onChange={e => handleNewSessionChange('notes', e.target.value)}
-                margin="dense"
-              />
-            </Grid>
+
+
           </Grid>
         </DialogContent>
         <DialogActions>
@@ -918,20 +1200,17 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
       </Dialog>
 
       {/* Dialog chỉnh sửa lịch */}
-      <Dialog open={openEditDialog} onClose={handleCloseEditDialog} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={openEditDialog} 
+        onClose={handleCloseEditDialog} 
+        maxWidth="sm" 
+        fullWidth
+        className="form-dialog"
+      >
         <DialogTitle>Chỉnh sửa lịch cuộc gọi</DialogTitle>
         <DialogContent>
           {editingSession && (
             <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  label="Tiêu đề cuộc gọi"
-                  fullWidth
-                  value={editingSession.title}
-                  onChange={e => handleEditSessionChange('title', e.target.value)}
-                  margin="dense"
-                />
-              </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Ngày"
@@ -965,64 +1244,35 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
                   margin="dense"
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Tên người gọi"
+                  select
+                  label="Khóa học"
                   fullWidth
-                  value={editingSession.caller}
-                  onChange={e => handleEditSessionChange('caller', e.target.value)}
+                  value={editingSession.courseTitle || ''}
+                  onChange={e => handleEditSessionChange('courseTitle', e.target.value)}
                   margin="dense"
-                />
+                  SelectProps={{ native: true }}
+                  required
+                  InputLabelProps={{ shrink: true }}
+                >
+                  <option value="">Chọn khóa học</option>
+                  {courses.map(course => (
+                    <option key={course.id} value={course.name}>
+                      {course.name}
+                    </option>
+                  ))}
+                </TextField>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
-                  label="Email người tạo cuộc gọi"
+                  label="Thời lượng"
                   fullWidth
-                  value={editingSession.callerEmail}
+                  value={editingSession.duration || ''}
                   margin="dense"
-                  type="email"
                   disabled
-                  helperText="Email được lấy từ tài khoản đăng nhập"
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Email người được mời"
-                  fullWidth
-                  value={editingSession.calleeEmail}
-                  onChange={e => handleEditSessionChange('calleeEmail', e.target.value)}
-                  margin="dense"
-                  type="email"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Nhắc nhở"
-                  fullWidth
-                  value={editingSession.reminder}
-                  onChange={e => handleEditSessionChange('reminder', e.target.value)}
-                  margin="dense"
-                  placeholder="15 phút trước, 30 phút trước..."
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Môn học"
-                  fullWidth
-                  value={editingSession.subject}
-                  onChange={e => handleEditSessionChange('subject', e.target.value)}
-                  margin="dense"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Ghi chú"
-                  fullWidth
-                  multiline
-                  minRows={2}
-                  value={editingSession.notes}
-                  onChange={e => handleEditSessionChange('notes', e.target.value)}
-                  margin="dense"
+                  helperText="Tự động tính toán từ thời gian bắt đầu và kết thúc"
+                  InputLabelProps={{ shrink: true }}
                 />
               </Grid>
             </Grid>
@@ -1050,6 +1300,18 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
           <Typography variant="body2" style={{ color: '#f44336' }}>Hủy lịch</Typography>
         </MenuItem>
       </Menu>
+
+      {/* Dialog xác nhận hủy lịch */}
+      <Dialog open={confirmCancelOpen} onClose={cancelCancel} maxWidth="xs" fullWidth>
+        <DialogTitle>Xác nhận hủy lịch</DialogTitle>
+        <DialogContent>
+          <Typography>Bạn có chắc chắn muốn hủy lịch này không?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelCancel} color="default">Không</Button>
+          <Button onClick={confirmCancel} color="secondary" variant="contained">Hủy lịch</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar thông báo lỗi */}
       <Snackbar

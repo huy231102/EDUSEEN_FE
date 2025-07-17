@@ -1,0 +1,55 @@
+.admin-dashboard-root {
+  padding: 32px;
+  background: #f7fafd;
+  min-height: 100vh;
+}
+.admin-dashboard-title {
+  font-weight: 700;
+  color: #1eb2a6;
+  margin-bottom: 32px;
+}
+.admin-dashboard-card {
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: #fff;
+  transition: all 0.3s;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+.admin-dashboard-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 16px rgba(30,178,166,0.12);
+}
+.admin-dashboard-icon {
+  font-size: 2.2rem;
+  color: #1eb2a6;
+}
+.admin-sidebar {
+  box-shadow: 2px 0 8px rgba(30,178,166,0.08);
+}
+.admin-sidebar-item {
+  border-radius: 8px;
+  margin: 6px 8px;
+  transition: background 0.2s, color 0.2s;
+  font-weight: 500;
+  background: transparent;
+  color: #fff;
+}
+.admin-sidebar-item:hover {
+  background: #20635a !important;
+  color: #fff !important;
+}
+.admin-sidebar-item-active {
+  background: #fff !important;
+  color: #184d47 !important;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(24,77,71,0.12);
+}
+.admin-sidebar-item-active .MuiListItemIcon-root {
+  color: #184d47 !important;
+}
+.admin-sidebar .MuiListItemIcon-root {
+  color: #fff !important;
+}
+.admin-sidebar {
+  background: #184d47 !important;
+} 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useSessions } from '../../contexts/SessionsContext';
 import {
   Typography,
   Card,
@@ -24,18 +23,16 @@ import {
   Divider,
   CircularProgress
 } from '@material-ui/core';
-import {
-  PlayArrow,
-  Schedule,
-  AccessTime,
-  Person,
-  VideoCall,
-  CalendarToday,
-  Timer,
-  History,
-  Refresh,
-  MoreVert
-} from '@material-ui/icons';
+import api from 'services/api';
+import { useToast } from 'components/common/Toast';
+import ScheduleIcon from '@material-ui/icons/Schedule';
+import AccessTimeIcon from '@material-ui/icons/AccessTime';
+import VideoCallIcon from '@material-ui/icons/VideoCall';
+import CalendarTodayIcon from '@material-ui/icons/CalendarToday';
+import TimerIcon from '@material-ui/icons/Timer';
+import HistoryIcon from '@material-ui/icons/History';
+import RefreshIcon from '@material-ui/icons/Refresh';
+import MoreVertIcon from '@material-ui/icons/MoreVert';
 import { makeStyles } from '@material-ui/core/styles';
 import './style.css';
 
@@ -153,13 +150,201 @@ const useStyles = makeStyles((theme) => ({
 
 const PastSessions = () => {
   const classes = useStyles();
-  const { sessions, loading, getStatistics, resetSessions, generateCallTitle } = useSessions();
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const { showToast } = useToast();
 
   const handleSessionClick = (session) => {
     setSelectedSession(session);
     setOpenDialog(true);
+  };
+
+  // Function gọi API lấy lịch sử cuộc gọi
+  const fetchCallHistory = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/api/videocall/history');
+      console.log('API Response:', response); // Debug log
+      
+      // Kiểm tra cấu trúc response và lấy data
+      const data = response.data || response;
+      
+      if (!Array.isArray(data)) {
+        console.error('Response không phải là array:', data);
+        throw new Error('Response không phải là array');
+      }
+      
+      const mappedSessions = data.map(item => {
+        console.log('Mapping item:', item); // Debug log
+        
+        // Validate và parse dates
+        let startDate, endDate;
+        try {
+          startDate = new Date(item.startTime);
+          endDate = new Date(item.endTime);
+          
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.warn('Invalid date for item:', item);
+            startDate = new Date();
+            endDate = new Date();
+          }
+        } catch (error) {
+          console.warn('Error parsing dates for item:', item, error);
+          startDate = new Date();
+          endDate = new Date();
+        }
+        
+        // Validate duration
+        const durationMinutes = item.durationMinutes || 0;
+        if (typeof durationMinutes !== 'number' || durationMinutes < 0) {
+          console.warn('Invalid duration for item:', item);
+        }
+        
+        return {
+          id: item.callId || Math.random().toString(),
+          date: startDate.toISOString().slice(0, 10),
+          startTime: startDate.toLocaleTimeString('vi-VN', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false 
+          }),
+          endTime: endDate.toLocaleTimeString('vi-VN', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false 
+          }),
+          duration: formatDuration(durationMinutes),
+          subject: item.subject || 'Tư vấn',
+          participants: [
+            { name: item.teacherName || 'Giáo viên', role: 'Giáo viên' },
+            { name: item.studentName || 'Học sinh', role: 'Học sinh' }
+          ],
+          notes: item.note || '',
+          status: item.note || 'Hoàn thành'
+        };
+      });
+      setSessions(mappedSessions);
+    } catch (error) {
+      console.error('Error fetching call history:', error);
+      if (error.message.includes('401')) {
+        showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!', 'error');
+      } else if (error.message.includes('403')) {
+        showToast('Bạn không có quyền truy cập lịch sử cuộc gọi!', 'error');
+      } else {
+        showToast('Lỗi tải lịch sử cuộc gọi!', 'error');
+      }
+      
+      // Set empty array để tránh lỗi render
+      setSessions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function format thời lượng
+  const formatDuration = (minutes) => {
+    try {
+      const mins = Math.abs(parseFloat(minutes) || 0);
+      const hours = Math.floor(mins / 60);
+      const remainingMins = Math.floor(mins % 60);
+      
+      if (hours > 0 && remainingMins > 0) {
+        return `${hours} giờ ${remainingMins} phút`;
+      } else if (hours > 0) {
+        return `${hours} giờ`;
+      } else {
+        return `${remainingMins} phút`;
+      }
+    } catch (error) {
+      console.warn('Error formatting duration:', error);
+      return '0 phút';
+    }
+  };
+
+  // Function tạo tiêu đề cuộc gọi
+  const generateCallTitle = (participants) => {
+    if (!participants || participants.length === 0) {
+      return 'Cuộc gọi video';
+    }
+    
+    if (participants.length === 1) {
+      return `Cuộc gọi với ${participants[0].name}`;
+    }
+    
+    const names = participants.map(p => p.name).join(', ');
+    return `Cuộc gọi nhóm: ${names}`;
+  };
+
+  // Function tính toán thống kê
+  const getStatistics = () => {
+    const totalSessions = sessions.length;
+    const totalDuration = sessions.reduce((total, session) => {
+      const durationStr = session.duration;
+      const hours = durationStr.match(/(\d+)\s*giờ/)?.[1] || 0;
+      const minutes = durationStr.match(/(\d+)\s*phút/)?.[1] || 0;
+      return total + parseInt(hours) * 60 + parseInt(minutes);
+    }, 0);
+    
+    return {
+      totalSessions,
+      totalDuration: formatDuration(totalDuration)
+    };
+  };
+
+  // Function làm mới dữ liệu
+  const resetSessions = () => {
+    fetchCallHistory();
+  };
+
+  // Function test API
+  const testAPI = async () => {
+    try {
+      console.log('Testing API...');
+      const response = await api.get('/api/videocall/history');
+      console.log('Test API Response:', response);
+      showToast('API test thành công!', 'success');
+    } catch (error) {
+      console.error('Test API Error:', error);
+      showToast('API test thất bại!', 'error');
+    }
+  };
+
+  // Function tạo test data
+  const createTestData = () => {
+    const testSessions = [
+      {
+        id: 1,
+        date: '2024-01-15',
+        startTime: '09:00',
+        endTime: '10:30',
+        duration: '1 giờ 30 phút',
+        subject: 'Toán học',
+        participants: [
+          { name: 'Nguyễn Văn A', role: 'Giáo viên' },
+          { name: 'Trần Thị B', role: 'Học sinh' }
+        ],
+        notes: 'Bài học về đạo hàm',
+        status: 'Hoàn thành'
+      },
+      {
+        id: 2,
+        date: '2024-01-14',
+        startTime: '14:00',
+        endTime: '15:00',
+        duration: '1 giờ',
+        subject: 'Vật lý',
+        participants: [
+          { name: 'Lê Văn C', role: 'Giáo viên' },
+          { name: 'Phạm Thị D', role: 'Học sinh' }
+        ],
+        notes: 'Bài học về điện từ',
+        status: 'Hoàn thành'
+      }
+    ];
+    setSessions(testSessions);
+    showToast('Đã tải test data!', 'success');
   };
 
   const handleCloseDialog = () => {
@@ -179,6 +364,13 @@ const PastSessions = () => {
 
   const statistics = getStatistics();
 
+  // Gọi API khi component mount
+  useEffect(() => {
+    // console.log('PastSessions component mounted');
+    // console.log('Auth token:', localStorage.getItem('authToken'));
+    fetchCallHistory();
+  }, []);
+
   if (loading) {
     return (
       <div className={classes.loadingContainer}>
@@ -190,16 +382,27 @@ const PastSessions = () => {
     );
   }
 
-  if (sessions.length === 0) {
+  // Debug info
+  // console.log('Rendering PastSessions with sessions:', sessions);
+
+  if (!Array.isArray(sessions) || sessions.length === 0) {
     return (
       <div className={classes.emptyStateContainer}>
-        <History className={classes.emptyStateIcon} />
+        <HistoryIcon className={classes.emptyStateIcon} />
         <Typography variant="h5" gutterBottom>
           Chưa có cuộc gọi nào
         </Typography>
         <Typography variant="body1" color="textSecondary" align="center">
           Bạn chưa có lịch sử cuộc gọi video nào. Hãy bắt đầu cuộc gọi đầu tiên!
         </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={createTestData}
+          style={{ marginTop: '16px' }}
+        >
+          Tải dữ liệu mẫu
+        </Button>
       </div>
     );
   }
@@ -209,19 +412,21 @@ const PastSessions = () => {
       <div className={classes.header}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
           <Typography variant="h5" style={{ fontWeight: 600 }}>
-            <VideoCall style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '1.5rem' }} />
+            <VideoCallIcon style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '1.5rem' }} />
             Lịch sử cuộc gọi video
           </Typography>
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<Refresh />}
-            onClick={resetSessions}
-            size="small"
-            style={{ borderRadius: '20px', textTransform: 'none' }}
-          >
-            Làm mới
-          </Button>
+          <Box>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<RefreshIcon />}
+              onClick={resetSessions}
+              size="small"
+              style={{ borderRadius: '20px', textTransform: 'none' }}
+            >
+              Làm mới
+            </Button>
+          </Box>
         </Box>
         <Typography variant="body2" color="textSecondary">
           Xem lại lịch sử các cuộc gọi video đã tham gia
@@ -232,7 +437,7 @@ const PastSessions = () => {
       <Grid container spacing={2} className={classes.statsGrid}>
         <Grid item xs={12} sm={6}>
           <div className={classes.statCard}>
-            <Schedule className={classes.statIcon} />
+            <ScheduleIcon className={classes.statIcon} />
             <Typography variant="h5" style={{ fontWeight: 600, marginBottom: '4px' }}>
               {statistics.totalSessions}
             </Typography>
@@ -243,7 +448,7 @@ const PastSessions = () => {
         </Grid>
         <Grid item xs={12} sm={6}>
           <div className={classes.statCard}>
-            <Timer className={classes.statIcon} />
+            <TimerIcon className={classes.statIcon} />
             <Typography variant="h5" style={{ fontWeight: 600, marginBottom: '4px' }}>
               {statistics.totalDuration}
             </Typography>
@@ -268,11 +473,13 @@ const PastSessions = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sessions.map((session) => (
-              <TableRow key={session.id} hover style={{ height: '60px' }}>
+            {sessions.map((session, index) => {
+              try {
+                return (
+                  <TableRow key={session.id || index} hover style={{ height: '60px' }}>
                 <TableCell style={{ padding: '12px 16px' }}>
                   <Box display="flex" alignItems="center">
-                    <VideoCall style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '18px' }} />
+                    <VideoCallIcon style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '18px' }} />
                     <Typography variant="body2" style={{ fontWeight: 600 }}>
                       {generateCallTitle(session.participants)}
                     </Typography>
@@ -280,7 +487,7 @@ const PastSessions = () => {
                 </TableCell>
                 <TableCell style={{ padding: '12px 16px' }}>
                   <Chip
-                    icon={<CalendarToday />}
+                    icon={<CalendarTodayIcon />}
                     label={formatDate(session.date)}
                     className={classes.dateChip}
                     size="small"
@@ -293,7 +500,7 @@ const PastSessions = () => {
                 </TableCell>
                 <TableCell style={{ padding: '12px 16px' }}>
                   <Chip
-                    icon={<AccessTime />}
+                    icon={<AccessTimeIcon />}
                     label={session.duration}
                     className={classes.durationChip}
                     size="small"
@@ -327,11 +534,16 @@ const PastSessions = () => {
                       }
                     }}
                   >
-                    <MoreVert style={{ fontSize: '16px', color: '#6c757d' }} />
+                    <MoreVertIcon style={{ fontSize: '16px', color: '#6c757d' }} />
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))}
+                );
+              } catch (error) {
+                console.error('Error rendering session:', error, session);
+                return null;
+              }
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -401,14 +613,7 @@ const PastSessions = () => {
                     ))}
                   </Box>
                 </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    Ghi chú
-                  </Typography>
-                  <Typography variant="body1">
-                    {selectedSession.notes}
-                  </Typography>
-                </Grid>
+
               </Grid>
             </DialogContent>
             <DialogActions>
