@@ -16,6 +16,12 @@ const AuthPage = lazy(() => import('./features/auth/pages/AuthPage'));
 const VerifyOTPPage = lazy(() => import('./features/auth/pages/VerifyOTPPage'));
 const ResetPasswordPage = lazy(() => import('./features/auth/pages/ResetPasswordPage'));
 const ProfilePage = lazy(() => import('./features/profile/pages/ProfilePage'));
+const TeacherDashboardPage = lazy(() => import('./features/courses/pages/TeacherDashboardPage'));
+const CourseEditPage = lazy(() => import('./features/courses/pages/CourseEditPage'));
+const CourseAnalyticsPage = lazy(() => import('./features/courses/pages/CourseAnalyticsPage'));
+const AssignmentsDashboardPage = lazy(() => import('./features/courses/pages/AssignmentsDashboardPage'));
+const AssignmentCreatePage = lazy(() => import('./features/courses/pages/AssignmentCreatePage'));
+const AssignmentGradingPage = lazy(() => import('./features/courses/pages/AssignmentGradingPage'));
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
 import ScrollToTop from './components/common/ScrollToTop';
@@ -50,6 +56,17 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
+            <Route path="teacher">
+              <Route path="dashboard" element={<TeacherDashboardPage />} />
+              <Route path="course">
+                <Route path="new" element={<CourseEditPage />} />
+                <Route path=":courseId/edit" element={<CourseEditPage />} />
+                <Route path=":courseId/analytics" element={<CourseAnalyticsPage />} />
+                <Route path=":courseId/assignments" element={<AssignmentsDashboardPage />} />
+                <Route path=":courseId/assignments/new" element={<AssignmentCreatePage />} />
+                <Route path=":courseId/assignments/:assignmentId" element={<AssignmentGradingPage />} />
+              </Route>
+            </Route>
           </Route>
           <Route
             path="/profile"
