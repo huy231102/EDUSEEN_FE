@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { courses, categories } from 'features/courses/data/courseData';
+import { categories } from 'features/courses/data/courseData';
 import './style.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import api from 'services/api';
 
 const TABS = [
   { id: 'info', label: 'Thông tin & Curriculum' },
@@ -21,47 +22,79 @@ const CourseEditPage = () => {
   const [courseData, setCourseData] = useState(null);
 
   // -------------------- Save handler --------------------
-  const handleSave = () => {
-    // Validate tối thiểu tên khoá học
+  const buildPayload = () => {
+    const sanitize = (str) => (str === undefined ? null : str);
+    return {
+      title: courseData.name,
+      description: sanitize(courseData.description),
+      categoryId: null, // TODO: ánh xạ categorySlug -> id nếu có danh mục
+      level: sanitize(courseData.level),
+      sections: (courseData.sections || []).map((s, idx) => ({
+        sectionId: s.sectionId,
+        title: s.title,
+        order: s.order ?? idx + 1,
+        lectures: (s.lectures || []).map((l, lidx) => ({
+          lectureId: l.lectureId,
+          title: l.title,
+          contentType: l.contentType || 'video',
+          contentUrl: l.contentUrl || '',
+          duration: l.duration || 0,
+          order: l.order ?? lidx + 1,
+        })),
+      })),
+    };
+  };
+
+  const handleSave = async () => {
     if (!courseData?.name?.trim()) {
       alert('Vui lòng nhập tên khoá học');
       return;
     }
 
-    if (isNew) {
-      // Tính id mới
-      const newId = courses.length ? Math.max(...courses.map((c) => c.id)) + 1 : 1;
-      const newCourse = {
-        ...courseData,
-        id: newId,
-        rating: 0,
-        totalLectures: courseData.sections?.reduce((sum, s) => sum + (s.lectures?.length || 0), 0) || 0,
-        totalTime: 0,
-      };
-      courses.push(newCourse);
-    } else {
-      const idx = courses.findIndex((c) => c.id.toString() === courseId.toString());
-      if (idx !== -1) {
-        courses[idx] = {
-          ...courses[idx],
-          ...courseData,
-          totalLectures: courseData.sections?.reduce((sum, s) => sum + (s.lectures?.length || 0), 0) || 0,
-        };
+    try {
+      if (isNew) {
+        await api.post('/api/teacher/course', buildPayload());
+      } else {
+        await api.put(`/api/teacher/course/${courseId}`, buildPayload());
       }
+      navigate('/teacher/dashboard');
+    } catch (err) {
+      console.error(err);
+      alert('Không thể lưu khoá học: ' + err.message);
     }
-
-    // Sau khi lưu, quay lại dashboard
-    navigate('/teacher/dashboard');
   };
 
   useEffect(() => {
     if (!isNew) {
-      const found = courses.find((c) => c.id.toString() === courseId);
-      if (!found) {
-        // Nếu không tìm thấy khoá học -> quay lại dashboard
-        navigate('/teacher/dashboard');
-      }
-      setCourseData(found);
+      const fetchCourse = async () => {
+        try {
+          const c = await api.get(`/api/teacher/course/${courseId}`);
+          const mapped = {
+            name: c.title,
+            description: c.description || '',
+            categoryId: c.categoryId,
+            level: c.level || 'beginner',
+            sections: (c.sections || []).map(s => ({
+              sectionId: s.sectionId,
+              title: s.title,
+              order: s.order,
+              lectures: (s.lectures || []).map(l => ({
+                lectureId: l.lectureId,
+                title: l.title,
+                contentType: l.contentType,
+                contentUrl: l.contentUrl,
+                duration: l.duration,
+                order: l.order,
+              }))
+            })),
+          };
+          setCourseData(mapped);
+        } catch (err) {
+          console.error(err);
+          navigate('/teacher/dashboard');
+        }
+      };
+      fetchCourse();
     } else {
       setCourseData({
         name: '',
