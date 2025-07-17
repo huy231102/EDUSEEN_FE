@@ -41,7 +41,7 @@ const CategoriesList = () => {
                     <img src={`/images/courses/online/${val.hoverCover}`} alt='' className='show' />
                   </div>
                   <h1>{val.name}</h1>
-                  <span>{val.courseCount}</span>
+                  <span>{val.courseCount} khóa học</span>
                 </div>
               </Link>
             ))}
