@@ -103,14 +103,71 @@ export const courses = [
               ]
             }
           },
-          { title: "Bài 2: Các câu chào hỏi thông dụng", videoUrl: "https://www.youtube.com/embed/GZWQ6I-4x2s?si=ETpZgfyk0MU2isy4" }
+          {
+            title: "Bài 2: Các câu chào hỏi thông dụng",
+            videoUrl: "https://www.youtube.com/embed/GZWQ6I-4x2s?si=ETpZgfyk0MU2isy4",
+            assignment: {
+              id: 4,
+              title: "Bài tập: Thực hành câu chào hỏi",
+              description: "Quay video (1 phút) trong đó bạn thực hành 5 câu chào hỏi phổ biến bằng ngôn ngữ ký hiệu.",
+              dueDate: "2024-08-01",
+              maxScore: 8,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          }
         ]
       },
       {
         title: "Chương 2: Giao tiếp cơ bản",
         lectures: [
-          { title: "Bài 3: Giới thiệu bản thân", videoUrl: "https://www.youtube.com/embed/S2tovL9-eng" },
-          { title: "Bài 4: Đặt câu hỏi đơn giản", videoUrl: "https://www.youtube.com/embed/S2tovL9-eng" }
+          {
+            title: "Bài 3: Giới thiệu bản thân",
+            videoUrl: "https://www.youtube.com/embed/S2tovL9-eng",
+            assignment: {
+              id: 5,
+              title: "Bài tập: Video tự giới thiệu",
+              description: "Quay video (1-2 phút) tự giới thiệu bản thân (tên, sở thích, nghề nghiệp) bằng ngôn ngữ ký hiệu.",
+              dueDate: "2024-08-03",
+              maxScore: 10,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          },
+          {
+            title: "Bài 4: Đặt câu hỏi đơn giản",
+            videoUrl: "https://www.youtube.com/embed/S2tovL9-eng",
+            assignment: {
+              id: 6,
+              title: "Bài tập: Thực hành đặt câu hỏi",
+              description: "Gửi một đoạn video (1 phút) trong đó bạn đặt tối thiểu 3 câu hỏi đơn giản bằng ngôn ngữ ký hiệu.",
+              dueDate: "2024-08-04",
+              maxScore: 10,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          },
+          {
+            title: "Bài 5: Hội thoại thực tế",
+            videoUrl: "https://www.youtube.com/embed/S2tovL9-eng",
+            assignment: {
+              id: 7,
+              title: "Bài tập: Hội thoại ngắn",
+              description: "Cặp đôi với một bạn học và quay video (2-3 phút) trao đổi hội thoại hằng ngày bằng ngôn ngữ ký hiệu.",
+              dueDate: "2024-08-06",
+              maxScore: 12,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          }
         ]
       }
     ]
@@ -134,7 +191,21 @@ export const courses = [
       {
         title: "Chương 1: Kỹ năng lắng nghe",
         lectures: [
-          { title: "Bài 1: Lắng nghe chủ động", videoUrl: "https://www.youtube.com/embed/S2tovL9-eng" }
+          {
+            title: "Bài 1: Lắng nghe chủ động",
+            videoUrl: "https://www.youtube.com/embed/S2tovL9-eng",
+            assignment: {
+              id: 2,
+              title: "Bài tập: Ghi âm cuộc hội thoại",
+              description: "Ghi âm (hoặc quay video) một đoạn hội thoại ngắn (1-2 phút) trong đó bạn áp dụng kỹ thuật lắng nghe chủ động. Hãy thể hiện rõ ngôn ngữ cơ thể và phản hồi phù hợp.",
+              dueDate: "2024-08-05",
+              maxScore: 10,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          }
         ]
       }
     ]
@@ -157,7 +228,21 @@ export const courses = [
       {
         title: "Chương 1: Microsoft Word",
         lectures: [
-          { title: "Bài 1: Định dạng văn bản", videoUrl: "https://www.youtube.com/embed/S2tovL9-eng" }
+          {
+            title: "Bài 1: Định dạng văn bản",
+            videoUrl: "https://www.youtube.com/embed/S2tovL9-eng",
+            assignment: {
+              id: 3,
+              title: "Bài tập: Tạo tài liệu chuẩn",
+              description: "Tải lên một tài liệu Word 2-3 trang, trong đó bạn áp dụng các kỹ thuật định dạng (heading, bullet, numbering, style) đã học.",
+              dueDate: "2024-08-10",
+              maxScore: 15,
+              submissions: [],
+              comments: [],
+              score: null,
+              attachments: []
+            }
+          }
         ]
       }
     ]
@@ -421,62 +506,29 @@ export const blog = [
   {
     id: 1,
     type: "admin",
-    date: "JAN. 18, 2021",
-    com: "3 BÌNH LUẬN",
-    title: "Xây Dựng Sự Nghiệp Vững Chắc Cùng Eduseen",
+    date: "JUL. 16, 2025",
+    title: "Tạo cơ hội sống độc lập cho người khiếm thính",
     desc: "Khám phá những cơ hội nghề nghiệp rộng mở sau khi hoàn thành các khóa học tại nền tảng của chúng tôi.",
-    cover: "/images/blog/b1.webp",
+    cover: "https://doanhnghiepvadautu.info.vn/Data/upload/images/khiemthinh1.jpg",
     url: "http://doanhnghiepvadautu.info.vn/tao-co-hoi-song-doc-lap-cho-nguoi-khiem-thinh.html",
   },
   {
     id: 2,
     type: "admin",
-    date: "API. 25, 2022",
-    com: "5 BÌNH LUẬN",
-    title: "Mẹo Học Tập Hiệu Quả Dành Cho Người Khiếm Thính",
-    desc: "Tổng hợp các phương pháp học tập sáng tạo và hiệu quả, giúp bạn tiếp thu kiến thức một cách tốt nhất.",
-    cover: "/images/blog/b2.webp",
+    date: "JUL. 25, 2025",
+    title: "Deaf International Exchange Opportunities",
+    desc: "Looking for an international experience that focuses on Deaf culture and/or sign language?",
+    cover: "https://miusa.org/wp-content/uploads/2015/07/resize-HK-hero-image-two-people-signing-1-1024x320.jpg",
     url: "https://miusa.org/resource/tip-sheets/deafexchange/",
   },
   {
     id: 3,
     type: "user",
-    date: "MAY. 15, 2022",
-    com: "10 BÌNH LUẬN",
+    date: "JUL. 15, 2025",
     title: "Câu Chuyện Truyền Cảm Hứng Từ Cựu Học Viên",
     desc: "Lắng nghe những chia sẻ chân thực từ các học viên đã thành công trên con đường sự nghiệp của riêng mình.",
-    cover: "/images/blog/b3.webp",
+    cover: "https://imagevietnam.vnanet.vn//MediaUpload/Org/2025/04/28/128-15-17-24.jpg",
     url: "https://vietnam.vnanet.vn/vietnamese/long-form/the-rieng-co-hoi-viec-lam-cho-nguoi-khiem-thinh-396604.html",
-  },
-  {
-    id: 4,
-    type: "admin",
-    date: "JAN. 02, 2022",
-    com: "3 BÌNH LUẬN",
-    title: "Tầm Quan Trọng Của Ngôn Ngữ Ký Hiệu Trong Giao Tiếp",
-    desc: "Tìm hiểu sâu hơn về vai trò của ngôn ngữ ký hiệu và cách nó giúp chúng ta kết nối với nhau.",
-    cover: "/images/blog/b4.webp",
-    url: "/blog/4",
-  },
-  {
-    id: 5,
-    type: "admin",
-    date: "DEC. 14, 2022",
-    com: "3 BÌNH LUẬN",
-    title: "Công Nghệ Hỗ Trợ Học Tập Cho Người Khiếm Thính",
-    desc: "Khám phá các công cụ và ứng dụng công nghệ tiên tiến giúp việc học trở nên dễ dàng và thú vị hơn.",
-    cover: "/images/blog/b5.webp",
-    url: "/blog/5",
-  },
-  {
-    id: 6,
-    type: "user",
-    date: "JAN. 18, 2021",
-    com: "12 BÌNH LUẬN",
-    title: "Vượt Qua Thử Thách, Chinh Phục Ước Mơ",
-    desc: "Hành trình đầy nghị lực của những học viên đã biến khó khăn thành động lực để vươn tới thành công.",
-    cover: "/images/blog/b6.webp",
-    url: "/blog/6",
   },
 ]
 

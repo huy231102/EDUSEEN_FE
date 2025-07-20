@@ -6,13 +6,16 @@ import CoursesList from 'features/courses/components/CoursesList';
 import CategoriesList from 'features/courses/components/CategoriesList';
 import Testimonal from 'features/courses/components/Testimonal';
 import Hblog from 'features/courses/components/Hblog';
-import { courses as allCourses, testimonal } from 'features/courses/data/courseData';
+import { courses as allCourses } from 'features/courses/data/courseData';
+import courseApi from 'services/courseApi';
 
 const CourseListPage = () => {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('default');
   const [displayCourses, setDisplayCourses] = useState([]);
+  const [topReviews, setTopReviews] = useState([]);
+  const [loadingReview, setLoadingReview] = useState(true);
 
   useEffect(() => {
     // Logic mới: lắng nghe 'state' từ useNavigate
@@ -57,19 +60,37 @@ const CourseListPage = () => {
 
   }, [location.state, searchTerm, sortOption]);
 
+  useEffect(() => {
+    // Chỉ fetch top review ở trang này
+    const fetchTopReviews = async () => {
+      try {
+        setLoadingReview(true);
+        const data = await courseApi.getTopReviews();
+        setTopReviews(data);
+      } catch {
+        setTopReviews([]);
+      } finally {
+        setLoadingReview(false);
+      }
+    };
+    fetchTopReviews();
+  }, []);
+
   return (
     <>
       <Hero />
       <AboutCard />
-      <CoursesList 
-        courses={displayCourses}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        sortOption={sortOption}
-        setSortOption={setSortOption}
-      />
+      <div id="courses-section">
+        <CoursesList 
+          courses={displayCourses}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
+        />
+      </div>
       <CategoriesList />
-      <Testimonal items={testimonal} subtitle='ĐÁNH GIÁ TỪ HỌC VIÊN' title='Những Gương Mặt Tiêu Biểu' />
+      {!loadingReview && <Testimonal items={topReviews} subtitle='ĐÁNH GIÁ TỪ HỌC VIÊN' title='Những Gương Mặt Tiêu Biểu' />}
       <Hblog />
     </>
   );

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../auth/contexts/AuthContext';
-import api from 'services/api';
+import userApi from 'services/userApi';
 import { useToast } from 'components/common/Toast';
+import ChangePasswordForm from '../../components/ChangePasswordForm';
 import './style.css'
 
 const ProfilePage = () => {
   const { user, login, logout } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -38,14 +40,11 @@ const ProfilePage = () => {
 
     try {
       // Map formData sang định dạng BE yêu cầu
-      const body = {
-        // Chỉ gửi các trường cho phép cập nhật
+      await userApi.updateProfile({
         firstName: formData.first_name,
         lastName: formData.last_name,
         avatarUrl: formData.avatar_url,
-      };
-
-      await api.put('/api/profile', body);
+      });
 
       // Cập nhật context với dữ liệu mới
       const updatedUser = {
@@ -94,6 +93,14 @@ const ProfilePage = () => {
             <Link to="/my-courses" className="primary-btn" style={{ marginBottom: '10px' }}>
               Khóa học của tôi
             </Link>
+            <button
+              type="button"
+              className="primary-btn change-password-btn"
+              style={{ marginBottom: '10px' }}
+              onClick={() => setShowChangePassword(true)}
+            >
+              Đổi mật khẩu
+            </button>
             <button
               onClick={handleLogout}
               className="primary-btn logout-button"
@@ -154,6 +161,7 @@ const ProfilePage = () => {
             </form>
           </div>
         </div>
+        {showChangePassword && <ChangePasswordForm onClose={() => setShowChangePassword(false)} />}
       </div>
     </div>
   );

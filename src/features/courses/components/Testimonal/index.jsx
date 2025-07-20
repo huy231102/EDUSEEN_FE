@@ -25,7 +25,6 @@ const StarRating = ({ rating }) => {
 }
 
 const Testimonal = ({ items, subtitle, title }) => {
-  // If no items are provided, don't render anything.
   if (!items || items.length === 0) {
     return null
   }
@@ -37,22 +36,22 @@ const Testimonal = ({ items, subtitle, title }) => {
           <Heading subtitle={subtitle} title={title} />
 
           <div className='content grid2'>
-            {items.map((val) => (
-              <div className='items shadow' key={val.id}>
+            {items.map((val, idx) => (
+              <div className='items shadow' key={val.id || idx}>
                 <div className='box flex'>
                   <div className='img'>
-                    <img src={val.cover} alt='' />
+                    <img src={val.userAvatarUrl || '/images/team/t1.webp'} alt='' />
                     <i className='fa fa-quote-left icon'></i>
                   </div>
                   <div className='name'>
-                    <h2>{val.name}</h2>
-                    <span>{val.post}</span>
+                    <h2>{val.userName}</h2>
+                    <span>{val.courseName}</span>
                     <div className='rating-section'>
                       <StarRating rating={val.rating} />
                     </div>
                   </div>
                 </div>
-                <p>{val.desc}</p>
+                <p>{val.courseDescription || ''}</p>
               </div>
             ))}
           </div>
