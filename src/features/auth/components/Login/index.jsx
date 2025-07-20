@@ -21,13 +21,15 @@ const LoginForm = ({ onForgotPassword }) => {
     // reset bất cứ trạng thái nội bộ nếu cần
     try {
       const res = await api.post('/api/auth/login', { email, password });
-      // API trả về { Message, Token: { AccessToken, RefreshToken }, User }
-      const tokenObj = res.token || res.Token || {};
-      const accessToken = tokenObj.accessToken || tokenObj.AccessToken;
+      console.log('Login response:', res);
+      
+      // API trả về { message, token: { accessToken, refreshToken }, user }
+      const tokenObj = res.token || {};
+      const accessToken = tokenObj.accessToken;
       if (!accessToken) throw new Error('Không nhận được access token');
 
       // Lấy thông tin người dùng
-      const userObj = res.user || res.User || null;
+      const userObj = res.user || null;
       console.log('userObj', userObj);
 
       // Lưu token và user vào context

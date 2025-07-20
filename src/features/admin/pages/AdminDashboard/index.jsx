@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, AppBar, Toolbar, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, TextField, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Select, FormControl, InputLabel, Switch, FormControlLabel, TablePagination, Avatar, Grid, InputAdornment, Chip, Collapse } from "@material-ui/core";
-import { People, Dashboard, Assignment, School, ExitToApp, Add, Edit, Delete, GetApp, PictureAsPdf, Search, Info, Star, BarChart, PersonAdd, RateReview, Lock, LockOpen, Refresh, Settings, ExpandLess, ExpandMore, Tune } from "@material-ui/icons";
+import { People, Dashboard, Assignment, School, ExitToApp, Add, Edit, Delete, GetApp, PictureAsPdf, Search, Info, Star, BarChart as BarChartIcon, PersonAdd, RateReview, Lock, LockOpen, Refresh, Settings, ExpandLess, ExpandMore, Tune, PlayArrow, AccessTime, TrendingUp, CheckCircle, Group, Person, Block } from "@material-ui/icons";
 import './style.css';
 import { format } from 'date-fns';
 import { Bar, Pie } from 'react-chartjs-2';
@@ -23,11 +23,11 @@ import NotificationsIcon from '@material-ui/icons/Notifications';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import FolderIcon from '@material-ui/icons/Folder';
 import Snackbar from '@material-ui/core/Snackbar';
-import MuiAlert from '@material-ui/lab/Alert';
+
 import EmojiObjectsIcon from '@material-ui/icons/EmojiObjects';
 import BookIcon from '@material-ui/icons/Book';
 import LanguageIcon from '@material-ui/icons/Language';
-import { BarChart as BarChartIcon } from '@material-ui/icons';
+
 import api from "services/api";
 
 
@@ -50,10 +50,11 @@ const fallbackCourses = [
     teacher: 'Nguyễn Văn A',
     createdAt: '2023-01-10',
     status: 'Chờ duyệt',
-    students: [
-      { id: 1, name: 'Phan Văn G', email: 'g@gmail.com', status: 'approved', registeredAt: '2023-01-12' },
-      { id: 2, name: 'Bùi Thị H', email: 'h@gmail.com', status: 'pending', registeredAt: '2023-01-13' },
-    ]
+    students: 2,
+    description: 'Khóa học toán nâng cao cho học sinh lớp 12',
+    category: 'Toán học',
+    level: 'Advanced',
+    thumbnailUrl: ''
   },
   {
     id: 2,
@@ -62,9 +63,11 @@ const fallbackCourses = [
     teacher: 'Trần Thị B',
     createdAt: '2023-02-15',
     status: 'Đã duyệt',
-    students: [
-      { id: 3, name: 'Lý Văn I', email: 'i@gmail.com', status: 'approved', registeredAt: '2023-02-16' },
-    ]
+    students: 1,
+    description: 'Khóa học văn học hiện đại Việt Nam',
+    category: 'Văn học',
+    level: 'Intermediate',
+    thumbnailUrl: ''
   }
 ];
 
@@ -99,120 +102,56 @@ const mockUsers = [
 const statusColor = {
   "Hoạt động": "#4caf50",
   "Đã khóa": "#f44336",
-  "Tạm ngưng": "#ff9800",
-  "Chờ duyệt": "#1a237e",
-  "Không hoạt động": "#9e9e9e",
   "Đã duyệt": "#1eb2a6",
 };
 
 function AdminDashboard(props) {
-  const [courses, setCourses] = useState(fallbackCourses);
+  // State cho Quản lý khóa học - phải khai báo trước khi sử dụng
+  const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [openCourseDetail, setOpenCourseDetail] = useState(false);
-  const [openAddStudent, setOpenAddStudent] = useState(false);
-  const [addStudentName, setAddStudentName] = useState('');
-  const [addStudentEmail, setAddStudentEmail] = useState('');
-  // Thêm state cho filter tìm kiếm khóa học
+
   const [courseSearch, setCourseSearch] = useState("");
   const [coursePage, setCoursePage] = useState(0);
-  const [courseRowsPerPage, setCourseRowsPerPage] = useState(5);
+  const [courseRowsPerPage, setCourseRowsPerPage] = useState(8);
   const [courseStatusFilter, setCourseStatusFilter] = useState("");
   const [courseDateFilter, setCourseDateFilter] = useState("");
   const [loadingCourses, setLoadingCourses] = useState(true);
+  const [courseToast, setCourseToast] = useState({ open: false, message: '', severity: 'success' });
+  const [userToast, setUserToast] = useState({ open: false, message: '', severity: 'success' });
+  const [usingFallbackData, setUsingFallbackData] = useState(false);
+  const [usingFallbackUsers, setUsingFallbackUsers] = useState(false);
+  const [courseStatistics, setCourseStatistics] = useState({
+    totalCourses: 0,
+    activeCourses: 0,
+    inactiveCourses: 0,
+    pendingCourses: 0,
+    totalStudents: 0,
+    totalTeachers: 0,
+    averageRating: 0,
+    totalReviews: 0
+  });
+  const [courseStatisticsLoaded, setCourseStatisticsLoaded] = useState(false);
 
-  const handleOpenCourseDetail = (course) => {
-    setSelectedCourse(course);
-    setOpenCourseDetail(true);
-  };
-  const handleCloseCourseDetail = () => setOpenCourseDetail(false);
+  const [userStatistics, setUserStatistics] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
+    students: 0,
+    teachers: 0,
+    admins: 0,
+    newUsersThisMonth: 0,
+    newUsersThisWeek: 0,
+    averageUsersPerDay: 0,
+    usersByRole: [],
+    usersByStatus: [],
+    userRegistrationsByMonth: []
+  });
 
-  const handleApproveStudent = (studentId) => {
-    setCourses(prev => prev.map(c =>
-      c.id === selectedCourse.id ? {
-        ...c,
-        students: c.students.map(s => s.id === studentId ? { ...s, status: 'approved' } : s)
-      } : c
-    ));
-    setSelectedCourse(prev => ({
-      ...prev,
-      students: prev.students.map(s => s.id === studentId ? { ...s, status: 'approved' } : s)
-    }));
-  };
-  const handleRejectStudent = (studentId) => {
-    setCourses(prev => prev.map(c =>
-      c.id === selectedCourse.id ? {
-        ...c,
-        students: c.students.map(s => s.id === studentId ? { ...s, status: 'rejected' } : s)
-      } : c
-    ));
-    setSelectedCourse(prev => ({
-      ...prev,
-      students: prev.students.map(s => s.id === studentId ? { ...s, status: 'rejected' } : s)
-    }));
-  };
-  const handleRemoveStudent = (studentId) => {
-    setCourses(prev => prev.map(c =>
-      c.id === selectedCourse.id ? {
-        ...c,
-        students: c.students.filter(s => s.id !== studentId)
-      } : c
-    ));
-    setSelectedCourse(prev => ({
-      ...prev,
-      students: prev.students.filter(s => s.id !== studentId)
-    }));
-  };
-  const handleOpenAddStudent = () => setOpenAddStudent(true);
-  const handleCloseAddStudent = () => setOpenAddStudent(false);
-  const handleConfirmAddStudent = () => {
-    if (!addStudentName || !addStudentEmail) return;
-    const newStudent = {
-      id: Date.now(),
-      name: addStudentName,
-      email: addStudentEmail,
-      status: 'approved',
-      registeredAt: new Date().toISOString().slice(0, 10)
-    };
-    setCourses(prev => prev.map(c =>
-      c.id === selectedCourse.id ? {
-        ...c,
-        students: [...c.students, newStudent]
-      } : c
-    ));
-    setSelectedCourse(prev => ({
-      ...prev,
-      students: [...prev.students, newStudent]
-    }));
-    setAddStudentName('');
-    setAddStudentEmail('');
-    setOpenAddStudent(false);
-  };
 
-  const handleApproveCourse = (courseId) => {
-    setCourses(prev => prev.map(c =>
-      c.id === courseId ? { ...c, status: 'Đã duyệt' } : c
-    ));
-    if (selectedCourse && selectedCourse.id === courseId) {
-      setSelectedCourse(prev => ({ ...prev, status: 'Đã duyệt' }));
-    }
-  };
-  const handleLockCourse = (courseId) => {
-    setCourses(prev => prev.map(c =>
-      c.id === courseId ? { ...c, status: 'Đã khóa' } : c
-    ));
-    if (selectedCourse && selectedCourse.id === courseId) {
-      setSelectedCourse(prev => ({ ...prev, status: 'Đã khóa' }));
-    }
-  };
-  const handleUnlockCourse = (courseId) => {
-    setCourses(prev => prev.map(c =>
-      c.id === courseId ? { ...c, status: 'Đã duyệt' } : c
-    ));
-    if (selectedCourse && selectedCourse.id === courseId) {
-      setSelectedCourse(prev => ({ ...prev, status: 'Đã duyệt' }));
-    }
-  };
 
+
+  // State cho Quản lý người dùng
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -226,78 +165,104 @@ function AdminDashboard(props) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selectedMenu, setSelectedMenu] = useState("Bảng điều khiển");
-  const [openPendingUsersDialog, setOpenPendingUsersDialog] = useState(false);
-  const [pendingUsers, setPendingUsers] = useState(
-    mockUsers.filter(u => u.status === 'Chờ duyệt')
-      .map(u => ({ ...u, selectedRole: u.role || 'Học sinh' }))
-  );
+
+
   const [openSetting, setOpenSetting] = useState(false);
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
+
+  // Định nghĩa roleMapById ở ngoài useEffect để có thể sử dụng trong fetchUsers
+  const roleMapById = {
+    1: "Học sinh",        // User
+    2: "Quản trị viên",   // Admin
+    3: "Giáo viên"        // Teacher
+  };
 
   useEffect(() => {
-    const roleMapById = {
-      1: "Học sinh",        // User
-      2: "Quản trị viên",   // Admin
-      3: "Giáo viên"        // Teacher
-    };
-    const fetchUsers = async () => {
-      setLoading(true);
+
+    const loadData = async () => {
       try {
-        const res = await api.get("/api/users");
-        const data = Array.isArray(res) ? res : res.data;
-        setUsers(
-          data.map(u => ({
-            id: u.userId,
-            name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
-            email: u.email,
-            username: u.username,
-            role: roleMapById[u.roleId] || u.roleName,
-            status: u.isActive ? "Hoạt động" : "Đã khóa",
-            joined: u.createdAt,
-            lastActive: u.updatedAt,
-            avatar: u.avatarUrl,
-          }))
-        );
-      } catch (err) {
-        setUsers([]);
-      } finally {
-        setLoading(false);
+        console.log('Bắt đầu loadData...');
+        
+        // Load users
+        await fetchUsers();
+        console.log('fetchUsers hoàn thành');
+        
+        // Load user statistics
+        await fetchUserStatistics();
+        console.log('fetchUserStatistics hoàn thành');
+        
+        // Load courses và course statistics
+        await fetchCourses();
+        console.log('fetchCourses hoàn thành');
+        
+        await fetchCourseStatistics();
+        console.log('fetchCourseStatistics hoàn thành');
+        
+      } catch (error) {
+        console.error('Lỗi trong loadData:', error);
       }
     };
-    fetchUsers();
+    
+    loadData();
   }, []);
 
-  // Mapping từ CourseDto (BE) sang format FE
-  const mapCourseDtoToFE = (dto) => ({
-    id: dto.courseId,
-    name: dto.title,
-    code: '', // BE chưa trả về, có thể bỏ qua hoặc bổ sung ở BE
-    teacher: dto.teacherName,
-    createdAt: dto.createdAt,
-    status: '', // BE chưa trả về, có thể để mặc định hoặc bổ sung ở BE
-    students: [], // BE chưa trả về, có thể để rỗng hoặc bổ sung ở BE
-    description: dto.description,
-    category: dto.categoryName,
-    level: dto.level,
-  });
-
+  // Chỉ load lại course statistics khi courses thay đổi và chưa load
   useEffect(() => {
-    const fetchCourses = async () => {
-      setLoadingCourses(true);
-      try {
-        const res = await api.get("/api/courses");
-        if (Array.isArray(res)) {
-          setCourses(res.map(mapCourseDtoToFE));
-        } else {
-          setCourses(fallbackCourses);
-        }
-      } catch (err) {
-        setCourses(fallbackCourses);
-      } finally {
-        setLoadingCourses(false);
-      }
-    };
-    fetchCourses();
-  }, []);
+    if (courses.length > 0 && !courseStatisticsLoaded) {
+      console.log('Courses đã load, load lại course statistics...');
+      fetchCourseStatistics();
+    }
+  }, [courses, courseStatisticsLoaded]);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      console.log('Đang tải danh sách người dùng...');
+      const res = await api.get("/api/admin/user");
+      console.log('Response từ API users:', res);
+      
+      // Xử lý response có thể là array hoặc object có data property
+      const data = Array.isArray(res) ? res : (res?.data || []);
+      console.log('Data từ API users:', data);
+      
+      const mappedUsers = data.map(u => ({
+        id: u.userId,
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+        email: u.email,
+        username: u.username,
+        role: roleMapById[u.roleId] || u.roleName,
+        status: u.isActive ? "Hoạt động" : "Đã khóa",
+        joined: u.createdAt,
+        lastActive: u.updatedAt,
+        avatar: u.avatarUrl,
+      }));
+      
+      console.log('Mapped users:', mappedUsers);
+      setUsers(mappedUsers);
+      setUsingFallbackUsers(false);
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách người dùng:', err);
+      console.log('Error details:', {
+        message: err.message,
+        status: err.status,
+        response: err.response
+      });
+      
+      // Sử dụng mock data khi API không hoạt động
+      setUsers(mockUsers.filter(u => u.status !== 'Chờ duyệt'));
+      setUsingFallbackUsers(true);
+      // Hiển thị thông báo lỗi
+      setUserToast({
+        open: true,
+        message: `Không thể tải danh sách người dùng: ${err.message || 'Lỗi không xác định'}`,
+        severity: 'warning'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
 
   // Lọc theo tên, email, username, role, trạng thái, ngày tham gia
   const filteredUsers = users.filter(u => {
@@ -339,30 +304,55 @@ function AdminDashboard(props) {
     setEditUser(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveEdit = () => {
-    setUsers(prev => prev.map(u => u.id === editUser.id ? { ...editUser } : u));
-    setOpenEdit(false);
+  const handleSaveEdit = async () => {
+    try {
+      console.log('Đang cập nhật thông tin user:', editUser);
+      
+      // Gọi API để cập nhật user
+      const response = await api.put(`/api/admin/user/${editUser.id}`, {
+        firstName: editUser.name.split(' ')[0] || '',
+        lastName: editUser.name.split(' ').slice(1).join(' ') || '',
+        email: editUser.email,
+        username: editUser.username,
+        roleId: editUser.role === 'Học sinh' ? 1 : 
+                editUser.role === 'Quản trị viên' ? 2 : 3,
+        isActive: editUser.status === 'Hoạt động'
+      });
+      
+      console.log('Response từ API update user:', response);
+      
+      // Cập nhật state local
+      setUsers(prev => prev.map(u => u.id === editUser.id ? { ...editUser } : u));
+      setOpenEdit(false);
+      
+      setUserToast({
+        open: true,
+        message: 'Cập nhật thông tin người dùng thành công!',
+        severity: 'success'
+      });
+      
+    } catch (error) {
+      console.error('Lỗi khi cập nhật thông tin user:', error);
+      console.log('Error details:', {
+        message: error.message,
+        status: error.status,
+        response: error.response
+      });
+      
+      setUserToast({
+        open: true,
+        message: `Không thể cập nhật thông tin: ${error.message || 'Lỗi không xác định'}`,
+        severity: 'error'
+      });
+    }
   };
 
-  const handleOpenPendingUsersDialog = () => setOpenPendingUsersDialog(true);
-  const handleClosePendingUsersDialog = () => setOpenPendingUsersDialog(false);
 
-  const handleChangeRole = (userId, value) => {
-    setPendingUsers(prev => prev.map(u => u.id === userId ? { ...u, selectedRole: value } : u));
-  };
-
-  const handleApproveUser = (userId, role) => {
-    // Cập nhật user sang trạng thái Hoạt động và role mới
-    setUsers(prev => prev.map(u =>
-      u.id === userId ? { ...u, status: 'Hoạt động', role } : u
-    ));
-    setPendingUsers(prev => prev.filter(u => u.id !== userId));
-  };
 
   // Thống kê số liệu dashboard
   const totalUsers = users.length;
   const totalCourses = courses.length;
-  const totalCourseRegistrations = courses.reduce((sum, c) => sum + c.students.length, 0);
+  const totalCourseRegistrations = courses.reduce((sum, c) => sum + (Array.isArray(c.students) ? c.students.length : (c.students || 0)), 0);
   // Giả lập số đánh giá (nếu có trường reviews)
   const totalCourseReviews = courses.reduce((sum, c) => sum + (c.reviews ? c.reviews.length : 0), 0);
   // Số user mới trong tháng này
@@ -491,28 +481,25 @@ function AdminDashboard(props) {
   const userStatusCounts = {
     'Hoạt động': users.filter(u => u.status === 'Hoạt động').length,
     'Đã khóa': users.filter(u => u.status === 'Đã khóa').length,
-    'Tạm ngưng': users.filter(u => u.status === 'Tạm ngưng').length,
-    'Chờ duyệt': users.filter(u => u.status === 'Chờ duyệt').length,
-    'Không hoạt động': users.filter(u => u.status === 'Không hoạt động').length,
   };
   const pieStatusData = {
     labels: Object.keys(userStatusCounts),
     datasets: [{
       data: Object.values(userStatusCounts),
-      backgroundColor: ['#4caf50', '#f44336', '#ff9800', '#1a237e', '#9e9e9e'],
+      backgroundColor: ['#4caf50', '#f44336'],
       borderWidth: 2,
     }]
   };
 
   // Bar chart top 5 khóa học đông học viên nhất
   const topCourses = [...courses]
-    .sort((a, b) => b.students.length - a.students.length)
+    .sort((a, b) => (Array.isArray(b.students) ? b.students.length : (b.students || 0)) - (Array.isArray(a.students) ? a.students.length : (a.students || 0)))
     .slice(0, 5);
   const barTopCoursesData = {
     labels: topCourses.map(c => c.name),
     datasets: [{
       label: 'Số học viên',
-      data: topCourses.map(c => c.students.length),
+      data: topCourses.map(c => Array.isArray(c.students) ? c.students.length : (c.students || 0)),
       backgroundColor: '#1eb2a6',
       borderRadius: 8,
       maxBarThickness: 36,
@@ -556,7 +543,6 @@ function AdminDashboard(props) {
   const [searchCategory, setSearchCategory] = useState('');
   const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
   const [openAddCategory, setOpenAddCategory] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: '', description: '', iconType: 'folder' });
   const [editCategory, setEditCategory] = useState(null);
@@ -624,6 +610,280 @@ function AdminDashboard(props) {
     { text: "Quản lý khóa học", icon: <School /> },
     { text: "Đăng xuất", icon: <ExitToApp /> },
   ];
+
+
+
+  // Lấy danh sách khóa học từ API
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    setLoadingCourses(true);
+    try {
+      console.log('Đang tải danh sách khóa học...');
+      const response = await api.get("/api/admin/course");
+      console.log('Response từ API courses:', response);
+      
+      // Xử lý response có thể là array hoặc object có data property
+      const data = Array.isArray(response) ? response : (response?.data || []);
+      console.log('Data từ API courses:', data);
+      
+      if (Array.isArray(data) && data.length > 0) {
+        const mappedCourses = data.map(course => ({
+          id: course.courseId,
+          name: course.title,
+          code: course.courseId.toString(),
+          teacher: course.teacherName || 'Chưa có giáo viên',
+          createdAt: course.createdAt,
+          status: course.isActive ? 'Đã duyệt' : 'Chờ duyệt',
+          students: course.studentCount || 0,
+          description: course.description,
+          category: course.categoryName,
+          level: course.level,
+          sectionCount: course.sectionCount || 0,
+          lectureCount: course.lectureCount || 0,
+          averageRating: course.averageRating,
+          reviewCount: course.reviewCount || 0,
+          thumbnailUrl: course.thumbnailUrl
+        }));
+        
+        console.log('Courses đã được map:', mappedCourses);
+        setCourses(mappedCourses);
+        setUsingFallbackData(false);
+      } else {
+        console.log('Không có dữ liệu courses từ API');
+        setCourses([]);
+        setUsingFallbackData(false);
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách khóa học:', error);
+      console.log('Sử dụng fallback courses data...');
+      
+      // Sử dụng fallback data khi API không hoạt động
+      setCourses(fallbackCourses);
+      setUsingFallbackData(true);
+      setCourseToast({
+        open: true,
+        message: 'Không thể kết nối API, đang sử dụng dữ liệu mẫu',
+        severity: 'warning'
+      });
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
+  // Fetch course statistics
+  const fetchCourseStatistics = async () => {
+    try {
+      console.log('Đang tải thống kê khóa học...');
+      const response = await api.get("/api/admin/course/statistics");
+      console.log('Response từ API statistics:', response);
+      
+      const data = response?.data || response;
+      console.log('Data từ API statistics:', data);
+      
+      const stats = {
+        totalCourses: data.totalCourses || 0,
+        activeCourses: data.activeCourses || 0,
+        inactiveCourses: data.inactiveCourses || 0,
+        pendingCourses: data.pendingCourses || 0,
+        totalStudents: data.totalStudents || 0,
+        totalTeachers: data.totalTeachers || 0,
+        averageRating: data.averageRating || 0,
+        totalReviews: data.totalReviews || 0
+      };
+      
+      console.log('Thống kê đã được set:', stats);
+      setCourseStatistics(stats);
+      setCourseStatisticsLoaded(true);
+    } catch (error) {
+      console.error('Lỗi khi tải thống kê khóa học:', error);
+      console.log('Sử dụng fallback data từ courses array...');
+      
+      // Sử dụng dữ liệu từ courses nếu API không hoạt động
+      const fallbackStats = {
+        totalCourses: courses.length,
+        activeCourses: courses.filter(c => c.status === 'Đã duyệt').length,
+        inactiveCourses: courses.filter(c => c.status === 'Chờ duyệt').length,
+        pendingCourses: courses.filter(c => c.status === 'Chờ duyệt').length,
+        totalStudents: courses.reduce((sum, c) => sum + (Array.isArray(c.students) ? c.students.length : (c.students || 0)), 0),
+        totalTeachers: 0,
+        averageRating: 0,
+        totalReviews: 0
+      };
+      
+      console.log('Fallback stats:', fallbackStats);
+      setCourseStatistics(fallbackStats);
+      setCourseStatisticsLoaded(true);
+    }
+  };
+
+  // Fetch user statistics
+  const fetchUserStatistics = async () => {
+    try {
+      console.log('Đang tải thống kê người dùng...');
+      const response = await api.get("/api/admin/user/statistics");
+      console.log('Response từ API user statistics:', response);
+      
+      const data = response?.data || response;
+      console.log('Data từ API user statistics:', data);
+      
+      const stats = {
+        totalUsers: data.totalUsers || 0,
+        activeUsers: data.activeUsers || 0,
+        inactiveUsers: data.inactiveUsers || 0,
+        students: data.students || 0,
+        teachers: data.teachers || 0,
+        admins: data.admins || 0,
+        newUsersThisMonth: data.newUsersThisMonth || 0,
+        newUsersThisWeek: data.newUsersThisWeek || 0,
+        averageUsersPerDay: data.averageUsersPerDay || 0,
+        usersByRole: data.usersByRole || [],
+        usersByStatus: data.usersByStatus || [],
+        userRegistrationsByMonth: data.userRegistrationsByMonth || []
+      };
+      
+      console.log('User statistics đã được set:', stats);
+      setUserStatistics(stats);
+    } catch (error) {
+      console.error('Lỗi khi tải thống kê người dùng:', error);
+      console.log('Sử dụng fallback data từ users array...');
+      
+      // Sử dụng dữ liệu từ users nếu API không hoạt động
+      const fallbackStats = {
+        totalUsers: users.length,
+        activeUsers: users.filter(u => u.status === 'Hoạt động').length,
+        inactiveUsers: users.filter(u => u.status === 'Đã khóa').length,
+        students: users.filter(u => u.role === 'Học sinh').length,
+        teachers: users.filter(u => u.role === 'Giáo viên').length,
+        admins: users.filter(u => u.role === 'Quản trị viên').length,
+        newUsersThisMonth: 0,
+        newUsersThisWeek: 0,
+        averageUsersPerDay: 0,
+        usersByRole: [],
+        usersByStatus: [],
+        userRegistrationsByMonth: []
+      };
+      
+      console.log('Fallback user stats:', fallbackStats);
+      setUserStatistics(fallbackStats);
+    }
+  };
+
+  // Lọc khóa học
+  const filteredCourses = courses.filter(course => {
+    const searchMatch = course.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+                       course.teacher.toLowerCase().includes(courseSearch.toLowerCase());
+    const statusMatch = courseStatusFilter ? course.status === courseStatusFilter : true;
+    const dateMatch = courseDateFilter ? course.createdAt === courseDateFilter : true;
+    return searchMatch && statusMatch && dateMatch;
+  });
+
+  // Phân trang khóa học
+  const pagedCourses = filteredCourses.slice(
+    coursePage * courseRowsPerPage,
+    coursePage * courseRowsPerPage + courseRowsPerPage
+  );
+
+  const handleCoursePageChange = (event, newPage) => {
+    setCoursePage(newPage);
+  };
+
+  const handleCourseRowsPerPageChange = (event) => {
+    setCourseRowsPerPage(parseInt(event.target.value, 10));
+    setCoursePage(0);
+  };
+
+
+
+
+
+
+
+  // Xử lý mở chi tiết khóa học
+  const handleOpenCourseDetail = (course) => {
+    setSelectedCourse(course);
+    setOpenCourseDetail(true);
+  };
+
+
+
+  // Xử lý xóa khóa học
+  const handleDeleteCourse = async (courseId) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa khóa học này?')) {
+      try {
+        console.log('Đang xóa khóa học:', courseId);
+        
+        const response = await api.delete(`/api/admin/course/${courseId}`);
+        console.log('Response từ API delete course:', response);
+        
+        setCourseToast({
+          open: true,
+          message: 'Xóa khóa học thành công!',
+          severity: 'success'
+        });
+        
+        // Tải lại danh sách và thống kê
+        await fetchCourses();
+        await fetchCourseStatistics();
+        
+      } catch (error) {
+        console.error('Lỗi khi xóa khóa học:', error);
+        console.log('Error details:', {
+          message: error.message,
+          status: error.status,
+          response: error.response
+        });
+        
+        setCourseToast({
+          open: true,
+          message: `Không thể xóa khóa học: ${error.message || 'Lỗi không xác định'}`,
+          severity: 'error'
+        });
+      }
+    }
+  };
+
+  // Xử lý duyệt/khóa khóa học
+  const handleToggleCourseStatus = async (courseId, currentStatus) => {
+    try {
+      console.log('Đang thay đổi trạng thái khóa học:', { courseId, currentStatus });
+      
+      const newStatus = currentStatus === 'Đã duyệt' ? false : true;
+      console.log('Trạng thái mới:', newStatus);
+      
+      const response = await api.put(`/api/admin/course/${courseId}/status`, {
+        isActive: newStatus
+      });
+      
+      console.log('Response từ API toggle status:', response);
+      
+      setCourseToast({
+        open: true,
+        message: `Đã ${newStatus ? 'duyệt' : 'khóa'} khóa học!`,
+        severity: 'success'
+      });
+      
+      // Tải lại danh sách và thống kê
+      await fetchCourses();
+      await fetchCourseStatistics();
+      
+    } catch (error) {
+      console.error('Lỗi khi thay đổi trạng thái khóa học:', error);
+      console.log('Error details:', {
+        message: error.message,
+        status: error.status,
+        response: error.response
+      });
+      
+      setCourseToast({
+        open: true,
+        message: `Không thể thay đổi trạng thái khóa học: ${error.message || 'Lỗi không xác định'}`,
+        severity: 'error'
+      });
+    }
+  };
 
   return (
     <Box sx={{ background: '#f7fafc', minHeight: '100vh' }}>
@@ -751,7 +1011,21 @@ function AdminDashboard(props) {
         {selectedMenu === "Bảng điều khiển" && (
           <>
             {/* Section: Thống kê tổng quan */}
-            <Typography variant="h4" sx={{ color: '#184d47', fontWeight: 700, mb: 3, textAlign: 'center' }}>Thống kê tổng quan</Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Typography variant="h4" sx={{ color: '#184d47', fontWeight: 700, textAlign: 'center' }}>Thống kê tổng quan</Typography>
+              <Button 
+                variant="outlined" 
+                color="primary" 
+                onClick={() => {
+                  console.log('Testing API connection...');
+                  fetchCourses();
+                  fetchCourseStatistics();
+                }}
+                sx={{ minWidth: 120 }}
+              >
+                Test API
+              </Button>
+            </Box>
             <Grid container spacing={4} mb={6}>
               <Grid item xs={12} sm={6} md={4} style={{ marginBottom: 32 }}>
                 <motion.div
@@ -846,7 +1120,305 @@ function AdminDashboard(props) {
         )}
         {selectedMenu === "Quản lý người dùng" && (
           <>
-            <Typography variant="h4" sx={{ color: '#184d47', fontWeight: 700, mb: 3, textAlign: 'center' }}>Quản lý người dùng</Typography>
+            {/* Header Section */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h3" sx={{ color: '#184d47', fontWeight: 800, mb: 1 }}>
+                Người dùng
+              </Typography>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Typography variant="body2" sx={{ color: '#1eb2a6', fontWeight: 600 }}>Dashboard</Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>/</Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>Người dùng</Typography>
+              </Box>
+            </Box>
+
+            {/* Warning Message */}
+            {usingFallbackUsers && (
+              <Paper elevation={2} sx={{ p: 2, mb: 3, borderRadius: 12, background: '#fff3cd', border: '1px solid #ffeaa7' }}>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Info style={{ color: '#856404' }} />
+                  <Typography variant="body2" style={{ color: '#856404' }}>
+                    Đang sử dụng dữ liệu mẫu do không thể kết nối API. Vui lòng kiểm tra kết nối mạng hoặc liên hệ quản trị viên.
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      setUsingFallbackUsers(false);
+                      fetchUsers();
+                      fetchUserStatistics();
+                    }}
+                    style={{ color: '#856404', borderColor: '#856404' }}
+                  >
+                    Thử lại
+                  </Button>
+                </Box>
+              </Paper>
+            )}
+
+            {/* Statistics Cards */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  borderRadius: 20, 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
+                        {userStatistics.totalUsers}
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
+                        Tổng người dùng
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <TrendingUp style={{ fontSize: 16, opacity: 0.8 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          +{userStatistics.newUsersThisMonth} tháng này
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      width: 70, 
+                      height: 70, 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.2)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}>
+                      <People style={{ fontSize: 35 }} />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  borderRadius: 20, 
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -30,
+                    right: -30,
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
+                        {userStatistics.activeUsers}
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
+                        Người dùng hoạt động
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <CheckCircle style={{ fontSize: 16, opacity: 0.8 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          {userStatistics.totalUsers > 0 ? ((userStatistics.activeUsers / userStatistics.totalUsers) * 100).toFixed(1) : 0}% tổng số
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      width: 70, 
+                      height: 70, 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.2)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}>
+                      <CheckCircle style={{ fontSize: 35 }} />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  borderRadius: 20, 
+                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -40,
+                    right: -40,
+                    width: 90,
+                    height: 90,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
+                        {userStatistics.students}
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
+                        Học sinh
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <School style={{ fontSize: 16, opacity: 0.8 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          {userStatistics.totalUsers > 0 ? ((userStatistics.students / userStatistics.totalUsers) * 100).toFixed(1) : 0}% tổng số
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      width: 70, 
+                      height: 70, 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.2)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}>
+                      <School style={{ fontSize: 35 }} />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  borderRadius: 20, 
+                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -35,
+                    right: -35,
+                    width: 85,
+                    height: 85,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
+                        {userStatistics.teachers}
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
+                        Giáo viên
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <Person style={{ fontSize: 16, opacity: 0.8 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          {userStatistics.totalUsers > 0 ? ((userStatistics.teachers / userStatistics.totalUsers) * 100).toFixed(1) : 0}% tổng số
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      width: 70, 
+                      height: 70, 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.2)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}>
+                      <Person style={{ fontSize: 35 }} />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  borderRadius: 20, 
+                  background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', 
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -45,
+                    right: -45,
+                    width: 95,
+                    height: 95,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
+                        {userStatistics.inactiveUsers}
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
+                        Người dùng không hoạt động
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <Block style={{ fontSize: 16, opacity: 0.8 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          {userStatistics.totalUsers > 0 ? ((userStatistics.inactiveUsers / userStatistics.totalUsers) * 100).toFixed(1) : 0}% tổng số
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      width: 70, 
+                      height: 70, 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.2)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}>
+                      <Block style={{ fontSize: 35 }} />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+            </Grid>
+
             <Paper elevation={4} sx={{ p: 3, borderRadius: 4, background: '#fff', boxShadow: '0 4px 24px rgba(30,178,166,0.08)' }}>
               <Box display="flex" alignItems="center" gap={2} mb={2}>
                 <span style={{...statIconStyle, background: 'linear-gradient(135deg, #1eb2a6 60%, #184d47 100%)', width: 40, height: 40, fontSize: 24}}><People style={{ fontSize: 24 }} /></span>
@@ -883,10 +1455,7 @@ function AdminDashboard(props) {
                   <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} label="Trạng thái">
                     <MenuItem value="">Tất cả</MenuItem>
                     <MenuItem value="Hoạt động">Hoạt động</MenuItem>
-                    <MenuItem value="Không hoạt động">Không hoạt động</MenuItem>
                     <MenuItem value="Đã khóa">Đã khóa</MenuItem>
-                    <MenuItem value="Chờ duyệt">Chờ duyệt</MenuItem>
-                    <MenuItem value="Tạm ngưng">Tạm ngưng</MenuItem>
                   </Select>
                 </FormControl>
                 <TextField
@@ -952,16 +1521,7 @@ function AdminDashboard(props) {
                             <IconButton onClick={() => handleOpenEdit(user)}>
                               <Edit />
                             </IconButton>
-                            {user.status === 'Chờ duyệt' && (
-                              <>
-                                <IconButton onClick={() => handleApproveUser(user.id, 'Học sinh')}>
-                                  <PersonAdd />
-                                </IconButton>
-                                <IconButton onClick={() => handleApproveUser(user.id, 'Giáo viên')}>
-                                  <RateReview />
-                                </IconButton>
-                              </>
-                            )}
+
                           </TableCell>
                         </TableRow>
                       ))
@@ -1032,10 +1592,7 @@ function AdminDashboard(props) {
                     label="Trạng thái"
                   >
                     <MenuItem value="Hoạt động">Hoạt động</MenuItem>
-                    <MenuItem value="Không hoạt động">Không hoạt động</MenuItem>
                     <MenuItem value="Đã khóa">Đã khóa</MenuItem>
-                    <MenuItem value="Chờ duyệt">Chờ duyệt</MenuItem>
-                    <MenuItem value="Tạm ngưng">Tạm ngưng</MenuItem>
                   </Select>
                 </FormControl>
               </DialogContent>
@@ -1044,200 +1601,817 @@ function AdminDashboard(props) {
                 <Button onClick={handleSaveEdit} color="primary">Lưu</Button>
               </DialogActions>
             </Dialog>
-            <Dialog open={openPendingUsersDialog} onClose={handleClosePendingUsersDialog}>
-              <DialogTitle>Duyệt người dùng chờ</DialogTitle>
-              <DialogContent>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Tên người dùng</TableCell>
-                      <TableCell>Email</TableCell>
-                      <TableCell>Vai trò</TableCell>
-                      <TableCell>Trạng thái</TableCell>
-                      <TableCell>Hoạt động</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {pendingUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <FormControl variant="outlined" size="small">
-                            <InputLabel>Vai trò</InputLabel>
-                            <Select
-                              value={user.selectedRole}
-                              onChange={(e) => handleChangeRole(user.id, e.target.value)}
-                              label="Vai trò"
-                            >
-                              <MenuItem value="Học sinh">Học sinh</MenuItem>
-                              <MenuItem value="Giáo viên">Giáo viên</MenuItem>
-                            </Select>
-                          </FormControl>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={user.status}
-                            style={{
-                              backgroundColor: statusColor[user.status],
-                              color: '#fff',
-                              fontWeight: 600,
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            color="success"
-                            onClick={() => handleApproveUser(user.id, user.selectedRole)}
-                            startIcon={<PersonAdd />}
-                          >
-                            Duyệt
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleClosePendingUsersDialog} color="primary">Đóng</Button>
-              </DialogActions>
-            </Dialog>
+
           </>
         )}
         {selectedMenu === "Quản lý khóa học" && (
           <>
-            <Typography variant="h4" sx={{ color: '#184d47', fontWeight: 700, mb: 3, textAlign: 'center' }}>Quản lý khóa học</Typography>
-            <Paper elevation={4} sx={{ p: 3, borderRadius: 4, background: '#fff', boxShadow: '0 4px 24px rgba(30,178,166,0.08)' }}>
-              <Box display="flex" alignItems="center" gap={3} mb={2}>
-                <TextField
-                  variant="outlined"
-                  size="small"
-                  placeholder="Tìm kiếm khóa học"
-                  value={courseSearch}
-                  onChange={e => setCourseSearch(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search />
-                      </InputAdornment>
-                    ),
-                    style: { borderRadius: 24 }
+            {/* Header Section */}
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h3" sx={{ color: '#184d47', fontWeight: 800, mb: 1 }}>
+                Khóa học
+              </Typography>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Typography variant="body2" sx={{ color: '#1eb2a6', fontWeight: 600 }}>Dashboard</Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>/</Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>Khóa học</Typography>
+              </Box>
+            </Box>
+
+            {/* Warning Message */}
+            {usingFallbackData && (
+              <Paper elevation={2} sx={{ p: 2, mb: 3, borderRadius: 12, background: '#fff3cd', border: '1px solid #ffeaa7' }}>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Info style={{ color: '#856404' }} />
+                  <Typography variant="body2" style={{ color: '#856404' }}>
+                    Đang sử dụng dữ liệu mẫu do không thể kết nối API. Vui lòng kiểm tra kết nối mạng hoặc liên hệ quản trị viên.
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      setUsingFallbackData(false);
+                      fetchCourses();
+                    }}
+                    style={{ color: '#856404', borderColor: '#856404' }}
+                  >
+                    Thử lại
+                  </Button>
+                </Box>
+              </Paper>
+            )}
+
+            {/* Statistics Cards */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  borderRadius: 20, 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
+                        {courseStatistics.totalCourses}
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
+                        Tổng khóa học
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <TrendingUp style={{ fontSize: 16, opacity: 0.8 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          +12% so với tháng trước
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      width: 70, 
+                      height: 70, 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.2)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}>
+                      <School style={{ fontSize: 35 }} />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  borderRadius: 20, 
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -30,
+                    right: -30,
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
+                        {courseStatistics.activeCourses}
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
+                        Khóa học hoạt động
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <CheckCircle style={{ fontSize: 16, opacity: 0.8 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          {courseStatistics.totalCourses > 0 ? ((courseStatistics.activeCourses / courseStatistics.totalCourses) * 100).toFixed(1) : 0}% tổng số
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      width: 70, 
+                      height: 70, 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.2)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}>
+                      <BarChartIcon style={{ fontSize: 35 }} />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  borderRadius: 20, 
+                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', 
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -40,
+                    right: -40,
+                    width: 90,
+                    height: 90,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
+                        {courseStatistics.totalStudents}
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
+                        Tổng học viên
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <Group style={{ fontSize: 16, opacity: 0.8 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          {courseStatistics.totalStudents > 0 ? Math.round(courseStatistics.totalStudents / courseStatistics.totalCourses) : 0} TB/khóa học
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      width: 70, 
+                      height: 70, 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.2)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}>
+                      <FaUserGraduate style={{ fontSize: 35 }} />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  borderRadius: 20, 
+                  background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', 
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -35,
+                    right: -35,
+                    width: 85,
+                    height: 85,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
+                        {courseStatistics.averageRating.toFixed(1)}
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
+                        Đánh giá TB
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <FaRegStar style={{ fontSize: 16, opacity: 0.8 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          {courseStatistics.totalReviews} đánh giá
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      width: 70, 
+                      height: 70, 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.2)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}>
+                      <FaRegStar style={{ fontSize: 35 }} />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+              
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Paper elevation={0} sx={{ 
+                  p: 3, 
+                  borderRadius: 20, 
+                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', 
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -25,
+                    right: -25,
+                    width: 75,
+                    height: 75,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)',
+                    zIndex: 0
+                  }
+                }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
+                    <Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
+                        {courseStatistics.pendingCourses}
+                      </Typography>
+                      <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
+                        Chờ duyệt
+                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1} mt={1}>
+                        <Info style={{ fontSize: 16, opacity: 0.8 }} />
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          Cần xem xét
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      width: 70, 
+                      height: 70, 
+                      borderRadius: '50%', 
+                      background: 'rgba(255,255,255,0.2)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.3)'
+                    }}>
+                      <Info style={{ fontSize: 35 }} />
+                    </Box>
+                  </Box>
+                </Paper>
+              </Grid>
+            </Grid>
+
+            {/* Main Content */}
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 16, background: '#fff', border: '1px solid #f0f0f0' }}>
+              {/* Search and Filter Section */}
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+                <Box display="flex" alignItems="center" gap={2} sx={{ flex: 1, maxWidth: 400 }}>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Tìm kiếm khóa học..."
+                    value={courseSearch}
+                    onChange={e => setCourseSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search style={{ color: '#666' }} />
+                        </InputAdornment>
+                      ),
+                      style: { 
+                        borderRadius: 12,
+                        background: '#f8f9fa',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          border: 'none'
+                        }
+                      }
+                    }}
+                    sx={{ 
+                      width: '100%',
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          border: 'none'
+                        },
+                        '&:hover fieldset': {
+                          border: 'none'
+                        },
+                        '&.Mui-focused fieldset': {
+                          border: 'none'
+                        }
+                      }
+                    }}
+                  />
+                </Box>
+
+              </Box>
+
+              {/* Filter Tabs */}
+              <Box display="flex" alignItems="center" gap={2} mb={3}>
+                <Button
+                  variant={courseStatusFilter === '' ? "contained" : "text"}
+                  onClick={() => setCourseStatusFilter('')}
+                  sx={{ 
+                    borderRadius: 20, 
+                    textTransform: 'none', 
+                    fontWeight: 600,
+                    background: courseStatusFilter === '' ? 'linear-gradient(135deg, #1eb2a6 0%, #184d47 100%)' : 'transparent',
+                    color: courseStatusFilter === '' ? 'white' : '#666',
+                    '&:hover': {
+                      background: courseStatusFilter === '' ? 'linear-gradient(135deg, #184d47 0%, #1eb2a6 100%)' : '#f5f5f5'
+                    }
                   }}
-                  style={{ minWidth: 200 }}
-                />
-                <FormControl variant="outlined" size="small" style={{ minWidth: 150 }}>
-                  <InputLabel>Trạng thái</InputLabel>
-                  <Select value={courseStatusFilter} onChange={e => setCourseStatusFilter(e.target.value)} label="Trạng thái">
-                    <MenuItem value="">Tất cả</MenuItem>
-                    <MenuItem value="Chờ duyệt">Chờ duyệt</MenuItem>
-                    <MenuItem value="Đã duyệt">Đã duyệt</MenuItem>
-                    <MenuItem value="Đã khóa">Đã khóa</MenuItem>
+                >
+                  Tất cả
+                </Button>
+                <Button
+                  variant={courseStatusFilter === 'Đã duyệt' ? "contained" : "text"}
+                  onClick={() => setCourseStatusFilter('Đã duyệt')}
+                  sx={{ 
+                    borderRadius: 20, 
+                    textTransform: 'none', 
+                    fontWeight: 600,
+                    background: courseStatusFilter === 'Đã duyệt' ? 'linear-gradient(135deg, #1eb2a6 0%, #184d47 100%)' : 'transparent',
+                    color: courseStatusFilter === 'Đã duyệt' ? 'white' : '#666',
+                    '&:hover': {
+                      background: courseStatusFilter === 'Đã duyệt' ? 'linear-gradient(135deg, #184d47 0%, #1eb2a6 100%)' : '#f5f5f5'
+                    }
+                  }}
+                >
+                  Hoạt động
+                </Button>
+                <Button
+                  variant={courseStatusFilter === 'Chờ duyệt' ? "contained" : "text"}
+                  onClick={() => setCourseStatusFilter('Chờ duyệt')}
+                  sx={{ 
+                    borderRadius: 20, 
+                    textTransform: 'none', 
+                    fontWeight: 600,
+                    background: courseStatusFilter === 'Chờ duyệt' ? 'linear-gradient(135deg, #1eb2a6 0%, #184d47 100%)' : 'transparent',
+                    color: courseStatusFilter === 'Chờ duyệt' ? 'white' : '#666',
+                    '&:hover': {
+                      background: courseStatusFilter === 'Chờ duyệt' ? 'linear-gradient(135deg, #184d47 0%, #1eb2a6 100%)' : '#f5f5f5'
+                    }
+                  }}
+                >
+                  Chờ duyệt
+                </Button>
+                <Button
+                  variant={courseStatusFilter === 'Đã khóa' ? "contained" : "text"}
+                  onClick={() => setCourseStatusFilter('Đã khóa')}
+                  sx={{ 
+                    borderRadius: 20, 
+                    textTransform: 'none', 
+                    fontWeight: 600,
+                    background: courseStatusFilter === 'Đã khóa' ? 'linear-gradient(135deg, #1eb2a6 0%, #184d47 100%)' : 'transparent',
+                    color: courseStatusFilter === 'Đã khóa' ? 'white' : '#666',
+                    '&:hover': {
+                      background: courseStatusFilter === 'Đã khóa' ? 'linear-gradient(135deg, #184d47 0%, #1eb2a6 100%)' : '#f5f5f5'
+                    }
+                  }}
+                >
+                  Đã khóa
+                </Button>
+                <Box sx={{ flex: 1 }} />
+                <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
+                  <Select 
+                    value={courseDateFilter} 
+                    onChange={e => setCourseDateFilter(e.target.value)}
+                    displayEmpty
+                    sx={{ 
+                      borderRadius: 12,
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        border: '1px solid #e0e0e0'
+                      }
+                    }}
+                  >
+                    <MenuItem value="">Tất cả danh mục</MenuItem>
+                    <MenuItem value="today">Hôm nay</MenuItem>
+                    <MenuItem value="week">Tuần này</MenuItem>
+                    <MenuItem value="month">Tháng này</MenuItem>
                   </Select>
                 </FormControl>
-                <TextField
-                  variant="outlined"
-                  size="small"
-                  type="date"
-                  label="Ngày tạo"
-                  InputLabelProps={{ shrink: true }}
-                  value={courseDateFilter}
-                  onChange={e => setCourseDateFilter(e.target.value)}
-                  style={{ minWidth: 160 }}
-                />
-                <IconButton onClick={() => { setCourseSearch(''); setCourseStatusFilter(''); setCourseDateFilter(''); }}>
-                  <Refresh />
-                </IconButton>
               </Box>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Tên khóa học</TableCell>
-                      <TableCell>Mã khóa học</TableCell>
-                      <TableCell>Giáo viên</TableCell>
-                      <TableCell>Trạng thái</TableCell>
-                      <TableCell>Số học viên</TableCell>
-                      <TableCell>Hoạt động</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {loadingCourses ? (
-                      <TableRow>
-                        <TableCell colSpan={6} align="center">
-                          Đang tải dữ liệu khóa học...
-                        </TableCell>
-                      </TableRow>
-                    ) : courses.filter(c => (c.name || '').toLowerCase().includes(courseSearch.toLowerCase())).map((course) => (
-                      <TableRow key={course.id}>
-                        <TableCell>{course.name}</TableCell>
-                        <TableCell>{course.code || '-'}</TableCell>
-                        <TableCell>{course.teacher}</TableCell>
-                        <TableCell>{course.status || '-'}</TableCell>
-                        <TableCell>{course.students ? course.students.length : 0}</TableCell>
-                        <TableCell>
-                          <IconButton onClick={() => handleOpenCourseDetail(course)}>
-                            <Info />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 25]}
-                component="div"
-                count={courses.length} // This count should be based on filtered courses
-                rowsPerPage={courseRowsPerPage}
-                page={coursePage}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-              />
+              
+              {/* Course Cards Grid */}
+              {loadingCourses ? (
+                <Box display="flex" flexDirection="column" alignItems="center" gap={2} py={8}>
+                  <div style={{ width: 40, height: 40, border: '3px solid #e0e0e0', borderTop: '3px solid #1eb2a6', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                  <Typography variant="body2" color="textSecondary">Đang tải dữ liệu khóa học...</Typography>
+                </Box>
+              ) : pagedCourses.length === 0 ? (
+                <Box display="flex" flexDirection="column" alignItems="center" gap={2} py={8}>
+                  <Typography variant="body1" color="textSecondary">
+                    {filteredCourses.length === 0 ? 'Không tìm thấy khóa học nào.' : 'Không có dữ liệu khóa học.'}
+                  </Typography>
+                </Box>
+              ) : (
+                <Grid container spacing={3}>
+                  {pagedCourses.map((course) => (
+                    <Grid item xs={12} sm={6} md={4} lg={3} key={course.id}>
+                      <Paper 
+                        elevation={0} 
+                        sx={{ 
+                          p: 3, 
+                          borderRadius: 16, 
+                          border: '1px solid #f0f0f0',
+                          transition: 'all 0.3s ease',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+                            border: '1px solid #1eb2a6'
+                          }
+                        }}
+                      >
+                        {/* Course Level Badge */}
+                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                          <Chip 
+                            label={course.level || 'Beginner'} 
+                            size="small" 
+                            sx={{ 
+                              background: course.level === 'Advanced' ? '#ffebee' : course.level === 'Intermediate' ? '#fff3e0' : '#e8f5e8',
+                              color: course.level === 'Advanced' ? '#d32f2f' : course.level === 'Intermediate' ? '#f57c00' : '#388e3c',
+                              fontWeight: 600,
+                              borderRadius: 8
+                            }}
+                          />
+                          <Box display="flex" gap={1}>
+                            <Tooltip title="Xem chi tiết">
+                              <IconButton 
+                                size="small" 
+                                onClick={(e) => { e.stopPropagation(); handleOpenCourseDetail(course); }}
+                                sx={{ color: '#1eb2a6', p: 0.5 }}
+                              >
+                                <Info fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+
+                          </Box>
+                        </Box>
+
+                        {/* Course Thumbnail */}
+                        <Box sx={{ mb: 2, position: 'relative' }}>
+                          {course.thumbnailUrl ? (
+                            <img 
+                              src={course.thumbnailUrl} 
+                              alt={course.name}
+                              style={{ 
+                                width: '100%', 
+                                height: 120, 
+                                borderRadius: 12, 
+                                objectFit: 'cover' 
+                              }}
+                            />
+                          ) : (
+                            <Box 
+                              sx={{ 
+                                width: '100%', 
+                                height: 120, 
+                                borderRadius: 12, 
+                                background: 'linear-gradient(135deg, #e0f7fa 0%, #f0f9ff 100%)',
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center' 
+                              }}
+                            >
+                              <School style={{ color: '#1eb2a6', fontSize: 40 }} />
+                            </Box>
+                          )}
+                          <Chip
+                            label={course.status}
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              top: 8,
+                              right: 8,
+                              backgroundColor: statusColor[course.status] || '#9e9e9e',
+                              color: '#fff',
+                              fontWeight: 600,
+                              fontSize: '0.7rem'
+                            }}
+                          />
+                        </Box>
+
+                        {/* Course Category */}
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            color: '#666', 
+                            mb: 1, 
+                            fontWeight: 500,
+                            textTransform: 'uppercase',
+                            fontSize: '0.75rem',
+                            letterSpacing: 0.5
+                          }}
+                        >
+                          {course.category || 'Chưa phân loại'}
+                        </Typography>
+
+                        {/* Course Title */}
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            fontWeight: 700, 
+                            mb: 2, 
+                            color: '#184d47',
+                            lineHeight: 1.3,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          {course.name}
+                        </Typography>
+
+                        {/* Course Metrics */}
+                        <Box display="flex" alignItems="center" gap={3} mb={2}>
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <BarChartIcon style={{ fontSize: 16, color: '#666' }} />
+                            <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8rem' }}>
+                              {course.level || 'Beginner'}
+                            </Typography>
+                          </Box>
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <PlayArrow style={{ fontSize: 16, color: '#666' }} />
+                            <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8rem' }}>
+                              {course.lectureCount || 0} Bài học
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Box display="flex" alignItems="center" gap={3} mb={2}>
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <FaClipboardList style={{ fontSize: 16, color: '#666' }} />
+                            <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8rem' }}>
+                              {course.sectionCount || 0} Chương
+                            </Typography>
+                          </Box>
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <FaUserGraduate style={{ fontSize: 16, color: '#666' }} />
+                            <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8rem' }}>
+                              {Array.isArray(course.students) ? course.students.length : course.students || 0} Học viên
+                            </Typography>
+                          </Box>
+                        </Box>
+                        {course.averageRating && (
+                          <Box display="flex" alignItems="center" gap={3} mb={3}>
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                              <FaRegStar style={{ fontSize: 16, color: '#ffc107' }} />
+                              <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8rem' }}>
+                                {course.averageRating.toFixed(1)} ({course.reviewCount || 0} đánh giá)
+                              </Typography>
+                            </Box>
+                          </Box>
+                        )}
+
+                        {/* Course Actions */}
+                        <Box display="flex" justifyContent="flex-end" alignItems="center">
+                          <Box display="flex" gap={0.5}>
+                            <Tooltip title={course.status === 'Đã duyệt' ? 'Khóa khóa học' : 'Duyệt khóa học'}>
+                              <IconButton 
+                                size="small" 
+                                onClick={(e) => { e.stopPropagation(); handleToggleCourseStatus(course.id, course.status); }}
+                                sx={{ color: course.status === 'Đã duyệt' ? '#f44336' : '#4caf50', p: 0.5 }}
+                              >
+                                {course.status === 'Đã duyệt' ? <Lock fontSize="small" /> : <LockOpen fontSize="small" />}
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Xóa khóa học">
+                              <IconButton 
+                                size="small" 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteCourse(course.id); }}
+                                sx={{ color: '#f44336', p: 0.5 }}
+                              >
+                                <Delete fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </Box>
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+              
+              {/* Pagination */}
+              <Box display="flex" justifyContent="center" mt={4}>
+                <TablePagination
+                  rowsPerPageOptions={[8, 12, 16]}
+                  component="div"
+                  count={filteredCourses.length}
+                  rowsPerPage={courseRowsPerPage}
+                  page={coursePage}
+                  onPageChange={handleCoursePageChange}
+                  onRowsPerPageChange={handleCourseRowsPerPageChange}
+                  labelRowsPerPage="Khóa học mỗi trang:"
+                  labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count}`}
+                  sx={{
+                    '& .MuiTablePagination-select': {
+                      borderRadius: 8
+                    },
+                    '& .MuiTablePagination-actions': {
+                      '& .MuiIconButton-root': {
+                        borderRadius: 8,
+                        '&:hover': {
+                          background: '#f0f9ff'
+                        }
+                      }
+                    }
+                  }}
+                />
+              </Box>
             </Paper>
-            <Dialog open={openCourseDetail} onClose={handleCloseCourseDetail}>
-              <DialogTitle>Chi tiết khóa học</DialogTitle>
+            <Dialog open={openCourseDetail} onClose={() => setOpenCourseDetail(false)} maxWidth="md" fullWidth>
+              <DialogTitle>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <School style={{ color: '#1eb2a6' }} />
+                  <Typography variant="h6">Chi tiết khóa học</Typography>
+                </Box>
+              </DialogTitle>
               <DialogContent>
-                <Typography variant="h6">Thông tin khóa học</Typography>
-                <Typography>Tên khóa học: {selectedCourse?.name}</Typography>
-                <Typography>Mã khóa học: {selectedCourse?.code || '-'}</Typography>
-                <Typography>Giáo viên: {selectedCourse?.teacher}</Typography>
-                <Typography>Trạng thái: {selectedCourse?.status || '-'}</Typography>
-                <Typography>Số học viên: {selectedCourse?.students ? selectedCourse.students.length : 0}</Typography>
-                <Typography>
-                  Ngày tạo: {selectedCourse?.createdAt && !isNaN(new Date(selectedCourse.createdAt))
-                    ? format(new Date(selectedCourse.createdAt), 'dd/MM/yyyy')
-                    : 'Không xác định'}
-                </Typography>
+                {selectedCourse && (
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                      <Box mb={2}>
+                        <Typography variant="subtitle2" color="textSecondary">Tên khóa học</Typography>
+                        <Typography variant="h6" style={{ fontWeight: 600 }}>{selectedCourse.name}</Typography>
+                      </Box>
+                      <Box mb={2}>
+                        <Typography variant="subtitle2" color="textSecondary">Mã khóa học</Typography>
+                        <Chip label={selectedCourse.code} style={{ background: '#e0f7fa', color: '#184d47' }} />
+                      </Box>
+                      <Box mb={2}>
+                        <Typography variant="subtitle2" color="textSecondary">Giáo viên</Typography>
+                        <Typography>{selectedCourse.teacher}</Typography>
+                      </Box>
+                      <Box mb={2}>
+                        <Typography variant="subtitle2" color="textSecondary">Danh mục</Typography>
+                        <Typography>{selectedCourse.category || 'Chưa phân loại'}</Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Box mb={2}>
+                        <Typography variant="subtitle2" color="textSecondary">Cấp độ</Typography>
+                        <Chip 
+                          label={selectedCourse.level || 'Beginner'} 
+                          style={{ 
+                            background: selectedCourse.level === 'Advanced' ? '#ffebee' : selectedCourse.level === 'Intermediate' ? '#fff3e0' : '#e8f5e8',
+                            color: selectedCourse.level === 'Advanced' ? '#d32f2f' : selectedCourse.level === 'Intermediate' ? '#f57c00' : '#388e3c'
+                          }}
+                        />
+                      </Box>
+                      <Box mb={2}>
+                        <Typography variant="subtitle2" color="textSecondary">Trạng thái</Typography>
+                        <Chip
+                          label={selectedCourse.status}
+                          style={{
+                            backgroundColor: statusColor[selectedCourse.status] || '#9e9e9e',
+                            color: '#fff',
+                            fontWeight: 600,
+                          }}
+                        />
+                      </Box>
+                                              <Box mb={2}>
+                          <Typography variant="subtitle2" color="textSecondary">Số học viên</Typography>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <FaUserGraduate style={{ color: '#1eb2a6' }} />
+                            <Typography variant="h6" style={{ fontWeight: 600 }}>
+                              {Array.isArray(selectedCourse.students) ? selectedCourse.students.length : selectedCourse.students || 0}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      <Box mb={2}>
+                        <Typography variant="subtitle2" color="textSecondary">Ngày tạo</Typography>
+                        <Typography>
+                          {selectedCourse.createdAt && !isNaN(new Date(selectedCourse.createdAt))
+                            ? format(new Date(selectedCourse.createdAt), 'dd/MM/yyyy HH:mm')
+                            : 'Không xác định'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Box mb={2}>
+                        <Typography variant="subtitle2" color="textSecondary">Mô tả</Typography>
+                        <Typography variant="body1" style={{ background: '#f8f9fa', padding: 16, borderRadius: 8 }}>
+                          {selectedCourse.description || 'Không có mô tả'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    {selectedCourse.thumbnailUrl && (
+                      <Grid item xs={12}>
+                        <Box mb={2}>
+                          <Typography variant="subtitle2" color="textSecondary">Ảnh đại diện</Typography>
+                          <img 
+                            src={selectedCourse.thumbnailUrl} 
+                            alt={selectedCourse.name}
+                            style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, objectFit: 'cover' }}
+                          />
+                        </Box>
+                      </Grid>
+                    )}
+                  </Grid>
+                )}
               </DialogContent>
               <DialogActions>
-                <Button onClick={handleCloseCourseDetail} color="primary">Đóng</Button>
+                <Button onClick={() => setOpenCourseDetail(false)} color="primary">Đóng</Button>
+
               </DialogActions>
             </Dialog>
-            <Dialog open={openAddStudent} onClose={handleCloseAddStudent}>
-              <DialogTitle>Thêm học sinh vào khóa học</DialogTitle>
-              <DialogContent>
-                <TextField
-                  label="Tên học sinh"
-                  fullWidth
-                  margin="normal"
-                  value={addStudentName}
-                  onChange={(e) => setAddStudentName(e.target.value)}
-                />
-                <TextField
-                  label="Email học sinh"
-                  fullWidth
-                  margin="normal"
-                  value={addStudentEmail}
-                  onChange={(e) => setAddStudentEmail(e.target.value)}
-                />
-              </DialogContent>
+
+
+            <Dialog open={openDeleteConfirm} onClose={() => setOpenDeleteConfirm(false)}>
+              <DialogTitle>Xác nhận xóa</DialogTitle>
+              <DialogContent>Bạn có chắc chắn muốn xóa khóa học này không?</DialogContent>
               <DialogActions>
-                <Button onClick={handleCloseAddStudent} color="primary">Hủy</Button>
-                <Button onClick={handleConfirmAddStudent} color="primary">Thêm</Button>
+                <Button onClick={() => setOpenDeleteConfirm(false)}>Hủy</Button>
+                <Button onClick={() => handleDeleteCourse(deleteTarget)} color="secondary">Xóa</Button>
               </DialogActions>
             </Dialog>
+                  <Snackbar open={toast.open} autoHideDuration={2000} onClose={() => setToast({ ...toast, open: false })}>
+        <Paper elevation={6} sx={{ 
+          p: 2, 
+          backgroundColor: toast.severity === 'error' ? '#f44336' : 
+                           toast.severity === 'warning' ? '#ff9800' : 
+                           toast.severity === 'info' ? '#2196f3' : '#4caf50',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Typography variant="body2">{toast.message}</Typography>
+        </Paper>
+      </Snackbar>
+      <Snackbar open={courseToast.open} autoHideDuration={2000} onClose={() => setCourseToast({ ...courseToast, open: false })}>
+        <Paper elevation={6} sx={{ 
+          p: 2, 
+          backgroundColor: courseToast.severity === 'error' ? '#f44336' : 
+                           courseToast.severity === 'warning' ? '#ff9800' : 
+                           courseToast.severity === 'info' ? '#2196f3' : '#4caf50',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Typography variant="body2">{courseToast.message}</Typography>
+        </Paper>
+      </Snackbar>
+      <Snackbar open={userToast.open} autoHideDuration={2000} onClose={() => setUserToast({ ...userToast, open: false })}>
+        <Paper elevation={6} sx={{ 
+          p: 2, 
+          backgroundColor: userToast.severity === 'error' ? '#f44336' : 
+                           userToast.severity === 'warning' ? '#ff9800' : 
+                           userToast.severity === 'info' ? '#2196f3' : '#4caf50',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Typography variant="body2">{userToast.message}</Typography>
+        </Paper>
+      </Snackbar>
           </>
         )}
         {selectedMenu === "Quản lý danh mục khóa học" && (
@@ -1358,7 +2532,17 @@ function AdminDashboard(props) {
               </DialogActions>
             </Dialog>
             <Snackbar open={toast.open} autoHideDuration={2000} onClose={() => setToast({ ...toast, open: false })}>
-              <MuiAlert elevation={6} variant="filled" onClose={() => setToast({ ...toast, open: false })} severity={toast.severity}>{toast.message}</MuiAlert>
+              <Paper elevation={6} style={{ 
+                padding: 16, 
+                backgroundColor: toast.severity === 'error' ? '#f44336' : 
+                                 toast.severity === 'warning' ? '#ff9800' : 
+                                 toast.severity === 'info' ? '#2196f3' : '#4caf50',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                <Typography variant="body2" style={{ marginRight: 8 }}>{toast.message}</Typography>
+              </Paper>
             </Snackbar>
           </Paper>
         )}
