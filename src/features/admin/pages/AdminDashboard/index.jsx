@@ -350,24 +350,27 @@ function AdminDashboard(props) {
 
 
   // Thống kê số liệu dashboard
-  const totalUsers = users.length;
-  const totalCourses = courses.length;
-  const totalCourseRegistrations = courses.reduce((sum, c) => sum + (Array.isArray(c.students) ? c.students.length : (c.students || 0)), 0);
-  // Giả lập số đánh giá (nếu có trường reviews)
-  const totalCourseReviews = courses.reduce((sum, c) => sum + (c.reviews ? c.reviews.length : 0), 0);
-  // Số user mới trong tháng này
+  const totalUsers = userStatistics.totalUsers || 0;
+  const activeUsers = userStatistics.activeUsers || 0;
+  const inactiveUsers = userStatistics.inactiveUsers || 0;
+  const students = userStatistics.students || 0;
+  const teachers = userStatistics.teachers || 0;
+  const admins = userStatistics.admins || 0;
+  const newUsersThisMonth = userStatistics.newUsersThisMonth || 0;
+  const newUsersThisWeek = userStatistics.newUsersThisWeek || 0;
+  const averageUsersPerDay = userStatistics.averageUsersPerDay || 0;
+
+  const totalCourses = courseStatistics.totalCourses || 0;
+  const activeCourses = courseStatistics.activeCourses || 0;
+  const inactiveCourses = courseStatistics.inactiveCourses || 0;
+  const pendingCourses = courseStatistics.pendingCourses || 0;
+  const totalStudents = courseStatistics.totalStudents || 0;
+  const totalTeachers = courseStatistics.totalTeachers || 0;
+  const averageRating = courseStatistics.averageRating || 0;
+  const totalReviews = courseStatistics.totalReviews || 0;
+
+  // Thêm lại biến now cho chart data
   const now = new Date();
-  const usersThisMonth = users.filter(u => {
-    const joined = new Date(u.joined);
-    return joined.getMonth() === now.getMonth() && joined.getFullYear() === now.getFullYear();
-  }).length;
-  // Số khóa học mới trong tháng này
-  const coursesThisMonth = courses.filter(c => {
-    const created = new Date(c.createdAt);
-    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-  }).length;
-  // Số khóa học chờ duyệt
-  const coursesPending = courses.filter(c => c.status === 'Chờ duyệt').length;
 
   // Dữ liệu biểu đồ mock: số user và số khóa học theo tháng (12 tháng)
   const months = [
@@ -729,11 +732,20 @@ function AdminDashboard(props) {
       const data = response?.data || response;
       console.log('Data từ API user statistics:', data);
       
+      // Lấy danh sách users hiện tại để xác định học sinh
+      // (nếu users chưa load thì fallback về data.students như cũ)
+      let studentsCount = 0;
+      if (users && users.length > 0) {
+        studentsCount = users.filter(u => u.role !== 'Quản trị viên' && u.role !== 'Giáo viên').length;
+      } else {
+        studentsCount = data.students || 0;
+      }
+      
       const stats = {
         totalUsers: data.totalUsers || 0,
         activeUsers: data.activeUsers || 0,
         inactiveUsers: data.inactiveUsers || 0,
-        students: data.students || 0,
+        students: studentsCount,
         teachers: data.teachers || 0,
         admins: data.admins || 0,
         newUsersThisMonth: data.newUsersThisMonth || 0,
@@ -755,7 +767,7 @@ function AdminDashboard(props) {
         totalUsers: users.length,
         activeUsers: users.filter(u => u.status === 'Hoạt động').length,
         inactiveUsers: users.filter(u => u.status === 'Đã khóa').length,
-        students: users.filter(u => u.role === 'Học sinh').length,
+        students: users.filter(u => u.role !== 'Quản trị viên' && u.role !== 'Giáo viên').length,
         teachers: users.filter(u => u.role === 'Giáo viên').length,
         admins: users.filter(u => u.role === 'Quản trị viên').length,
         newUsersThisMonth: 0,
@@ -1013,18 +1025,6 @@ function AdminDashboard(props) {
             {/* Section: Thống kê tổng quan */}
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
               <Typography variant="h4" sx={{ color: '#184d47', fontWeight: 700, textAlign: 'center' }}>Thống kê tổng quan</Typography>
-              <Button 
-                variant="outlined" 
-                color="primary" 
-                onClick={() => {
-                  console.log('Testing API connection...');
-                  fetchCourses();
-                  fetchCourseStatistics();
-                }}
-                sx={{ minWidth: 120 }}
-              >
-                Test API
-              </Button>
             </Box>
             <Grid container spacing={4} mb={6}>
               <Grid item xs={12} sm={6} md={4} style={{ marginBottom: 32 }}>
@@ -1070,7 +1070,7 @@ function AdminDashboard(props) {
                 <motion.div whileHover={{ scale: 1.07, boxShadow: '0 12px 32px rgba(30,178,166,0.18)' }} style={{ ...statCardStyle, minWidth: 260, minHeight: 120, padding: 32 }}>
                   <span style={{ ...statIconStyle, background: 'linear-gradient(135deg, #1eb2a6 60%, #184d47 100%)', width: 60, height: 60, fontSize: 38 }}><FaUserGraduate /></span>
                   <div>
-                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={usersThisMonth} duration={1.2} /></div>
+                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={newUsersThisMonth} duration={1.2} /></div>
                     <div style={{ ...statLabelStyle, fontSize: 18 }}>User mới tháng này</div>
                   </div>
                 </motion.div>
@@ -1079,7 +1079,7 @@ function AdminDashboard(props) {
                 <motion.div whileHover={{ scale: 1.07, boxShadow: '0 12px 32px rgba(24,77,71,0.18)' }} style={{ ...statCardStyle, minWidth: 260, minHeight: 120, padding: 32 }}>
                   <span style={{ ...statIconStyle, background: 'linear-gradient(135deg, #184d47 60%, #1eb2a6 100%)', width: 60, height: 60, fontSize: 38 }}><FaBookOpen /></span>
                   <div>
-                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={coursesThisMonth} duration={1.2} /></div>
+                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={pendingCourses} duration={1.2} /></div>
                     <div style={{ ...statLabelStyle, fontSize: 18 }}>Khóa học mới tháng này</div>
                   </div>
                 </motion.div>
@@ -1088,7 +1088,7 @@ function AdminDashboard(props) {
                 <motion.div whileHover={{ scale: 1.07, boxShadow: '0 12px 32px rgba(255,112,67,0.18)' }} style={{ ...statCardStyle, background: 'linear-gradient(135deg, #fff3e0 0%, #fff 100%)', minWidth: 260, minHeight: 120, padding: 32 }}>
                   <span style={{ ...statIconStyle, background: 'linear-gradient(135deg, #ff7043 60%, #ffb300 100%)', width: 60, height: 60, fontSize: 38 }}><FaClipboardList /></span>
                   <div>
-                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={coursesPending} duration={1.2} /></div>
+                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={pendingCourses} duration={1.2} /></div>
                     <div style={{ ...statLabelStyle, fontSize: 18 }}>Khóa học chờ duyệt</div>
                   </div>
                 </motion.div>
