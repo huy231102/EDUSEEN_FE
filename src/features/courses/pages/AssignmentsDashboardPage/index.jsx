@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { courses } from 'features/courses/data/courseData';
+import api from 'services/api';
 import './style.css';
 
 const AssignmentsDashboardPage = () => {
@@ -10,41 +10,27 @@ const AssignmentsDashboardPage = () => {
   const [course, setCourse] = useState(null);
 
   useEffect(() => {
-    const found = courses.find(c => c.id.toString() === courseId);
-    if (!found) {
-      navigate('/teacher/dashboard');
-      return;
+    async function fetchData() {
+      try {
+        const [courseData, assignmentsData] = await Promise.all([
+          api.get(`/api/teacher/course/${courseId}`),
+          api.get(`/api/teacher/course/${courseId}/assignments`),
+        ]);
+        setCourse(courseData);
+        setAssignments(assignmentsData);
+      } catch (err) {
+        console.error(err);
+        navigate('/teacher/dashboard');
+      }
     }
-    setCourse(found);
-
-    const collected = [];
-    found.sections?.forEach(sec => {
-      sec.lectures?.forEach(lec => {
-        if (lec.assignment) {
-          // Mock some stats if chưa có
-          const totalAssigned = 25;
-          const totalSubmitted = Math.floor(Math.random() * 26); // 0-25
-          const averageGrade = totalSubmitted ? (5 + Math.random() * 5).toFixed(1) : '-';
-          collected.push({
-            assignmentId: lec.assignment.id,
-            title: lec.assignment.title,
-            sectionTitle: sec.title,
-            lectureTitle: lec.title,
-            totalAssigned,
-            totalSubmitted,
-            averageGrade,
-          });
-        }
-      });
-    });
-    setAssignments(collected);
+    fetchData();
   }, [courseId, navigate]);
 
   return (
     <section className="assignments-dashboard">
       <div className="container">
         <Link to="/teacher/dashboard" className="back-link"><i className="fas fa-arrow-left"></i> Quay lại Dashboard</Link>
-        {course && <h2 className="page-title">Bài tập của khoá học: {course.name}</h2>}
+        {course && <h2 className="page-title">Bài tập của khoá học: {course.title || course.name}</h2>}
 
         {course && (
           <div className="top-actions">
@@ -75,7 +61,7 @@ const AssignmentsDashboardPage = () => {
                       {a.totalSubmitted}/{a.totalAssigned} đã nộp
                     </span>
                   </td>
-                  <td>{a.averageGrade}</td>
+                  <td>{a.averageGrade !== null && a.averageGrade !== undefined ? Number(a.averageGrade).toFixed(1) : '-'}</td>
                   <td className="actions-cell">
                     <Link to={`/teacher/course/${courseId}/assignments/${a.assignmentId}`} className="btn small">Xem bài nộp</Link>
                     <Link to={`/teacher/course/${courseId}/assignments/${a.assignmentId}/edit`} className="btn small">Chỉnh sửa</Link>
@@ -94,4 +80,4 @@ const AssignmentsDashboardPage = () => {
   );
 };
 
-export default AssignmentsDashboardPage; 
+export default AssignmentsDashboardPage;

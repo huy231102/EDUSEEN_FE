@@ -1,18 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { courses } from 'features/courses/data/courseData';
+import api from 'services/api';
 import './style.css';
 
 const TeacherDashboardPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [displayCourses, setDisplayCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const transformCourse = useCallback((c) => {
+    const totalLectures = (c.sections || []).reduce((sum, s) => sum + (s.lectures ? s.lectures.length : 0), 0);
+    const totalMinutes = (c.sections || []).reduce((minSum, s) => minSum + (s.lectures || []).reduce((m, l) => m + (l.duration || 0), 0), 0);
+    return {
+      id: c.courseId,
+      name: c.title,
+      cover: c.cover || '/favicon.png', // placeholder nếu API chưa có
+      totalLectures,
+      totalTime: (totalMinutes / 60).toFixed(1),
+      enrolledCount: c.enrolledCount || 0,
+      rating: c.averageRating || 0,
+    };
+  }, []);
 
   useEffect(() => {
-    const filteredCourses = courses.filter(course =>
-      course.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setDisplayCourses(filteredCourses);
-  }, [searchTerm]);
+    async function fetchCourses() {
+      try {
+        setLoading(true);
+        const data = await api.get('/api/teacher/course');
+        const mapped = data.map(transformCourse);
+        setDisplayCourses(mapped);
+      } catch (err) {
+        console.error(err);
+        setError('Không thể tải danh sách khóa học.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCourses();
+  }, [transformCourse]);
+
+  const filteredCourses = displayCourses.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <section className="teacher-dashboard">
@@ -36,7 +64,9 @@ const TeacherDashboardPage = () => {
         </div>
 
         <div className="dashboard-cards">
-          {displayCourses.map(course => (
+          {loading && <p>Đang tải...</p>}
+          {error && <p className="error-text">{error}</p>}
+          {!loading && filteredCourses.map(course => (
             <div className="teacher-course-card" key={course.id}>
               <div className="thumbnail">
                 <img src={course.cover} alt={course.name} />
@@ -58,7 +88,7 @@ const TeacherDashboardPage = () => {
               </div>
             </div>
           ))}
-          {displayCourses.length === 0 && (
+          {!loading && filteredCourses.length === 0 && (
             <p>Không có khóa học phù hợp.</p>
           )}
         </div>

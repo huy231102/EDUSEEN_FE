@@ -13,26 +13,40 @@ async function request(url, options = {}) {
 
   const headers = {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
     ...(options.headers || {}),
     ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
   };
 
   const response = await fetch(`${BASE_URL}${url}`, {
     headers,
-    // Chỉ đính kèm cookie khi options.credentials được truyền vào
     credentials: options.credentials || 'omit',
     ...options,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Request failed');
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    // Nếu không phải JSON, thử lấy text
+    try {
+      data = await response.text();
+    } catch {
+      data = null;
+    }
   }
 
-  // 204 No Content
-  if (response.status === 204) return null;
+  if (!response.ok) {
+    let errorText = 'Request failed';
+    if (data && typeof data === 'object') {
+      errorText = data.message || data.error || data.Error || JSON.stringify(data);
+    } else if (typeof data === 'string') {
+      errorText = data;
+    }
+    throw new Error(errorText);
+  }
 
-  return response.json();
+  return data;
 }
 
 export const api = {

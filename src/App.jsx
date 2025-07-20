@@ -22,11 +22,13 @@ const CourseAnalyticsPage = lazy(() => import('./features/courses/pages/CourseAn
 const AssignmentsDashboardPage = lazy(() => import('./features/courses/pages/AssignmentsDashboardPage'));
 const AssignmentCreatePage = lazy(() => import('./features/courses/pages/AssignmentCreatePage'));
 const AssignmentGradingPage = lazy(() => import('./features/courses/pages/AssignmentGradingPage'));
+const AssignmentEditPage = lazy(() => import('./features/courses/pages/AssignmentEditPage'));
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
 import ScrollToTop from './components/common/ScrollToTop';
 import Loader from 'components/common/Loader';
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const AdminDashboard = lazy(() => import('./features/admin/pages/AdminDashboard'));
 
 const App = () => {
   return (
@@ -65,6 +67,7 @@ const App = () => {
                 <Route path=":courseId/assignments" element={<AssignmentsDashboardPage />} />
                 <Route path=":courseId/assignments/new" element={<AssignmentCreatePage />} />
                 <Route path=":courseId/assignments/:assignmentId" element={<AssignmentGradingPage />} />
+                <Route path=":courseId/assignments/:assignmentId/edit" element={<AssignmentEditPage />} />
               </Route>
             </Route>
           </Route>
@@ -73,6 +76,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRole={2}>
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />

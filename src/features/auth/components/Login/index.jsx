@@ -27,14 +27,19 @@ const LoginForm = ({ onForgotPassword }) => {
       if (!accessToken) throw new Error('Không nhận được access token');
 
       // Lấy thông tin người dùng
-      const userObj = res.user || res.User || null;
+      const userObj = res.user || null;
+      console.log('userObj', userObj);
 
       // Lưu token và user vào context
       login(accessToken, userObj);
       showToast('Đăng nhập thành công', 'success');
       console.log('tokenObj', tokenObj)
       console.log('accessToken', accessToken);
-      navigate('/');
+      if (userObj && Number(userObj.roleId) === 2) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       console.error(err);
       showToast('Đăng nhập thất bại', 'error');
