@@ -46,7 +46,7 @@ const App = () => {
           />
           <Route path="/" element={<MainLayout />}>
             <Route index element={<CourseListPage />} />
-            <Route path="category/:categorySlug" element={<CategoryPage />} />
+            <Route path="category/:categoryId" element={<CategoryPage />} />
             <Route path="courses" element={<CourseListPage />} />
             <Route path="courses/:courseId" element={<CourseDetailPage />} />
             <Route path="courses/:courseId/learn" element={<CourseContentPage />} />

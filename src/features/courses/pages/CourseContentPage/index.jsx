@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { courses } from 'features/courses/data/courseData';
+import { useParams, Link, useLocation } from 'react-router-dom';
+import courseApi from 'services/courseApi';
 import './style.css';
 import YouTube from 'react-youtube';
 import { useMyCourses } from 'features/courses/contexts/MyCoursesContext';
 
 const CourseContentPage = () => {
   const { courseId } = useParams();
-  const course = courses.find((c) => c.id === parseInt(courseId));
+  const location = useLocation();
+  const [course, setCourse] = useState(location.state?.course || null);
+  const [loading, setLoading] = useState(!location.state?.course);
   const { markLectureCompleted, enrollCourse } = useMyCourses();
 
   const [currentLecture, setCurrentLecture] = useState(null);
@@ -24,6 +26,57 @@ const CourseContentPage = () => {
   const [comments, setComments] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [activeTab, setActiveTab] = useState('video'); // 'video' | 'assignment'
+
+  useEffect(() => {
+    if (!course) {
+      setLoading(true);
+      courseApi.getCourseDetail(courseId)
+        .then(data => {
+          const mappedCourse = {
+            id: data.courseId,
+            name: data.title,
+            cover: data.cover,
+            description: data.description,
+            trainerName: data.teacherName,
+            trainerJob: 'Giảng viên',
+            teacherAvatarUrl: data.teacherAvatarUrl,
+            totalTime: Math.round(data.sections?.reduce((totalHours, section) => {
+              const sectionMinutes = section.lectures?.reduce((total, lecture) =>
+                total + (lecture.duration || 0), 0) || 0;
+              return totalHours + (sectionMinutes / 60);
+            }, 0) * 100) / 100 || 0,
+            rating: data.rating || 0,
+            isEnrolled: data.isEnrolled || false,
+            sections: data.sections?.map(section => ({
+              id: section.sectionId,
+              title: section.title,
+              order: section.order,
+              lectures: section.lectures?.map(lecture => ({
+                id: lecture.lectureId,
+                title: lecture.title,
+                contentType: lecture.contentType,
+                contentUrl: lecture.contentUrl,
+                duration: lecture.duration,
+                order: lecture.order,
+                isCompleted: lecture.isCompleted || false
+              })) || []
+            })) || [],
+            reviews: data.reviews?.map(review => ({
+              id: Date.now() + Math.random(),
+              userName: review.userName,
+              courseName: review.courseName,
+              courseDescription: review.comment,
+              userAvatarUrl: review.userAvatarUrl || '/images/testo/t1.webp',
+              rating: review.rating,
+              createdAt: review.createdAt
+            })) || []
+          };
+          setCourse(mappedCourse);
+        })
+        .catch(() => setCourse(null))
+        .finally(() => setLoading(false));
+    }
+  }, [courseId, course]);
 
   useEffect(() => {
     // Tự động mở section đầu tiên và chọn bài giảng đầu tiên
@@ -44,9 +97,8 @@ const CourseContentPage = () => {
     setActiveTab('video');
   }, [currentLecture]);
 
-  if (!course) {
-    return <div>Đang tải...</div>;
-  }
+  if (loading) return <div>Đang tải...</div>;
+  if (!course) return <div>Không tìm thấy khoá học.</div>;
 
   const handleLectureSelect = (lecture, sectionIndex, globalIndex) => {
     if (globalIndex > allowedIndex) return; // chưa được phép
@@ -137,7 +189,7 @@ const CourseContentPage = () => {
                   {/* Sử dụng react-youtube để bắt sự kiện kết thúc video */}
                   <YouTube
                     videoId={(() => {
-                      const match = currentLecture.videoUrl.match(/embed\/([^?]+)/);
+                      const match = currentLecture.contentUrl.match(/embed\/([^?]+)/);
                       return match ? match[1] : '';
                     })()}
                     opts={{

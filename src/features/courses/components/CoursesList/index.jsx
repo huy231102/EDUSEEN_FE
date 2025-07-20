@@ -1,11 +1,10 @@
 import React from "react"
 import './style.css'
-import { courses as allCourses } from 'features/courses/data/courseData';
 import Heading from 'components/common/Heading';
 import CourseCardItem from "../CourseCardItem"
 
 const CoursesList = ({ 
-  courses = allCourses, 
+  courses = [], 
   subtitle = "Khóa học của chúng tôi", 
   title = "Khám phá các khóa học phổ biến của chúng tôi",
   searchTerm,
@@ -37,8 +36,6 @@ const CoursesList = ({
                     <select value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
                       <option value="default">Sắp xếp mặc định</option>
                       <option value="rating_desc">Đánh giá cao nhất</option>
-                      <option value="price_asc">Giá: Thấp đến Cao</option>
-                      <option value="price_desc">Giá: Cao đến Thấp</option>
                       <option value="duration_desc">Thời lượng: Nhiều nhất</option>
                       <option value="duration_asc">Thời lượng: Ít nhất</option>
                     </select>

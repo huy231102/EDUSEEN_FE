@@ -35,6 +35,55 @@
   font-weight: 500;
 }
 
+/* Progress bar styles */
+.course-progress {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1eb2a6, #17a2b8);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Continue learning button style */
+.continue-learning {
+  background: linear-gradient(135deg, #1eb2a6, #17a2b8) !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(30, 178, 166, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.continue-learning:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(30, 178, 166, 0.4) !important;
+}
+
 /* --- Right Column (Description & Teacher) --- */
 .content-right h2 {
   font-size: 28px;

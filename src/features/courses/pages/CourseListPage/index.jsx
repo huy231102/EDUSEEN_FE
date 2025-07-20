@@ -6,7 +6,6 @@ import CoursesList from 'features/courses/components/CoursesList';
 import CategoriesList from 'features/courses/components/CategoriesList';
 import Testimonal from 'features/courses/components/Testimonal';
 import Hblog from 'features/courses/components/Hblog';
-import { courses as allCourses } from 'features/courses/data/courseData';
 import courseApi from 'services/courseApi';
 
 const CourseListPage = () => {
@@ -16,6 +15,8 @@ const CourseListPage = () => {
   const [displayCourses, setDisplayCourses] = useState([]);
   const [topReviews, setTopReviews] = useState([]);
   const [loadingReview, setLoadingReview] = useState(true);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Logic mới: lắng nghe 'state' từ useNavigate
@@ -28,37 +29,58 @@ const CourseListPage = () => {
         }
       }, 100);
     }
+  }, [location.state]);
 
-    // Lọc và sắp xếp khóa học
-    const searchedCourses = allCourses.filter(course =>
-      course.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  // Fetch top courses từ API
+  useEffect(() => {
+    const fetchTopCourses = async () => {
+      try {
+        setLoadingCourses(true);
+        const data = await courseApi.getTopCourses(9);
+        // Map về structure FE mong muốn
+        const mapped = data.map(dto => ({
+          id: dto.courseId,
+          name: dto.title,
+          cover: dto.cover,
+          trainerName: dto.teacherName,
+          totalTime: dto.totalTime,
+          rating: dto.rating || 0,
+          isFavorite: dto.isFavorite,
+          // Sử dụng avatar từ API hoặc fallback
+          tcover: dto.teacherAvatarUrl || '/images/team/t1.webp'
+        }));
+        setDisplayCourses(mapped);
+      } catch (err) {
+        console.error(err);
+        setError('Không thể tải danh sách khóa học');
+        setDisplayCourses([]);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+    fetchTopCourses();
+  }, []);
 
-    const sortedCourses = [...searchedCourses];
+  // Tính toán danh sách hiển thị sau khi search & sort
+  useEffect(() => {
+    const searched = displayCourses.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const sorted = [...searched];
     switch (sortOption) {
       case 'rating_desc':
-        sortedCourses.sort((a, b) => b.rating - a.rating);
-        break;
-      case 'price_asc':
-        sortedCourses.sort((a, b) => a.priceAll - b.priceAll);
-        break;
-      case 'price_desc':
-        sortedCourses.sort((a, b) => b.priceAll - a.priceAll);
+        sorted.sort((a, b) => b.rating - a.rating);
         break;
       case 'duration_desc':
-        sortedCourses.sort((a, b) => b.totalTime - a.totalTime);
+        sorted.sort((a, b) => b.totalTime - a.totalTime);
         break;
       case 'duration_asc':
-        sortedCourses.sort((a, b) => a.totalTime - b.totalTime);
+        sorted.sort((a, b) => a.totalTime - b.totalTime);
         break;
       default:
-        sortedCourses.sort((a, b) => a.id - b.id);
+        sorted.sort((a, b) => a.id - b.id);
         break;
     }
-
-    setDisplayCourses(sortedCourses);
-
-  }, [location.state, searchTerm, sortOption]);
+    setDisplayCourses(sorted);
+  }, [searchTerm, sortOption]);
 
   useEffect(() => {
     // Chỉ fetch top review ở trang này
@@ -75,6 +97,30 @@ const CourseListPage = () => {
     };
     fetchTopReviews();
   }, []);
+
+  if (loadingCourses) {
+    return (
+      <>
+        <Hero />
+        <AboutCard />
+        <div className="container" style={{ padding: '50px', textAlign: 'center' }}>
+          <p>Đang tải danh sách khóa học...</p>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Hero />
+        <AboutCard />
+        <div className="container" style={{ padding: '50px', textAlign: 'center' }}>
+          <p>Lỗi: {error}</p>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
