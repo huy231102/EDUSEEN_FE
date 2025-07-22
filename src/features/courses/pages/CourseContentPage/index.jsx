@@ -183,32 +183,53 @@ const CourseContentPage = () => {
             </div>
 
             {activeTab === 'video' && (
-          <>
-            <h1 className="lecture-title">{currentLecture.title}</h1>
-            <div className="video-player-wrapper">
-                  {/* Sử dụng react-youtube để bắt sự kiện kết thúc video */}
-                  <YouTube
-                    videoId={(() => {
-                      const match = currentLecture.contentUrl.match(/embed\/([^?]+)/);
-                      return match ? match[1] : '';
-                    })()}
-                    opts={{
-                      width: '100%',
-                      height: '100%',
-                      playerVars: {
-                        autoplay: 0,
-                      },
-                    }}
-                    onEnd={() => {
-                      setVideoCompleted(true);
-                      if (!currentLecture.assignment) {
-                        const currentIdx = flattenedLectures.findIndex(l => l.title === currentLecture.title);
-                        if (currentIdx === allowedIndex) {
-                          setAllowedIndex(allowedIndex + 1);
+              <>
+                <h1 className="lecture-title">{currentLecture.title}</h1>
+                <div className="video-player-wrapper">
+                  {currentLecture.contentUrl && (currentLecture.contentUrl.includes('youtube.com') || currentLecture.contentUrl.includes('youtu.be')) ? (
+                    <YouTube
+                      videoId={(() => {
+                        // Lấy videoId từ link YouTube
+                        const url = currentLecture.contentUrl;
+                        const match = url.match(/(?:youtube\.com.*(?:\?|&)v=|youtu\.be\/)([\w-]+)/);
+                        return match ? match[1] : '';
+                      })()}
+                      opts={{
+                        width: '100%',
+                        height: '100%',
+                        playerVars: {
+                          autoplay: 0,
+                        },
+                      }}
+                      onEnd={() => {
+                        setVideoCompleted(true);
+                        if (!currentLecture.assignment) {
+                          const currentIdx = flattenedLectures.findIndex(l => l.title === currentLecture.title);
+                          if (currentIdx === allowedIndex) {
+                            setAllowedIndex(allowedIndex + 1);
+                          }
                         }
-                      }
-                    }}
-                  />
+                      }}
+                    />
+                  ) : currentLecture.contentUrl ? (
+                    <video
+                      src={currentLecture.contentUrl}
+                      controls
+                      width="100%"
+                      style={{ maxHeight: 400, background: '#000' }}
+                      onEnded={() => {
+                        setVideoCompleted(true);
+                        if (!currentLecture.assignment) {
+                          const currentIdx = flattenedLectures.findIndex(l => l.title === currentLecture.title);
+                          if (currentIdx === allowedIndex) {
+                            setAllowedIndex(allowedIndex + 1);
+                          }
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div>Không có video cho bài giảng này.</div>
+                  )}
                 </div>
               </>
             )}
