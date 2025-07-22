@@ -5,6 +5,7 @@ import './style.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import api from 'services/api';
 import VideoS3Upload from 'components/common/VideoS3Upload';
+import ImageS3Upload from 'components/common/ImageS3Upload';
 
 const TABS = [
   { id: 'info', label: 'Thông tin & Curriculum' },
@@ -211,30 +212,12 @@ const CourseInfoTab = ({ course, setCourse, onSave, isNew }) => {
         </select>
       </div>
       <div className="form-group">
-        <label>Ảnh bìa</label>
-        <input
-          type="text"
-          placeholder="URL ảnh bìa hoặc tải lên sau"
-          name="cover"
-          value={course.cover}
-          onChange={handleChange}
+        <label>Ảnh bìa khoá học</label>
+        <ImageS3Upload
+          defaultUrl={course.cover}
+          onUploaded={url => setCourse({ ...course, cover: url })}
         />
       </div>
-      <div className="form-group">
-        <label>Video giới thiệu (YouTube URL hoặc Upload)</label>
-        <input
-          type="text"
-          name="introVideo"
-          placeholder="Hoặc dán link YouTube ở đây"
-          value={course.introVideo || ''}
-          onChange={handleChange}
-        />
-        <VideoS3Upload
-          defaultUrl={course.introVideo}
-          onUploaded={url => setCourse({ ...course, introVideo: url })}
-        />
-      </div>
-
       {/* Curriculum Builder */}
       <h3 style={{marginTop:'30px'}}>Chương trình học</h3>
       <CurriculumBuilder course={course} setCourse={setCourse} />
