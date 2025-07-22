@@ -37,6 +37,13 @@ const LoginForm = ({ onForgotPassword }) => {
       console.log('accessToken', accessToken);
       if (userObj && Number(userObj.roleId) === 2) {
         navigate('/admin');
+      } else if (
+        userObj && (
+          Number(userObj.roleId) === 3 ||
+          (userObj.roleName && userObj.roleName.toLowerCase() === 'teacher')
+        )
+      ) {
+        navigate('/teacher/dashboard');
       } else {
         navigate('/');
       }
