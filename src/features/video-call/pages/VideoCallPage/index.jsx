@@ -135,12 +135,12 @@ function TabPanel(props) {
   return (
     <div
       role="tabpanel"
-      hidden={value !== index}
+      style={{ display: value === index ? 'block' : 'none' }}
       id={`video-tabpanel-${index}`}
       aria-labelledby={`video-tab-${index}`}
       {...other}
     >
-      {value === index && <Box>{children}</Box>}
+      <Box>{children}</Box>
     </div>
   );
 }
@@ -148,6 +148,15 @@ function TabPanel(props) {
 const VideoCallPage = () => {
   const classes = useStyles();
   const [tabValue, setTabValue] = useState(0);
+
+  // Thêm log để debug state dialog
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  console.log("VideoCallPage render, openCreateDialog:", openCreateDialog);
+  const handleOpenCreateDialog = () => {
+    console.log("Gọi setOpenCreateDialog(true)");
+    setOpenCreateDialog(true);
+  };
+  const handleCloseCreateDialog = () => setOpenCreateDialog(false);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -213,9 +222,15 @@ const VideoCallPage = () => {
           </TabPanel>
 
           <TabPanel value={tabValue} index={2} className={classes.tabPanel}>
-            <PersonalCalendar onSwitchToVideoCall={() => setTabValue(0)} />
+            <PersonalCalendar 
+              onSwitchToVideoCall={() => setTabValue(0)}
+              openCreateDialog={openCreateDialog}
+              handleOpenCreateDialog={handleOpenCreateDialog}
+              handleCloseCreateDialog={handleCloseCreateDialog}
+            />
           </TabPanel>
         </div>
+        {/* Luôn render Dialog tạo mới lịch ở ngoài */}
       </div>
     </SessionsProvider>
   );
