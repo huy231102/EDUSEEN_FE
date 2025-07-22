@@ -4,6 +4,8 @@ import { categories } from 'features/courses/data/courseData';
 import './style.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import api from 'services/api';
+import VideoS3Upload from 'components/common/VideoS3Upload';
+import ImageS3Upload from 'components/common/ImageS3Upload';
 
 const TABS = [
   { id: 'info', label: 'Thông tin & Curriculum' },
@@ -210,27 +212,12 @@ const CourseInfoTab = ({ course, setCourse, onSave, isNew }) => {
         </select>
       </div>
       <div className="form-group">
-        <label>Ảnh bìa</label>
-        <input
-          type="text"
-          placeholder="URL ảnh bìa hoặc tải lên sau"
-          name="cover"
-          value={course.cover}
-          onChange={handleChange}
+        <label>Ảnh bìa khoá học</label>
+        <ImageS3Upload
+          defaultUrl={course.cover}
+          onUploaded={url => setCourse({ ...course, cover: url })}
         />
       </div>
-      <div className="form-group">
-        <label>Video giới thiệu (YouTube URL hoặc Upload)</label>
-        <input
-          type="text"
-          name="introVideo"
-          placeholder="Hoặc dán link YouTube ở đây"
-          value={course.introVideo || ''}
-          onChange={handleChange}
-        />
-        <input type="file" accept="video/*" onChange={(e)=>setCourse({...course, introVideoFile: e.target.files[0]})} style={{marginTop:'8px'}} />
-      </div>
-
       {/* Curriculum Builder */}
       <h3 style={{marginTop:'30px'}}>Chương trình học</h3>
       <CurriculumBuilder course={course} setCourse={setCourse} />
@@ -271,15 +258,14 @@ const CurriculumBuilder = ({ course, setCourse }) => {
     if (!lectureTitle.trim()) return;
     const newSections = [...course.sections];
     if (lectureType === 'video' && !lectureFile) {
-      alert('Vui lòng chọn file video');
+      alert('Vui lòng upload video');
       return;
     }
     const lectureObj = {
       title: lectureTitle.trim(),
       contentType: lectureType,
-      contentUrl: '',
+      contentUrl: lectureType === 'video' ? lectureFile : '',
       duration: 0,
-      file: lectureType === 'video' ? lectureFile : null,
       text: lectureType === 'text' ? lectureText : '',
     };
     newSections[sectionIdx].lectures.push(lectureObj);
@@ -361,7 +347,9 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                               <option value="text">Text</option>
                             </select>
                             {lectureType === 'video' ? (
-                              <input type="file" accept="video/*" onChange={(e)=>setLectureFile(e.target.files[0])} />
+                              <VideoS3Upload
+                                onUploaded={url => setLectureFile(url)}
+                              />
                             ) : (
                               <textarea placeholder="Nội dung bài giảng" value={lectureText} onChange={(e)=>setLectureText(e.target.value)} rows={3}></textarea>
                             )}
@@ -388,13 +376,10 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                                     <div className="lecture-content">
                                       <span>{lec.title}</span>
                                       {lec.contentType === 'video' ? (
-                                        lec.file ? (
-                                          <small className="file-name">{lec.file.name}</small>
+                                        lec.contentUrl ? (
+                                          <video src={lec.contentUrl} controls width="200" style={{marginTop:4}} />
                                         ) : (
-                                          <label className="upload-btn">
-                                            <input type="file" accept="video/*" style={{display:'none'}} onChange={(e)=>handleFileUpload(sIdx, lIdx, e.target.files[0])} />
-                                            <i className="fas fa-upload"></i> Upload video
-                                          </label>
+                                          <small className="file-name">Chưa upload video</small>
                                         )
                                       ) : (
                                         <small className="file-name">Text</small>
