@@ -63,7 +63,7 @@ const AssignmentGradingPage = () => {
     }
   }, [selectedIdx, submissions]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const updated = [...submissions];
     updated[selectedIdx] = {
       ...updated[selectedIdx],
@@ -71,6 +71,19 @@ const AssignmentGradingPage = () => {
       feedback: feedback.trim(),
     };
     setSubmissions(updated);
+
+    // Gọi API gửi feedback và điểm
+    if (updated[selectedIdx].submissionId) {
+      try {
+        await api.post(`/api/submission/${updated[selectedIdx].submissionId}/feedback`, {
+          grade: score === '' ? null : Number(score),
+          feedback: feedback.trim(),
+        });
+      } catch (err) {
+        alert('Lỗi khi gửi feedback: ' + (err?.response?.data?.message || err.message));
+        return;
+      }
+    }
 
     // find next ungraded
     const nextIdx = updated.findIndex((s, idx) => s.grade == null && idx > selectedIdx);
