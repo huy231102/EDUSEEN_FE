@@ -92,4 +92,75 @@
 
 .back-link i {
   margin-right: 6px;
+}
+
+.course-analytics-page .stats-title {
+  font-size: 2rem;
+  margin-bottom: 24px;
+  font-weight: 700;
+  text-align: center;
+}
+.course-analytics-page .highlight {
+  color: #1eb2a6;
+}
+.course-analytics-page .overview-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 36px;
+}
+.course-analytics-page .stat-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(30,178,166,0.08);
+  padding: 24px 32px;
+  min-width: 180px;
+  text-align: center;
+  flex: 1 1 180px;
+  max-width: 220px;
+}
+.course-analytics-page .stat-number {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+.course-analytics-page .stat-number.primary { color: #1eb2a6; }
+.course-analytics-page .stat-number.success { color: #27ae60; }
+.course-analytics-page .stat-number.info { color: #2980b9; }
+.course-analytics-page .stat-number.warning { color: #f39c12; }
+.course-analytics-page .stat-number.danger { color: #e74c3c; }
+.course-analytics-page .charts-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  justify-content: center;
+  margin-top: 32px;
+}
+.course-analytics-page .chart-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(30,178,166,0.08);
+  padding: 24px 16px 8px 16px;
+  min-width: 340px;
+  text-align: center;
+}
+.course-analytics-page .assignment-title {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 18px;
+  margin-top: 32px;
+}
+@media (max-width: 900px) {
+  .course-analytics-page .overview-grid, .course-analytics-page .charts-grid {
+    flex-direction: column;
+    align-items: center;
+  }
+  .course-analytics-page .stat-card, .course-analytics-page .chart-card {
+    min-width: unset;
+    max-width: 100%;
+    width: 100%;
+  }
 } 
