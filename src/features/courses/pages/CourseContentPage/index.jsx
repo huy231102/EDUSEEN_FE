@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import courseApi from 'services/courseApi';
+import assignmentApi from 'services/assignmentApi';
 import './style.css';
 import YouTube from 'react-youtube';
 import { useMyCourses } from 'features/courses/contexts/MyCoursesContext';
@@ -26,6 +27,8 @@ const CourseContentPage = () => {
   const [comments, setComments] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [activeTab, setActiveTab] = useState('video'); // 'video' | 'assignment'
+  const [assignment, setAssignment] = useState(null);
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
 
   useEffect(() => {
     if (!course) {
@@ -58,7 +61,8 @@ const CourseContentPage = () => {
                 contentUrl: lecture.contentUrl,
                 duration: lecture.duration,
                 order: lecture.order,
-                isCompleted: lecture.isCompleted || false
+                isCompleted: lecture.isCompleted || false,
+                assignmentId: lecture.assignmentId || null
               })) || []
             })) || [],
             reviews: data.reviews?.map(review => ({
@@ -92,16 +96,41 @@ const CourseContentPage = () => {
     setVideoCompleted(false);
     setAssignmentFile(null);
     setCommentInput('');
-    setComments(currentLecture?.assignment?.comments || []);
+    setComments([]);
     setSubmitted(false);
     setActiveTab('video');
+    setAssignment(null);
+    
+    // Fetch thông tin bài tập nếu có assignmentId
+    if (currentLecture?.assignmentId) {
+      setAssignmentLoading(true);
+      assignmentApi.getDetail(currentLecture.assignmentId)
+        .then(data => {
+          setAssignment({
+            id: data.assignmentId,
+            title: data.title,
+            description: data.description,
+            dueDate: data.dueDate,
+            maxScore: 10, // Giá trị mặc định, có thể cập nhật sau
+            score: data.grade,
+            attachments: [], // Có thể cập nhật sau nếu có attachment
+            comments: []
+          });
+        })
+        .catch(err => {
+          console.error('Lỗi khi tải thông tin bài tập:', err);
+          setAssignment(null);
+        })
+        .finally(() => {
+          setAssignmentLoading(false);
+        });
+    }
   }, [currentLecture]);
 
   if (loading) return <div>Đang tải...</div>;
   if (!course) return <div>Không tìm thấy khoá học.</div>;
 
   const handleLectureSelect = (lecture, sectionIndex, globalIndex) => {
-    if (globalIndex > allowedIndex) return; // chưa được phép
     setCurrentLecture(lecture);
     markLectureCompleted(course.id, lecture.title);
     // Đảm bảo section của bài giảng được chọn luôn mở
@@ -146,7 +175,7 @@ const CourseContentPage = () => {
                   {section.lectures.map((lecture, lectureIndex) => (
                     <li 
                       key={lectureIndex}
-                      className={`lecture-item ${currentLecture?.title === lecture.title ? 'active' : ''} ${flattenedLectures.findIndex(l=>l.title===lecture.title) > allowedIndex ? 'disabled': ''}`}
+                      className={`lecture-item ${currentLecture?.title === lecture.title ? 'active' : ''}`}
                       onClick={() => handleLectureSelect(lecture, sectionIndex, flattenedLectures.findIndex(l => l.title===lecture.title))}
                     >
                       <i className="fa fa-play-circle"></i> {lecture.title}
@@ -164,14 +193,14 @@ const CourseContentPage = () => {
         {currentLecture ? (
           <>
             {/* TAB HEADER */}
-            <div className="tabs-header">
+            <div className="tab-row">
               <button
                 className={`tab-item ${activeTab === 'video' ? 'active' : ''}`}
                 onClick={() => handleTabClick('video')}
               >
                 Bài học
               </button>
-              {currentLecture.assignment && (
+              {currentLecture.assignmentId && (
                 <button
                   className={`tab-item ${activeTab === 'assignment' ? 'active' : ''} ${!videoCompleted ? 'disabled' : ''}`}
                   onClick={() => handleTabClick('assignment')}
@@ -181,6 +210,7 @@ const CourseContentPage = () => {
                 </button>
               )}
             </div>
+            <hr className="tab-divider" />
 
             {activeTab === 'video' && (
           <>
@@ -213,203 +243,165 @@ const CourseContentPage = () => {
               </>
             )}
 
-            {activeTab === 'assignment' && currentLecture.assignment && videoCompleted && (
+                        {activeTab === 'assignment' && currentLecture.assignmentId && videoCompleted && (
               <div className="assignment-section">
-                {/* LEFT - Nội dung đề bài */}
-                <div className="assignment-content">
-                  <div className="assignment-header">
-                    <div className="assignment-icon">
-                      <i className="fa fa-clipboard-list"></i>
-                    </div>
-                    <div className="assignment-info">
-                      <h1 className="assignment-title">{currentLecture.assignment.title}</h1>
-                      <div className="assignment-meta">
-                        <span className="points">
-                          <i className="fa fa-star"></i> {currentLecture.assignment.maxScore} điểm
-                        </span>
-                        <span className="due-date">
-                          <i className="fa fa-calendar"></i> Đến hạn {currentLecture.assignment.dueDate}
-                        </span>
-                      </div>
-                    </div>
+                {assignmentLoading ? (
+                  <div className="assignment-loading">
+                    <p>Đang tải thông tin bài tập...</p>
                   </div>
-                  
-                  <div className="assignment-description">
-                    <h3><i className="fa fa-info-circle"></i> Yêu cầu bài tập</h3>
-                    <p>{currentLecture.assignment.description}</p>
-                  </div>
-
-                  {/* Attachment mẫu (nếu có) */}
-                  {currentLecture.assignment.attachments?.length > 0 && (
-                    <div className="attachment-section">
-                      <h3><i className="fa fa-paperclip"></i> Tài liệu tham khảo</h3>
-                      <div className="attachment-list">
-                      {currentLecture.assignment.attachments.map((att, idx) => (
-                        <a key={idx} href={att.url} target="_blank" rel="noreferrer" className="attachment-item">
-                          <div className="attachment-icon">
-                            <i className="fa fa-file-excel"></i>
-                          </div>
-                          <div className="attachment-info">
-                            <span className="attachment-name">{att.name}</span>
-                            <span className="attachment-type">Microsoft Excel</span>
-                          </div>
-                          <i className="fa fa-download"></i>
-                        </a>
-                      ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Bình luận lớp học */}
-                  <div className="comment-section">
-                    <h3><i className="fa fa-comments"></i> Thảo luận lớp học</h3>
-                    <div className="comment-container">
-                      {comments.length > 0 ? (
-                        <div className="comment-list">
-                          {comments.map((c, idx) => (
-                            <div key={idx} className="comment-item">
-                              <div className="comment-avatar">
-                                <i className="fa fa-user-circle"></i>
-                              </div>
-                              <div className="comment-content">
-                                <span className="comment-author">Học viên</span>
-                                <p className="comment-text">{c}</p>
-                              </div>
-                            </div>
-                          ))}
+                ) : assignment ? (
+                  <>
+                    {/* LEFT - Nội dung đề bài */}
+                    <div className="assignment-content">
+                      <div className="assignment-header">
+                        <div className="assignment-icon">
+                          <i className="fa fa-clipboard-list"></i>
                         </div>
-                      ) : (
-                        <div className="no-comments">
-                          <i className="fa fa-comment-slash"></i>
-                          <p>Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+                        <div className="assignment-info">
+                          <h1 className="assignment-title">{assignment?.title || 'Đang tải...'}</h1>
+                          <div className="assignment-meta">
+                            <span className="points">
+                              <i className="fa fa-star"></i> {assignment?.maxScore || 10} điểm
+                            </span>
+                            <span className="due-date">
+                              <i className="fa fa-calendar"></i> Đến hạn {assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString('vi-VN') : 'Chưa có'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="assignment-description">
+                        <h3><i className="fa fa-info-circle"></i> Yêu cầu bài tập</h3>
+                        <p>{assignment?.description || 'Đang tải mô tả bài tập...'}</p>
+                      </div>
+
+                      {/* Attachment mẫu (nếu có) */}
+                      {assignment?.attachments?.length > 0 && (
+                        <div className="attachment-section">
+                          <h3><i className="fa fa-paperclip"></i> Tài liệu tham khảo</h3>
+                          <div className="attachment-list">
+                          {assignment.attachments.map((att, idx) => (
+                            <a key={idx} href={att.url} target="_blank" rel="noreferrer" className="attachment-item">
+                              <div className="attachment-icon">
+                                <i className="fa fa-file-excel"></i>
+                              </div>
+                              <div className="attachment-info">
+                                <span className="attachment-name">{att.name}</span>
+                                <span className="attachment-type">Microsoft Excel</span>
+                              </div>
+                              <i className="fa fa-download"></i>
+                            </a>
+                          ))}
+                          </div>
                         </div>
                       )}
-                      
-                      <div className="comment-input-section">
-                        <div className="comment-input-wrapper">
-                          <textarea
-                            value={commentInput}
-                            onChange={(e) => setCommentInput(e.target.value)}
-                            placeholder="Chia sẻ suy nghĩ của bạn về bài tập này..."
-                            rows="3"
-                          />
-                          <button
-                            className="comment-send-btn"
-                            onClick={() => {
-                              if (!commentInput.trim()) return;
-                              setComments([...comments, commentInput.trim()]);
-                              setCommentInput('');
-                            }}
-                            disabled={!commentInput.trim()}
-                          >
-                            <i className="fa fa-paper-plane"></i> Gửi
-                          </button>
+
+                    </div>
+
+                    {/* RIGHT - Bài tập của bạn */}
+                    <div className="assignment-sidebar">
+                      <div className="sidebar-header">
+                        <h3><i className="fa fa-user-edit"></i> Bài tập của bạn</h3>
+                        <div className={`submission-status ${submitted ? 'submitted' : 'pending'}`}>
+                          <i className={`fa ${submitted ? 'fa-check-circle' : 'fa-clock'}`}></i>
+                          {submitted ? 'Đã nộp' : 'Chưa nộp'}
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* RIGHT - Bài tập của bạn */}
-                <div className="assignment-sidebar">
-                  <div className="sidebar-header">
-                    <h3><i className="fa fa-user-edit"></i> Bài tập của bạn</h3>
-                    <div className={`submission-status ${submitted ? 'submitted' : 'pending'}`}>
-                      <i className={`fa ${submitted ? 'fa-check-circle' : 'fa-clock'}`}></i>
-                      {submitted ? 'Đã nộp' : 'Chưa nộp'}
-                    </div>
-                  </div>
+                      <div className="submission-area">
+                        {/* Hiển thị file đã chọn */}
+                        {assignmentFile && (
+                          <div className="submission-file-item">
+                            <div className="file-icon">
+                              <i className="fa fa-file-alt"></i>
+                            </div>
+                            <div className="file-info">
+                              <span className="file-name">{assignmentFile.name}</span>
+                              <span className="file-size">{(assignmentFile.size / 1024).toFixed(1)} KB</span>
+                            </div>
+                            {!submitted && (
+                              <button 
+                                className="remove-file-btn"
+                                onClick={() => setAssignmentFile(null)}
+                              >
+                                <i className="fa fa-times"></i>
+                              </button>
+                            )}
+                          </div>
+                        )}
 
-                  <div className="submission-area">
-                    {/* Hiển thị file đã chọn */}
-                    {assignmentFile && (
-                      <div className="submission-file-item">
-                        <div className="file-icon">
-                          <i className="fa fa-file-alt"></i>
+                        {!assignmentFile && !submitted && (
+                          <label className="file-input-label">
+                            <div className="upload-icon">
+                              <i className="fa fa-cloud-upload-alt"></i>
+                            </div>
+                            <span>Thêm hoặc tạo file</span>
+                            <small>Hỗ trợ: PDF, DOC, DOCX, XLS, XLSX</small>
+                            <input type="file" onChange={(e) => setAssignmentFile(e.target.files[0])} />
+                          </label>
+                        )}
+
+                        {/* Nút nộp / hủy nộp */}
+                        <div className="action-buttons">
+                          {!submitted ? (
+                            <button
+                              className="submit-btn"
+                              disabled={!assignmentFile}
+                              onClick={() => {
+                                if (!assignmentFile) return;
+                                setSubmitted(true);
+                                const currentIdx = flattenedLectures.findIndex(l=>l.title===currentLecture.title);
+                                if (currentIdx === allowedIndex) {
+                                  setAllowedIndex(allowedIndex + 1);
+                                }
+                              }}
+                            >
+                              <i className="fa fa-paper-plane"></i> Nộp bài
+                            </button>
+                          ) : (
+                            <button
+                              className="unsubmit-btn"
+                              onClick={() => {
+                                setSubmitted(false);
+                                setAssignmentFile(null);
+                              }}
+                            >
+                              <i className="fa fa-undo"></i> Hủy nộp bài
+                            </button>
+                          )}
                         </div>
-                        <div className="file-info">
-                          <span className="file-name">{assignmentFile.name}</span>
-                          <span className="file-size">{(assignmentFile.size / 1024).toFixed(1)} KB</span>
-                        </div>
-                        {!submitted && (
-                          <button 
-                            className="remove-file-btn"
-                            onClick={() => setAssignmentFile(null)}
-                          >
-                            <i className="fa fa-times"></i>
-                          </button>
+                      </div>
+
+                      {/* Điểm số */}
+                      <div className="score-section">
+                        <h4><i className="fa fa-chart-line"></i> Kết quả</h4>
+                        {assignment?.score !== null && assignment?.score !== undefined ? (
+                          <>
+                            <div className="score-display">
+                              <span className="score-value">{assignment.score}/{assignment.maxScore}</span>
+                              <span className="score-label">điểm</span>
+                            </div>
+                            {assignment?.teacherComment && (
+                              <div className="teacher-comment">
+                                <i className="fa fa-comments"></i> Nhận xét của giáo viên: <span>{assignment.teacherComment}</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="score-pending">
+                            <i className="fa fa-hourglass-half"></i>
+                            <span>Đang chờ chấm điểm</span>
+                          </div>
                         )}
                       </div>
-                    )}
-
-                    {!assignmentFile && !submitted && (
-                      <label className="file-input-label">
-                        <div className="upload-icon">
-                          <i className="fa fa-cloud-upload-alt"></i>
-                        </div>
-                        <span>Thêm hoặc tạo file</span>
-                        <small>Hỗ trợ: PDF, DOC, DOCX, XLS, XLSX</small>
-                        <input type="file" onChange={(e) => setAssignmentFile(e.target.files[0])} />
-                      </label>
-                    )}
-
-                    {/* Nút nộp / hủy nộp */}
-                    <div className="action-buttons">
-                      {!submitted ? (
-                        <button
-                          className="submit-btn"
-                          disabled={!assignmentFile}
-                          onClick={() => {
-                            if (!assignmentFile) return;
-                            setSubmitted(true);
-                            const currentIdx = flattenedLectures.findIndex(l=>l.title===currentLecture.title);
-                            if (currentIdx === allowedIndex) {
-                              setAllowedIndex(allowedIndex + 1);
-                            }
-                          }}
-                        >
-                          <i className="fa fa-paper-plane"></i> Nộp bài
-                        </button>
-                      ) : (
-                        <button
-                          className="unsubmit-btn"
-                          onClick={() => {
-                            setSubmitted(false);
-                            setAssignmentFile(null);
-                          }}
-                        >
-                          <i className="fa fa-undo"></i> Hủy nộp bài
-                        </button>
-                      )}
                     </div>
+                  </>
+                ) : (
+                  <div className="assignment-error">
+                    <p>Không thể tải thông tin bài tập</p>
                   </div>
-
-                  {/* Điểm số */}
-                  <div className="score-section">
-                    <h4><i className="fa fa-chart-line"></i> Kết quả</h4>
-                    {currentLecture.assignment.score !== null ? (
-                      <div className="score-display">
-                        <span className="score-value">{currentLecture.assignment.score}/{currentLecture.assignment.maxScore}</span>
-                        <span className="score-label">điểm</span>
-                      </div>
-                    ) : (
-                      <div className="score-pending">
-                        <i className="fa fa-hourglass-half"></i>
-                        <span>Đang chờ chấm điểm</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Nhận xét riêng tư (đơn giản) */}
-                  <div className="private-comment">
-                    <h4><i className="fa fa-lock"></i> Nhận xét riêng tư</h4>
-                    <textarea placeholder="Gửi nhận xét riêng tư cho giáo viên..." rows="3" />
-                    <button className="private-comment-btn">
-                      <i className="fa fa-paper-plane"></i> Gửi
-                    </button>
-                  </div>
-                </div>
-            </div>
+                )}
+              </div>
             )}
           </>
         ) : (

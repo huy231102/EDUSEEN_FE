@@ -42,7 +42,8 @@ const LoginForm = ({ onForgotPassword }) => {
       }
     } catch (err) {
       console.error(err);
-      showToast('Đăng nhập thất bại', 'error');
+      const apiMsg = err?.response?.data?.error || err?.response?.data?.message || err?.message;
+      showToast(apiMsg || 'Đăng nhập thất bại', 'error');
     }
   };
 

@@ -40,6 +40,7 @@ const CourseEditPage = () => {
           contentUrl: l.contentUrl || '',
           duration: l.duration || 0,
           order: l.order ?? lidx + 1,
+          assignmentId: l.assignmentId || null
         })),
       })),
     };
@@ -85,6 +86,7 @@ const CourseEditPage = () => {
                 contentUrl: l.contentUrl,
                 duration: l.duration,
                 order: l.order,
+                assignmentId: l.assignmentId || null
               }))
             })),
           };

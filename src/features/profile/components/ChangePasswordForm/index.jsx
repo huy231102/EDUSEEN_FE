@@ -30,8 +30,8 @@ const ChangePasswordForm = ({ onClose }) => {
       showToast('Đổi mật khẩu thành công!', 'success');
       onClose();
     } catch (err) {
-      const message = err.response?.data?.message || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.';
-      showToast(message, 'error');
+      const apiMsg = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+      showToast(apiMsg || 'Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu hiện tại.', 'error');
       console.error(err);
     }
   };

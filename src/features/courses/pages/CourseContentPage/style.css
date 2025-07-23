@@ -1,10 +1,16 @@
+body, html, #root {
+  overflow-x: hidden !important;
+}
+
 /* General Layout */
 .course-content-page {
   display: flex;
   height: 100vh;
   width: 100%;
-  background: linear-gradient(135deg, #1eb2a6 0%, #16a085 100%);
+  background: #fff;
   color: #333;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 /* Sidebar (Left Column) */
@@ -17,6 +23,9 @@
   overflow-y: auto;
   box-shadow: 4px 0 20px rgba(0,0,0,0.1);
   backdrop-filter: blur(10px);
+  min-width: 0;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .content-sidebar .back-link {
@@ -128,17 +137,11 @@
     color: #fff;
 }
 
-.lecture-item.disabled {
-   opacity: 0.3;
-   cursor: not-allowed;
-   pointer-events: auto; /* vẫn nhận hover để hiển thị mờ nhưng không cho click */
- }
-
 
 /* Main Content (Right Column) */
 .content-main {
   flex-grow: 1;
-  padding: 20px 40px 40px 40px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   background: rgba(255, 255, 255, 0.95);
@@ -146,6 +149,9 @@
   margin: 20px;
   border-radius: 20px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  min-width: 0;
+  max-width: 100vw;
+  overflow-x: hidden;
   /* overflow-y: auto; */ /* Removed to prevent scrolling */
 }
 
@@ -202,6 +208,8 @@
 }
 
 .tab-item {
+  display: inline-block;
+  margin-right: 10px;
   padding: 10px 20px;
   background: rgba(255, 255, 255, 0.8);
   border: none;
@@ -212,6 +220,11 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  margin: 0px;
+}
+
+.tab-item:last-child {
+  margin-right: 0;
 }
 
 .tab-item.active {
@@ -224,6 +237,23 @@
 .tab-item.disabled {
   opacity: 0.5;
   pointer-events: none;
+}
+
+.tab-divider {
+  border: none;
+  border-top: 1.5px solid #e0e0e0;
+  margin: 15px 0px;
+  width: 100%;
+}
+
+.tab-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 0;
 }
 
 /* Assignment Section Improvements */
@@ -757,129 +787,28 @@
   box-shadow: 0 4px 15px rgba(108, 117, 125, 0.2);
 }
 
-/* Private Comment */
-.private-comment {
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 12px;
-  border: 1px solid rgba(30, 178, 166, 0.1);
-}
+/* XÓA TOÀN BỘ PHẦN CSS COMMENT LỚP HỌC */
+/*
+.private-comment { ... }
+.private-comment h4 { ... }
+.private-comment textarea { ... }
+.private-comment textarea:focus { ... }
+.private-comment-btn { ... }
+.private-comment-btn:hover { ... }
+*/
 
-.private-comment h4 {
-  margin: 0 0 12px 0;
+.teacher-comment {
+  margin-top: 10px;
   color: #1eb2a6;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.private-comment textarea {
-  width: 100%;
-  min-height: 60px;
-  margin-bottom: 12px;
-  padding: 12px;
-  border: 1px solid rgba(30, 178, 166, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-  resize: vertical;
-  font-family: inherit;
-}
-
-.private-comment textarea:focus {
-  outline: none;
-  border-color: #1eb2a6;
-  box-shadow: 0 0 0 3px rgba(30, 178, 166, 0.1);
-  transform: translateY(-1px);
-}
-
-.private-comment-btn {
-  width: 100%;
-  padding: 8px 0;
-  background: linear-gradient(135deg, #1eb2a6, #16a085);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(30, 178, 166, 0.3);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 14px;
-}
-
-.private-comment-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(30, 178, 166, 0.4);
-}
-
-.comment-section textarea {
-  width: 100%;
-  min-height: 80px;
-  margin: 0;
-  padding: 12px;
-  border: 1px solid rgba(30, 178, 166, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-  resize: vertical;
-  font-family: inherit;
-}
-
-.comment-section textarea:focus {
-  outline: none;
-  border-color: #1eb2a6;
-  box-shadow: 0 0 0 3px rgba(30, 178, 166, 0.1);
-  transform: translateY(-1px);
-}
-
-.comment-section button {
-  margin-top: 8px;
-  padding: 8px 16px;
-  background: linear-gradient(135deg, #1eb2a6, #16a085);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(30, 178, 166, 0.3);
-}
-
-.comment-section button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(30, 178, 166, 0.4);
-}
-
-.comment-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.comment-list li {
-  background: linear-gradient(135deg, rgba(30, 178, 166, 0.1), rgba(22, 160, 133, 0.1));
-  padding: 8px 10px;
-  border-radius: 12px;
-  margin-bottom: 6px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(30, 178, 166, 0.1);
-  transition: all 0.3s ease;
-}
-
-.comment-list li:hover {
-  transform: translateX(3px);
-  box-shadow: 0 4px 15px rgba(30, 178, 166, 0.1);
-}
-
-.file-submit input[type="file"] {
-  margin-left: 10px;
+.teacher-comment i {
+  font-size: 16px;
+  margin-right: 4px;
 }
 
 /* Score Section */
@@ -890,6 +819,9 @@
   border-radius: 12px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(30, 178, 166, 0.2);
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .score-section h4 {
@@ -928,4 +860,38 @@
   gap: 8px;
   color: #6c757d;
   font-style: italic;
+}
+
+/* Assignment Loading and Error States */
+.assignment-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.assignment-loading p {
+  color: #1eb2a6;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.assignment-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  background: rgba(231, 76, 60, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(231, 76, 60, 0.2);
+}
+
+.assignment-error p {
+  color: #e74c3c;
+  font-weight: 500;
+  font-size: 16px;
 } 
