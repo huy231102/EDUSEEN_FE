@@ -42,6 +42,17 @@ const TeacherDashboardPage = () => {
 
   const filteredCourses = displayCourses.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
+  // Hàm xoá khoá học
+  const handleDeleteCourse = async (courseId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xoá khoá học này?')) return;
+    try {
+      await api.delete(`/api/teacher/course/${courseId}`);
+      setDisplayCourses(prev => prev.filter(c => c.id !== courseId));
+    } catch (err) {
+      alert('Xoá khoá học thất bại!');
+    }
+  };
+
   return (
     <section className="teacher-dashboard">
       <div className="container">
@@ -85,6 +96,14 @@ const TeacherDashboardPage = () => {
                 <Link to={`/teacher/course/${course.id}/analytics`} className="btn">Thống kê</Link>
                 <Link to={`/teacher/course/${course.id}/assignments`} className="btn">Quản lý bài tập</Link>
                 <Link to={`/courses/${course.id}`} className="btn outline">Xem trang khóa học</Link>
+                <button
+                  className="btn small"
+                  style={{ color: '#e74c3c', background: 'none', border: 'none', marginLeft: 8 }}
+                  title="Xoá khoá học"
+                  onClick={() => handleDeleteCourse(course.id)}
+                >
+                  <i className="fas fa-trash"></i>
+                </button>
               </div>
             </div>
           ))}
