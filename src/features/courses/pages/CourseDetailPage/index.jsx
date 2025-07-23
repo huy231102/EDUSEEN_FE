@@ -51,7 +51,8 @@ const CourseDetailPage = () => {
               contentUrl: lecture.contentUrl,
               duration: lecture.duration,
               order: lecture.order,
-              isCompleted: lecture.isCompleted || false
+              isCompleted: lecture.isCompleted || false,
+              assignmentId: lecture.assignmentId || null
             })) || []
           })) || [],
           reviews: data.reviews?.map(review => ({
@@ -95,33 +96,64 @@ const CourseDetailPage = () => {
   // Kiểm tra xem user đã đăng ký khóa học chưa
   // Xóa hàm isEnrolled cũ
 
-  // localStorage reviews
-  const storedReviews = JSON.parse(localStorage.getItem('userReviews') || '{}');
-  const [userReviews, setUserReviews] = useState(storedReviews[courseId] || []);
+  // XÓA: localStorage reviews
+  // const storedReviews = JSON.parse(localStorage.getItem('userReviews') || '{}');
+  // const [userReviews, setUserReviews] = useState(storedReviews[courseId] || []);
 
-  const handleReviewSubmit = ({ rating, comment }) => {
+  // Sửa lại handleReviewSubmit
+  const handleReviewSubmit = async ({ rating, comment }) => {
     if (!user) return alert('Cần đăng nhập để đánh giá');
-    const newReview = {
-      id: Date.now(),
-      userId: user.user_id,
-      userName: `${user.first_name} ${user.last_name}`,
-      courseName: course.name,
-      courseDescription: comment,
-      userAvatarUrl: user.avatar_url || '/images/testo/t1.webp',
-      rating,
-    };
-
-    let updated = [...userReviews];
-    const idx = updated.findIndex((r) => r.userId === user.user_id);
-    if (idx >= 0) {
-      updated[idx] = newReview; // cập nhật
-    } else {
-      updated.push(newReview);
+    try {
+      await courseApi.rateCourse(course.id, { rating, reviewText: comment });
+      // Sau khi gửi đánh giá, fetch lại chi tiết khoá học để cập nhật reviews
+      setLoading(true);
+      const data = await courseApi.getCourseDetail(courseId);
+      // Map lại như ở trên
+      const mappedCourse = {
+        id: data.courseId,
+        name: data.title,
+        cover: data.cover,
+        description: data.description,
+        trainerName: data.teacherName,
+        trainerJob: 'Giảng viên',
+        teacherAvatarUrl: data.teacherAvatarUrl,
+        totalTime: Math.round(data.sections?.reduce((totalHours, section) => {
+          const sectionMinutes = section.lectures?.reduce((total, lecture) => 
+            total + (lecture.duration || 0), 0) || 0;
+          return totalHours + (sectionMinutes / 60);
+        }, 0) * 100) / 100 || 0,
+        rating: data.rating || 0,
+        isEnrolled: data.isEnrolled || false,
+        sections: data.sections?.map(section => ({
+          id: section.sectionId,
+          title: section.title,
+          order: section.order,
+          lectures: section.lectures?.map(lecture => ({
+            id: lecture.lectureId,
+            title: lecture.title,
+            contentType: lecture.contentType,
+            contentUrl: lecture.contentUrl,
+            duration: lecture.duration,
+            order: lecture.order,
+            isCompleted: lecture.isCompleted || false,
+            assignmentId: lecture.assignmentId || null
+          })) || []
+        })) || [],
+        reviews: data.reviews?.map(review => ({
+          id: Date.now() + Math.random(),
+          userName: review.userName,
+          courseName: review.courseName,
+          courseDescription: review.comment,
+          userAvatarUrl: review.userAvatarUrl || '/images/testo/t1.webp',
+          rating: review.rating,
+          createdAt: review.createdAt
+        })) || []
+      };
+      setCourse(mappedCourse);
+      setLoading(false);
+    } catch (err) {
+      alert('Gửi đánh giá thất bại!');
     }
-
-    setUserReviews(updated);
-    const all = { ...storedReviews, [courseId]: updated };
-    localStorage.setItem('userReviews', JSON.stringify(all));
   };
 
   // Hàm xử lý khi bấm nút bắt đầu/tiếp tục học
@@ -161,7 +193,8 @@ const CourseDetailPage = () => {
               contentUrl: lecture.contentUrl,
               duration: lecture.duration,
               order: lecture.order,
-              isCompleted: lecture.isCompleted || false
+              isCompleted: lecture.isCompleted || false,
+              assignmentId: lecture.assignmentId || null
             })) || []
           })) || [],
           reviews: data.reviews?.map(review => ({
@@ -265,9 +298,9 @@ const CourseDetailPage = () => {
       </section>
 
       {/* Hiển thị đánh giá */}
-      {(course.reviews?.length > 0 || userReviews.length > 0) && (
+      {course.reviews?.length > 0 && (
         <Testimonal
-          items={[...(course.reviews || []), ...userReviews]}
+          items={course.reviews}
           subtitle="ĐÁNH GIÁ"
           title="Học Viên Của Chúng Tôi Nói Gì"
         />

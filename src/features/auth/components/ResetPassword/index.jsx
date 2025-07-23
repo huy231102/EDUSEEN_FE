@@ -12,6 +12,8 @@ const ResetPasswordForm = () => {
   const [token, setToken] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const tokenFromUrl = searchParams.get('token');
@@ -35,31 +37,40 @@ const ResetPasswordForm = () => {
       showToast('Mật khẩu đã được đặt lại thành công!', 'success');
       navigate('/auth');
     } catch (error) {
-      showToast('Đặt lại mật khẩu thất bại. Vui lòng thử lại.', 'error');
+      const apiMsg = error?.response?.data?.message || error?.message;
+      showToast(apiMsg || 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.', 'error');
     }
   };
 
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
-      <div className="form-group">
+      <div className="form-group password-group">
         <input
-          type="password"
+          type={showPassword ? 'text' : 'password'}
           placeholder="Mật khẩu mới"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           autoComplete="new-password"
         />
+        <i
+          className={`fa ${showPassword ? 'fa-eye-slash' : 'fa-eye'} toggle-password`}
+          onClick={() => setShowPassword(!showPassword)}
+        ></i>
       </div>
-      <div className="form-group">
+      <div className="form-group password-group">
         <input
-          type="password"
+          type={showConfirmPassword ? 'text' : 'password'}
           placeholder="Xác nhận mật khẩu mới"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
           autoComplete="new-password"
         />
+        <i
+          className={`fa ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'} toggle-password`}
+          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+        ></i>
       </div>
       <button type="submit" className="primary-btn">
         Đặt lại mật khẩu

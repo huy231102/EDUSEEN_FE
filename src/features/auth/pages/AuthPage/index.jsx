@@ -30,11 +30,11 @@ const AuthPage = () => {
         {activeView !== 'forgotPassword' ? (
           <>
             <Heading
-              subtitle="Welcome"
+              subtitle="Chào mừng"
               title={
                 activeView === 'login'
-                  ? 'Login to your account'
-                  : 'Create a new account'
+                  ? 'Đăng nhập vào tài khoản của bạn'
+                  : 'Tạo tài khoản mới'
               }
             />
             <div className="auth-tabs">

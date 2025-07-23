@@ -11,7 +11,11 @@ const MyCoursesList = ({ courses, progressMap }) => {
           <Heading subtitle="KHÓA HỌC CỦA TÔI" title="Tiếp tục hành trình học tập" />
           <div className='grid2'>
             {courses.map(course => (
-              <MyCourseCardItem key={course.id} course={course} progress={progressMap[course.id] || 0} />
+              <MyCourseCardItem
+                key={course.courseId}
+                course={course}
+                progress={progressMap[course.courseId] || 0}
+              />
             ))}
           </div>
         </div>

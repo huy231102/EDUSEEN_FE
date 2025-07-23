@@ -11,6 +11,10 @@ export const courseApi = {
   getCourseDetail: (courseId) => api.get(`/api/course/detail/${courseId}`),
   // Đăng ký khoá học
   enrollCourse: (courseId) => api.post(`/api/course/enroll/${courseId}`),
+  // Lấy danh sách khóa học đã đăng ký
+  getMyCourses: () => api.get('/api/course/my-courses'),
+  // Đánh giá khoá học
+  rateCourse: (courseId, data) => api.post(`/api/course/rate/${courseId}`, data),
 };
 
 export default courseApi; 
