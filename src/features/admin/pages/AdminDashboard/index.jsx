@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, AppBar, Toolbar, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, TextField, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Select, FormControl, InputLabel, Switch, FormControlLabel, TablePagination, Avatar, Grid, InputAdornment, Chip, Collapse } from "@material-ui/core";
+import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, AppBar, Toolbar, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, TextField, Tooltip as MuiTooltip, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Select, FormControl, InputLabel, Switch, FormControlLabel, TablePagination, Avatar, Grid, InputAdornment, Chip, Collapse } from "@material-ui/core";
 import { People, Dashboard, Assignment, School, ExitToApp, Add, Edit, Delete, GetApp, PictureAsPdf, Search, Info, Star, BarChart as BarChartIcon, PersonAdd, RateReview, Lock, LockOpen, Refresh, Settings, ExpandLess, ExpandMore, Tune, PlayArrow, AccessTime, TrendingUp, CheckCircle, Group, Person, Block } from "@material-ui/icons";
 import './style.css';
 import { format } from 'date-fns';
-import { Bar, Pie } from 'react-chartjs-2';
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,6 +29,8 @@ import BookIcon from '@material-ui/icons/Book';
 import LanguageIcon from '@material-ui/icons/Language';
 
 import api from "services/api";
+import { useNavigate } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend as RechartsLegend, ResponsiveContainer } from 'recharts';
 
 
 ChartJS.register(
@@ -106,6 +108,7 @@ const statusColor = {
 };
 
 function AdminDashboard(props) {
+  const navigate = useNavigate();
   // State cho Quản lý khóa học - phải khai báo trước khi sử dụng
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -177,8 +180,11 @@ function AdminDashboard(props) {
     3: "Giáo viên"        // Teacher
   };
 
-  useEffect(() => {
+  // Thêm lại biến now cho chart data
+  const now = new Date();
+  const chartYear = now.getFullYear(); // Lấy năm hiện tại, hoặc cho phép chọn năm nếu muốn
 
+  useEffect(() => {
     const loadData = async () => {
       try {
         console.log('Bắt đầu loadData...');
@@ -188,14 +194,14 @@ function AdminDashboard(props) {
         console.log('fetchUsers hoàn thành');
         
         // Load user statistics
-        await fetchUserStatistics();
+        await fetchUserStatistics(chartYear);
         console.log('fetchUserStatistics hoàn thành');
         
         // Load courses và course statistics
         await fetchCourses();
         console.log('fetchCourses hoàn thành');
         
-        await fetchCourseStatistics();
+        await fetchCourseStatistics(chartYear);
         console.log('fetchCourseStatistics hoàn thành');
         
       } catch (error) {
@@ -204,7 +210,7 @@ function AdminDashboard(props) {
     };
     
     loadData();
-  }, []);
+  }, [chartYear]);
 
   // Chỉ load lại course statistics khi courses thay đổi và chưa load
   useEffect(() => {
@@ -369,16 +375,18 @@ function AdminDashboard(props) {
   const averageRating = courseStatistics.averageRating || 0;
   const totalReviews = courseStatistics.totalReviews || 0;
 
-  // Thêm lại biến now cho chart data
-  const now = new Date();
-
   // Dữ liệu biểu đồ mock: số user và số khóa học theo tháng (12 tháng)
   const months = [
     'Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'
   ];
-  // Tạo dữ liệu fake cho chart
-  const usersByMonth = Array.from({ length: 12 }, () => Math.floor(Math.random() * 50));
-  const coursesByMonth = Array.from({ length: 12 }, () => Math.floor(Math.random() * 20));
+  // Lấy số liệu user mới từ API, fallback về random nếu không có
+  const usersByMonth = (userStatistics.userRegistrationsByMonth && userStatistics.userRegistrationsByMonth.length === 12 && typeof userStatistics.userRegistrationsByMonth[0] === 'object')
+    ? userStatistics.userRegistrationsByMonth.map(item => item.Count)
+    : Array.from({ length: 12 }, () => Math.floor(Math.random() * 50));
+  // Lấy số liệu khóa học mới từ API, fallback về random nếu không có
+  const coursesByMonth = (courseStatistics.courseRegistrationsByMonth && courseStatistics.courseRegistrationsByMonth.length === 12)
+    ? courseStatistics.courseRegistrationsByMonth
+    : Array.from({ length: 12 }, () => Math.floor(Math.random() * 20));
   const barData = {
     labels: months,
     datasets: [
@@ -677,15 +685,10 @@ function AdminDashboard(props) {
   };
 
   // Fetch course statistics
-  const fetchCourseStatistics = async () => {
+  const fetchCourseStatistics = async (year = chartYear) => {
     try {
-      console.log('Đang tải thống kê khóa học...');
-      const response = await api.get("/api/admin/course/statistics");
-      console.log('Response từ API statistics:', response);
-      
+      const response = await api.get(`/api/admin/course/statistics?year=${year}`);
       const data = response?.data || response;
-      console.log('Data từ API statistics:', data);
-      
       const stats = {
         totalCourses: data.totalCourses || 0,
         activeCourses: data.activeCourses || 0,
@@ -694,10 +697,9 @@ function AdminDashboard(props) {
         totalStudents: data.totalStudents || 0,
         totalTeachers: data.totalTeachers || 0,
         averageRating: data.averageRating || 0,
-        totalReviews: data.totalReviews || 0
+        totalReviews: data.totalReviews || 0,
+        courseRegistrationsByMonth: data.courseRegistrationsByMonth || []
       };
-      
-      console.log('Thống kê đã được set:', stats);
       setCourseStatistics(stats);
       setCourseStatisticsLoaded(true);
     } catch (error) {
@@ -723,15 +725,10 @@ function AdminDashboard(props) {
   };
 
   // Fetch user statistics
-  const fetchUserStatistics = async () => {
+  const fetchUserStatistics = async (year = chartYear) => {
     try {
-      console.log('Đang tải thống kê người dùng...');
-      const response = await api.get("/api/admin/user/statistics");
-      console.log('Response từ API user statistics:', response);
-      
+      const response = await api.get(`/api/admin/user/statistics?year=${year}`);
       const data = response?.data || response;
-      console.log('Data từ API user statistics:', data);
-      
       // Lấy danh sách users hiện tại để xác định học sinh
       // (nếu users chưa load thì fallback về data.students như cũ)
       let studentsCount = 0;
@@ -897,6 +894,13 @@ function AdminDashboard(props) {
     }
   };
 
+  // Hàm xử lý logout
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    navigate('/login'); // hoặc window.location.href = '/login'; nếu không dùng react-router-dom
+  };
+
   return (
     <Box sx={{ background: '#f7fafc', minHeight: '100vh' }}>
       {/* Sidebar cố định bên trái */}
@@ -946,22 +950,16 @@ function AdminDashboard(props) {
               </ListItem>
             ))}
             {/* Dropdown Cài đặt hệ thống */}
-            <ListItem button onClick={() => setOpenSetting(!openSetting)}>
-              <ListItemIcon><Settings /></ListItemIcon>
-              <ListItemText primary="Cài đặt hệ thống" />
-              {openSetting ? <ExpandLess /> : <ExpandMore />}
+            <ListItem 
+              button 
+              selected={selectedMenu === "Quản lý danh mục khóa học"}
+              onClick={() => setSelectedMenu("Quản lý danh mục khóa học")}
+            >
+              <ListItemIcon><CategoryIcon /></ListItemIcon>
+              <ListItemText primary="Quản lý danh mục khóa học" />
             </ListItem>
             <Collapse in={openSetting} timeout="auto" unmountOnExit>
               <List component="div" disablePadding>
-                <ListItem
-                  button
-                  style={{ paddingLeft: 40 }}
-                  selected={selectedMenu === "Quản lý danh mục khóa học"}
-                  onClick={() => setSelectedMenu("Quản lý danh mục khóa học")}
-                >
-                  <ListItemIcon><CategoryIcon /></ListItemIcon>
-                  <ListItemText primary="Quản lý danh mục khóa học" />
-                </ListItem>
                 <ListItem
                   button
                   style={{ paddingLeft: 40 }}
@@ -987,7 +985,7 @@ function AdminDashboard(props) {
               button
               key={menuItems[3].text}
               selected={selectedMenu === menuItems[3].text}
-              onClick={() => setSelectedMenu(menuItems[3].text)}
+              onClick={handleLogout}
               style={{
                 background: selectedMenu === menuItems[3].text ? "#222" : "transparent",
                 color: selectedMenu === menuItems[3].text ? "#fff" : "#333",
@@ -1084,25 +1082,7 @@ function AdminDashboard(props) {
                   </div>
                 </motion.div>
               </Grid>
-              <Grid item xs={12} sm={6} md={4} style={{ marginBottom: 32 }}>
-                <motion.div whileHover={{ scale: 1.07, boxShadow: '0 12px 32px rgba(255,112,67,0.18)' }} style={{ ...statCardStyle, background: 'linear-gradient(135deg, #fff3e0 0%, #fff 100%)', minWidth: 260, minHeight: 120, padding: 32 }}>
-                  <span style={{ ...statIconStyle, background: 'linear-gradient(135deg, #ff7043 60%, #ffb300 100%)', width: 60, height: 60, fontSize: 38 }}><FaClipboardList /></span>
-                  <div>
-                    <div style={{ ...statNumberStyle, fontSize: 40 }}><CountUp end={pendingCourses} duration={1.2} /></div>
-                    <div style={{ ...statLabelStyle, fontSize: 18 }}>Khóa học chờ duyệt</div>
-                  </div>
-                </motion.div>
-              </Grid>
             </Grid>
-            <Paper elevation={4} sx={{ p: 3, borderRadius: 4, mt: 4, background: '#fff', boxShadow: '0 4px 24px rgba(30,178,166,0.08)' }}>
-              <Box display="flex" alignItems="center" gap={2} mb={2}>
-                <span style={{...statIconStyle, background: 'linear-gradient(135deg, #1eb2a6 60%, #184d47 100%)', width: 40, height: 40, fontSize: 24}}><BarChartIcon style={{ fontSize: 24 }} /></span>
-                <Typography variant="h6" style={{ fontWeight: 700, color: '#184d47' }}>Thống kê user & khóa học theo tháng ({now.getFullYear()})</Typography>
-              </Box>
-              <div style={{ width: '100%', height: 320 }}>
-                <Bar data={barData} options={barOptions} />
-              </div>
-            </Paper>
             {/* Section thông báo mới */}
             <Box mt={5}>
               <Paper elevation={2} sx={{ p: 3, borderRadius: 4, background: '#e0f7fa', boxShadow: '0 2px 12px rgba(30,178,166,0.08)' }}>
@@ -2079,7 +2059,7 @@ function AdminDashboard(props) {
                             }}
                           />
                           <Box display="flex" gap={1}>
-                            <Tooltip title="Xem chi tiết">
+                            <MuiTooltip title="Xem chi tiết">
                               <IconButton 
                                 size="small" 
                                 onClick={(e) => { e.stopPropagation(); handleOpenCourseDetail(course); }}
@@ -2087,7 +2067,7 @@ function AdminDashboard(props) {
                               >
                                 <Info fontSize="small" />
                               </IconButton>
-                            </Tooltip>
+                            </MuiTooltip>
 
                           </Box>
                         </Box>
@@ -2210,7 +2190,7 @@ function AdminDashboard(props) {
                         {/* Course Actions */}
                         <Box display="flex" justifyContent="flex-end" alignItems="center">
                           <Box display="flex" gap={0.5}>
-                            <Tooltip title={course.status === 'Đã duyệt' ? 'Khóa khóa học' : 'Duyệt khóa học'}>
+                            <MuiTooltip title={course.status === 'Đã duyệt' ? 'Khóa khóa học' : 'Duyệt khóa học'}>
                               <IconButton 
                                 size="small" 
                                 onClick={(e) => { e.stopPropagation(); handleToggleCourseStatus(course.id, course.status); }}
@@ -2218,8 +2198,8 @@ function AdminDashboard(props) {
                               >
                                 {course.status === 'Đã duyệt' ? <Lock fontSize="small" /> : <LockOpen fontSize="small" />}
                               </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Xóa khóa học">
+                            </MuiTooltip>
+                            <MuiTooltip title="Xóa khóa học">
                               <IconButton 
                                 size="small" 
                                 onClick={(e) => { e.stopPropagation(); handleDeleteCourse(course.id); }}
@@ -2227,7 +2207,7 @@ function AdminDashboard(props) {
                               >
                                 <Delete fontSize="small" />
                               </IconButton>
-                            </Tooltip>
+                            </MuiTooltip>
                           </Box>
                         </Box>
                       </Paper>
@@ -2248,178 +2228,14 @@ function AdminDashboard(props) {
                   onRowsPerPageChange={handleCourseRowsPerPageChange}
                   labelRowsPerPage="Khóa học mỗi trang:"
                   labelDisplayedRows={({ from, to, count }) => `${from}-${to} của ${count}`}
-                  sx={{
-                    '& .MuiTablePagination-select': {
-                      borderRadius: 8
-                    },
-                    '& .MuiTablePagination-actions': {
-                      '& .MuiIconButton-root': {
-                        borderRadius: 8,
-                        '&:hover': {
-                          background: '#f0f9ff'
-                        }
-                      }
-                    }
-                  }}
                 />
               </Box>
             </Paper>
-            <Dialog open={openCourseDetail} onClose={() => setOpenCourseDetail(false)} maxWidth="md" fullWidth>
-              <DialogTitle>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <School style={{ color: '#1eb2a6' }} />
-                  <Typography variant="h6">Chi tiết khóa học</Typography>
-                </Box>
-              </DialogTitle>
-              <DialogContent>
-                {selectedCourse && (
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
-                      <Box mb={2}>
-                        <Typography variant="subtitle2" color="textSecondary">Tên khóa học</Typography>
-                        <Typography variant="h6" style={{ fontWeight: 600 }}>{selectedCourse.name}</Typography>
-                      </Box>
-                      <Box mb={2}>
-                        <Typography variant="subtitle2" color="textSecondary">Mã khóa học</Typography>
-                        <Chip label={selectedCourse.code} style={{ background: '#e0f7fa', color: '#184d47' }} />
-                      </Box>
-                      <Box mb={2}>
-                        <Typography variant="subtitle2" color="textSecondary">Giáo viên</Typography>
-                        <Typography>{selectedCourse.teacher}</Typography>
-                      </Box>
-                      <Box mb={2}>
-                        <Typography variant="subtitle2" color="textSecondary">Danh mục</Typography>
-                        <Typography>{selectedCourse.category || 'Chưa phân loại'}</Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <Box mb={2}>
-                        <Typography variant="subtitle2" color="textSecondary">Cấp độ</Typography>
-                        <Chip 
-                          label={selectedCourse.level || 'Beginner'} 
-                          style={{ 
-                            background: selectedCourse.level === 'Advanced' ? '#ffebee' : selectedCourse.level === 'Intermediate' ? '#fff3e0' : '#e8f5e8',
-                            color: selectedCourse.level === 'Advanced' ? '#d32f2f' : selectedCourse.level === 'Intermediate' ? '#f57c00' : '#388e3c'
-                          }}
-                        />
-                      </Box>
-                      <Box mb={2}>
-                        <Typography variant="subtitle2" color="textSecondary">Trạng thái</Typography>
-                        <Chip
-                          label={selectedCourse.status}
-                          style={{
-                            backgroundColor: statusColor[selectedCourse.status] || '#9e9e9e',
-                            color: '#fff',
-                            fontWeight: 600,
-                          }}
-                        />
-                      </Box>
-                                              <Box mb={2}>
-                          <Typography variant="subtitle2" color="textSecondary">Số học viên</Typography>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <FaUserGraduate style={{ color: '#1eb2a6' }} />
-                            <Typography variant="h6" style={{ fontWeight: 600 }}>
-                              {Array.isArray(selectedCourse.students) ? selectedCourse.students.length : selectedCourse.students || 0}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      <Box mb={2}>
-                        <Typography variant="subtitle2" color="textSecondary">Ngày tạo</Typography>
-                        <Typography>
-                          {selectedCourse.createdAt && !isNaN(new Date(selectedCourse.createdAt))
-                            ? format(new Date(selectedCourse.createdAt), 'dd/MM/yyyy HH:mm')
-                            : 'Không xác định'}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Box mb={2}>
-                        <Typography variant="subtitle2" color="textSecondary">Mô tả</Typography>
-                        <Typography variant="body1" style={{ background: '#f8f9fa', padding: 16, borderRadius: 8 }}>
-                          {selectedCourse.description || 'Không có mô tả'}
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    {selectedCourse.thumbnailUrl && (
-                      <Grid item xs={12}>
-                        <Box mb={2}>
-                          <Typography variant="subtitle2" color="textSecondary">Ảnh đại diện</Typography>
-                          <img 
-                            src={selectedCourse.thumbnailUrl} 
-                            alt={selectedCourse.name}
-                            style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, objectFit: 'cover' }}
-                          />
-                        </Box>
-                      </Grid>
-                    )}
-                  </Grid>
-                )}
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={() => setOpenCourseDetail(false)} color="primary">Đóng</Button>
-
-              </DialogActions>
-            </Dialog>
-
-
-            <Dialog open={openDeleteConfirm} onClose={() => setOpenDeleteConfirm(false)}>
-              <DialogTitle>Xác nhận xóa</DialogTitle>
-              <DialogContent>Bạn có chắc chắn muốn xóa khóa học này không?</DialogContent>
-              <DialogActions>
-                <Button onClick={() => setOpenDeleteConfirm(false)}>Hủy</Button>
-                <Button onClick={() => handleDeleteCourse(deleteTarget)} color="secondary">Xóa</Button>
-              </DialogActions>
-            </Dialog>
-                  <Snackbar open={toast.open} autoHideDuration={2000} onClose={() => setToast({ ...toast, open: false })}>
-        <Paper elevation={6} sx={{ 
-          p: 2, 
-          backgroundColor: toast.severity === 'error' ? '#f44336' : 
-                           toast.severity === 'warning' ? '#ff9800' : 
-                           toast.severity === 'info' ? '#2196f3' : '#4caf50',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}>
-          <Typography variant="body2">{toast.message}</Typography>
-        </Paper>
-      </Snackbar>
-      <Snackbar open={courseToast.open} autoHideDuration={2000} onClose={() => setCourseToast({ ...courseToast, open: false })}>
-        <Paper elevation={6} sx={{ 
-          p: 2, 
-          backgroundColor: courseToast.severity === 'error' ? '#f44336' : 
-                           courseToast.severity === 'warning' ? '#ff9800' : 
-                           courseToast.severity === 'info' ? '#2196f3' : '#4caf50',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}>
-          <Typography variant="body2">{courseToast.message}</Typography>
-        </Paper>
-      </Snackbar>
-      <Snackbar open={userToast.open} autoHideDuration={2000} onClose={() => setUserToast({ ...userToast, open: false })}>
-        <Paper elevation={6} sx={{ 
-          p: 2, 
-          backgroundColor: userToast.severity === 'error' ? '#f44336' : 
-                           userToast.severity === 'warning' ? '#ff9800' : 
-                           userToast.severity === 'info' ? '#2196f3' : '#4caf50',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1
-        }}>
-          <Typography variant="body2">{userToast.message}</Typography>
-        </Paper>
-      </Snackbar>
           </>
         )}
         {selectedMenu === "Quản lý danh mục khóa học" && (
-          <Paper elevation={3} style={{ padding: 32, maxWidth: 700 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h5">Quản lý danh mục khóa học</Typography>
-              <Button variant="contained" color="primary" onClick={handleOpenAddCategory}>Thêm danh mục</Button>
-            </Box>
+          <Paper elevation={3} style={{ padding: 32, maxWidth: 700, margin: '32px auto' }}>
+            <Typography variant="h5" mb={2}>Quản lý danh mục khóa học</Typography>
             <TextField
               variant="outlined"
               size="small"
@@ -2429,195 +2245,35 @@ function AdminDashboard(props) {
               style={{ marginBottom: 16, minWidth: 260 }}
               InputProps={{ startAdornment: <InputAdornment position="start"><Search /></InputAdornment> }}
             />
-            <DragDropContext onDragEnd={result => {
-              if (!result.destination) return;
-              const reordered = Array.from(categories);
-              const [removed] = reordered.splice(result.source.index, 1);
-              reordered.splice(result.destination.index, 0, removed);
-              setCategories(reordered);
-              setToast({ open: true, message: 'Đã thay đổi thứ tự danh mục!', severity: 'info' });
-            }}>
-              <Droppable droppableId="category-list">
-                {(provided) => (
-                  <Table ref={provided.innerRef} {...provided.droppableProps} size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell style={{ width: 40 }}></TableCell>
-                        <TableCell>Icon</TableCell>
-                        <TableCell>Tên danh mục</TableCell>
-                        <TableCell>Số khóa học</TableCell>
-                        <TableCell>Trạng thái</TableCell>
-                        <TableCell>Thao tác</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {categories.filter(cat => cat.name.toLowerCase().includes(searchCategory.toLowerCase())).map((cat, idx) => (
-                        <Draggable key={cat.id} draggableId={cat.id.toString()} index={idx}>
-                          {(provided, snapshot) => (
-                            <TableRow
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              style={{ background: snapshot.isDragging ? '#f0f7fa' : 'inherit', ...provided.draggableProps.style }}
-                            >
-                              <TableCell {...provided.dragHandleProps} style={{ cursor: 'grab', width: 40 }}>::</TableCell>
-                              <TableCell>{getIconByType(cat.iconType)}</TableCell>
-                              <TableCell>
-                                <Box display="flex" alignItems="center">
-                                  <Typography style={{ fontWeight: 600 }}>{cat.name}</Typography>
-                                  <Chip label={`${cat.courseCount} KH`} size="small" style={{ marginLeft: 8, background: cat.active ? '#e0f7fa' : '#ffe0e0', color: cat.active ? '#184d47' : '#f44336', fontWeight: 600 }} />
-                                </Box>
-                                <Typography variant="body2" color="textSecondary">{cat.description}</Typography>
-                              </TableCell>
-                              <TableCell>{cat.courseCount}</TableCell>
-                              <TableCell>
-                                <Switch checked={cat.active} onChange={() => handleToggleCategory(cat.id)} color="primary" />
-                              </TableCell>
-                              <TableCell>
-                                <IconButton onClick={() => handleEditCategory(cat)}><Edit fontSize="small" /></IconButton>
-                                <IconButton onClick={() => handleDeleteCategory(cat.id)}><Delete fontSize="small" /></IconButton>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </TableBody>
-                  </Table>
-                )}
-              </Droppable>
-            </DragDropContext>
-            <Dialog open={openAddCategory} onClose={handleCloseAddCategory}>
-              <DialogTitle>{editCategory ? 'Sửa danh mục' : 'Thêm danh mục'}</DialogTitle>
-              <DialogContent>
-                <TextField
-                  label="Tên danh mục"
-                  fullWidth
-                  margin="normal"
-                  value={newCategory.name}
-                  onChange={e => setNewCategory({ ...newCategory, name: e.target.value })}
-                />
-                <TextField
-                  label="Mô tả"
-                  fullWidth
-                  margin="normal"
-                  value={newCategory.description}
-                  onChange={e => setNewCategory({ ...newCategory, description: e.target.value })}
-                />
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Chọn icon</InputLabel>
-                  <Select
-                    value={newCategory.iconType}
-                    onChange={e => setNewCategory({ ...newCategory, iconType: e.target.value })}
-                    label="Chọn icon"
-                  >
-                    {iconOptions.map(opt => (
-                      <MenuItem value={opt.value} key={opt.value}>
-                        <Box display="flex" alignItems="center">{opt.icon}<span style={{ marginLeft: 8 }}>{opt.label}</span></Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </DialogContent>
-              <DialogActions>
-                <Button onClick={handleCloseAddCategory}>Hủy</Button>
-                <Button onClick={editCategory ? handleSaveEditCategory : handleSaveAddCategory} color="primary">Lưu</Button>
-              </DialogActions>
-            </Dialog>
-            <Dialog open={openDeleteConfirm} onClose={() => setOpenDeleteConfirm(false)}>
-              <DialogTitle>Xác nhận xóa</DialogTitle>
-              <DialogContent>Bạn có chắc chắn muốn xóa danh mục này không?</DialogContent>
-              <DialogActions>
-                <Button onClick={() => setOpenDeleteConfirm(false)}>Hủy</Button>
-                <Button onClick={handleConfirmDelete} color="secondary">Xóa</Button>
-              </DialogActions>
-            </Dialog>
-            <Snackbar open={toast.open} autoHideDuration={2000} onClose={() => setToast({ ...toast, open: false })}>
-              <Paper elevation={6} style={{ 
-                padding: 16, 
-                backgroundColor: toast.severity === 'error' ? '#f44336' : 
-                                 toast.severity === 'warning' ? '#ff9800' : 
-                                 toast.severity === 'info' ? '#2196f3' : '#4caf50',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                <Typography variant="body2" style={{ marginRight: 8 }}>{toast.message}</Typography>
-              </Paper>
-            </Snackbar>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Icon</TableCell>
+                  <TableCell>Tên danh mục</TableCell>
+                  <TableCell>Số khóa học</TableCell>
+                  <TableCell>Trạng thái</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {categories.filter(cat => cat.name.toLowerCase().includes(searchCategory.toLowerCase())).map((cat) => (
+                  <TableRow key={cat.id}>
+                    <TableCell>{getIconByType(cat.iconType)}</TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center">
+                        <Typography style={{ fontWeight: 600 }}>{cat.name}</Typography>
+                        <Chip label={`${cat.courseCount} KH`} size="small" style={{ marginLeft: 8, background: cat.active ? '#e0f7fa' : '#ffe0e0', color: cat.active ? '#184d47' : '#f44336', fontWeight: 600 }} />
+                      </Box>
+                      <Typography variant="body2" color="textSecondary">{cat.description}</Typography>
+                    </TableCell>
+                    <TableCell>{cat.courseCount}</TableCell>
+                    <TableCell>{cat.active ? "Đang bật" : "Đang tắt"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </Paper>
-        )}
-        {selectedMenu === "Cấu hình thông báo" && (
-          <Paper elevation={3} style={{ padding: 32, maxWidth: 600 }}>
-            <Typography variant="h5" gutterBottom>Cấu hình thông báo</Typography>
-            <FormControlLabel
-              control={<Switch checked={notifyEmail} onChange={e => setNotifyEmail(e.target.checked)} />}
-              label="Gửi email thông báo"
-            />
-            <FormControlLabel
-              control={<Switch checked={notifyInApp} onChange={e => setNotifyInApp(e.target.checked)} />}
-              label="Thông báo trong hệ thống"
-            />
-            <TextField
-              label="Mẫu thông báo duyệt user"
-              fullWidth
-              margin="normal"
-              multiline
-              rows={3}
-              value={templateUserApprove}
-              onChange={e => setTemplateUserApprove(e.target.value)}
-            />
-            <Button variant="contained" color="primary" onClick={handleSaveNotificationConfig}>Lưu thay đổi</Button>
-          </Paper>
-        )}
-        {selectedMenu === "Cài đặt chung" && (
-          <Paper elevation={3} style={{ padding: 32, maxWidth: 600 }}>
-            <Typography variant="h5" gutterBottom>Cài đặt chung</Typography>
-            <TextField
-              label="Tên hệ thống"
-              fullWidth
-              margin="normal"
-              value={systemName}
-              onChange={e => setSystemName(e.target.value)}
-            />
-            <Box display="flex" alignItems="center" mb={2}>
-              <input
-                accept="image/*"
-                style={{ display: 'none' }}
-                id="upload-logo"
-                type="file"
-                onChange={handleLogoChange}
-              />
-              <label htmlFor="upload-logo">
-                <Button variant="outlined" color="primary" component="span">Upload Logo</Button>
-              </label>
-              {logo && <img src={logo} alt="logo" style={{ height: 40, marginLeft: 16, borderRadius: 8, boxShadow: '0 2px 8px #ccc' }} />}
-            </Box>
-            <TextField
-              label="Màu chủ đạo"
-              type="color"
-              margin="normal"
-              value={mainColor}
-              onChange={e => setMainColor(e.target.value)}
-              style={{ width: 120 }}
-            />
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Ngôn ngữ mặc định</InputLabel>
-              <Select value={defaultLang} onChange={e => setDefaultLang(e.target.value)}>
-                <MenuItem value="vi">Tiếng Việt</MenuItem>
-                <MenuItem value="en">English</MenuItem>
-              </Select>
-            </FormControl>
-            <Button variant="contained" color="primary" onClick={handleSaveGeneralConfig}>Lưu thay đổi</Button>
-          </Paper>
-        )}
-        {selectedMenu === "Đăng xuất" && (
-          <Box mt={8} textAlign="center">
-            <Typography variant="h4" style={{ color: '#184d47', fontWeight: 700 }}>Bạn đã chọn Đăng xuất</Typography>
-          </Box>
         )}
       </Box>
     </Box>
   );
-};
-
-export default AdminDashboard; 
+}

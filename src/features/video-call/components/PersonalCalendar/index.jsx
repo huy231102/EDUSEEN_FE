@@ -227,14 +227,15 @@ const mockUpcomingSessions = [
   }
 ];
 
-const PersonalCalendar = ({ onSwitchToVideoCall }) => {
+const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCreateDialog, handleCloseCreateDialog }) => {
+  console.log("PersonalCalendar render");
   const classes = useStyles();
   const { user } = useAuth();
   const [upcomingSessions, setUpcomingSessions] = useState([]); // bỏ mockUpcomingSessions
   const [selectedSession, setSelectedSession] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  // KHÔNG khai báo lại openCreateDialog ở local, chỉ nhận prop
   const [newSession, setNewSession] = useState({
     title: '',
     date: '',
@@ -305,7 +306,9 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
     setSelectedSession(null);
   };
 
-  const handleOpenCreateDialog = () => {
+  // Hàm mở dialog tạo mới lịch (logic bổ sung)
+  const handleOpenCreateDialogLocal = () => {
+    console.log("==> Đã bấm nút Đặt lịch cuộc gọi");
     let defaultName = '';
     if (user) {
       if (user.name) defaultName = user.name;
@@ -317,9 +320,8 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
       caller: defaultName,
       callerEmail: user?.email || '',
     }));
-    setOpenCreateDialog(true);
+    handleOpenCreateDialog();
   };
-  const handleCloseCreateDialog = () => setOpenCreateDialog(false);
 
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
@@ -603,10 +605,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
     if (!newSession.calleeEmail?.trim()) {
       errors.push('Email người được mời không được để trống');
     }
-    
-    if (!newSession.courseId) {
-      errors.push('Vui lòng chọn khóa học');
-    }
+    // Đã bỏ kiểm tra bắt buộc khóa học
 
     // 2. Kiểm tra định dạng email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -688,18 +687,15 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
     const durationMinutes = Math.floor(diffMs / (1000 * 60));
     
     const scheduleData = {
-      dto: {
-        SenderEmail: user?.email || '', // Email người đặt lịch (user hiện tại)
-        ReceiverEmail: newSession.calleeEmail.trim(), // Email người nhận
-        ScheduledTime: `${newSession.date}T${newSession.startTime}`,
-        Duration: durationMinutes,
-        CourseId: parseInt(newSession.courseId, 10),
-      }
+      receiverEmail: newSession.calleeEmail.trim(),
+      scheduledTime: `${newSession.date}T${newSession.startTime}`,
+      duration: durationMinutes,
+      courseId: newSession.courseId ? parseInt(newSession.courseId, 10) : null,
     };
     
     try {
       await bookSchedule(scheduleData);
-      setOpenCreateDialog(false);
+      handleCloseCreateDialog(); // Đóng dialog sau khi lưu thành công
       // Reset form
       setNewSession({
         title: '',
@@ -786,6 +782,13 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
 
   const statistics = getStatistics();
 
+  // Tách lịch sắp tới và quá hạn
+  const now = new Date();
+  const upcomingSessionsFiltered = upcomingSessions.filter(session => {
+    const end = new Date(`${session.date}T${session.endTime}`);
+    return end > now;
+  });
+
   if (loading) {
     return (
       <div className={classes.loadingContainer}>
@@ -797,532 +800,532 @@ const PersonalCalendar = ({ onSwitchToVideoCall }) => {
     );
   }
 
-  if (upcomingSessions.length === 0) {
-    return (
-      <div className={classes.emptyStateContainer}>
-        <Event className={classes.emptyStateIcon} />
-        <Typography variant="h5" gutterBottom>
-          Chưa có cuộc gọi nào được đặt lịch
-        </Typography>
-        <Typography variant="body1" color="textSecondary" align="center">
-          Hãy đặt lịch cuộc gọi đầu tiên với giáo viên!
-        </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          style={{ marginTop: '16px' }}
-          onClick={handleOpenCreateDialog}
-        >
-          Đặt lịch cuộc gọi
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <div className={classes.root}>
-      <div className={classes.header}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-          <Typography variant="h5" style={{ fontWeight: 600 }}>
-            <Event style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '1.5rem' }} />
-            Lịch cá nhân
+    <>
+      {upcomingSessionsFiltered.length === 0 ? (
+        <div className={classes.emptyStateContainer}>
+          <Event className={classes.emptyStateIcon} />
+          <Typography variant="h5" gutterBottom>
+            Chưa có cuộc gọi nào được đặt lịch
+          </Typography>
+          <Typography variant="body1" color="textSecondary" align="center">
+            Hãy đặt lịch cuộc gọi đầu tiên với giáo viên!
           </Typography>
           <Button
-            variant="outlined"
+            variant="contained"
             color="primary"
-            size="small"
-            style={{ borderRadius: '20px', textTransform: 'none' }}
-            onClick={handleOpenCreateDialog}
+            style={{ marginTop: '16px' }}
+            onClick={handleOpenCreateDialogLocal}
           >
-            Đặt lịch mới
+            Đặt lịch cuộc gọi
           </Button>
-        </Box>
-        <Typography variant="body2" color="textSecondary">
-          Xem các cuộc gọi sắp tới đã được đặt lịch
-        </Typography>
-      </div>
-
-      {/* Thống kê */}
-      <Grid container spacing={3} className={classes.statsGrid}>
-        <Grid item xs={12} sm={4}>
-          <div className={classes.statCard}>
-            <Schedule className={classes.statIcon} />
-            <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#222' }}>
-              {statistics.totalScheduled}
-            </Typography>
-            <Typography variant="body2" color="textSecondary" style={{ fontWeight: 500 }}>
-              Tổng số cuộc gọi đã đặt
-            </Typography>
-          </div>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <div className={classes.statCard}>
-            <CalendarToday className={classes.statIcon} />
-            <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#222' }}>
-              {statistics.todaySessions}
-            </Typography>
-            <Typography variant="body2" color="textSecondary" style={{ fontWeight: 500 }}>
-              Cuộc gọi hôm nay
-            </Typography>
-          </div>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <div className={classes.statCard}>
-            <Notifications className={classes.statIcon} />
-            <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#222' }}>
-              {statistics.thisWeekSessions}
-            </Typography>
-            <Typography variant="body2" color="textSecondary" style={{ fontWeight: 500 }}>
-              Cuộc gọi tuần này
-            </Typography>
-          </div>
-        </Grid>
-      </Grid>
-
-      {/* Bảng lịch sắp tới */}
-      <TableContainer component={Paper} className={classes.tableContainer}>
-        <Table size="small">
-          <TableHead className={classes.tableHeader}>
-            <TableRow>
-              <TableCell style={{ padding: '12px 16px' }}>Cuộc gọi</TableCell>
-              <TableCell style={{ padding: '12px 16px' }}>Ngày</TableCell>
-              <TableCell style={{ padding: '12px 16px' }}>Thời gian</TableCell>
-              <TableCell style={{ padding: '12px 16px' }}>Thời lượng</TableCell>
-              <TableCell style={{ padding: '12px 16px' }}>Trạng thái</TableCell>
-              <TableCell style={{ padding: '12px 16px' }}>Môn học</TableCell>
-              <TableCell style={{ padding: '12px 16px' }}>Chi tiết</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {upcomingSessions.map((session) => (
-              <TableRow key={session.id} hover style={{ height: '60px' }}>
-                <TableCell style={{ padding: '12px 16px' }}>
-                  <Box display="flex" alignItems="center">
-                    <Event style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '18px' }} />
-                    <Typography variant="body2" style={{ fontWeight: 600 }}>
-                      Cuộc gọi với {session.partnerName} ({session.role})
-                    </Typography>
-                  </Box>
-                </TableCell>
-                <TableCell style={{ padding: '12px 16px' }}>
-                  <Chip
-                    icon={<CalendarToday />}
-                    label={formatDate(session.date)}
-                    className={classes.dateChip}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell style={{ padding: '12px 16px' }}>
-                  <Typography variant="body2">
-                    {session.startTime} - {session.endTime}
-                  </Typography>
-                </TableCell>
-                <TableCell style={{ padding: '12px 16px' }}>
-                  <Chip
-                    icon={<AccessTime />}
-                    label={session.duration}
-                    className={classes.durationChip}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell style={{ padding: '12px 16px' }}>
-                  {getStatusChip(session.date)}
-                </TableCell>
-                <TableCell style={{ padding: '12px 16px' }}>
-                  <Chip
-                    label={session.subject}
-                    size="small"
-                    style={{ 
-                      backgroundColor: '#e8f5e8', 
-                      color: '#2e7d32',
-                      fontWeight: 500,
-                      fontSize: '12px'
-                    }}
-                  />
-                </TableCell>
-                <TableCell style={{ padding: '12px 16px' }}>
-                  <IconButton
-                    color="default"
-                    size="small"
-                    style={{ 
-                      backgroundColor: '#f8f9fa',
-                      width: '32px',
-                      height: '32px',
-                      border: '1px solid #e9ecef',
-                      '&:hover': {
-                        backgroundColor: '#e9ecef'
-                      }
-                    }}
-                    onClick={(e) => handleMenuOpen(e, session)}
-                  >
-                    <MoreVert style={{ fontSize: '16px', color: '#6c757d' }} />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Dialog chi tiết cuộc gọi */}
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        maxWidth="md"
-        fullWidth
-        className="form-dialog"
-      >
-        {selectedSession && (
-          <>
-            <DialogTitle>
-              <Typography variant="h6">
-                Chi tiết cuộc gọi: Cuộc gọi với {selectedSession.partnerName} ({selectedSession.role})
+        </div>
+      ) : (
+        <div className={classes.root}>
+          <div className={classes.header}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="h5" style={{ fontWeight: 600 }}>
+                <Event style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '1.5rem' }} />
+                Lịch cá nhân
               </Typography>
-            </DialogTitle>
-            <DialogContent>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">
-                    Ngày diễn ra
-                  </Typography>
-                  <Typography variant="body1" gutterBottom>
-                    {formatDate(selectedSession.date)}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">
-                    Thời gian
-                  </Typography>
-                  <Typography variant="body1" gutterBottom>
-                    {selectedSession.startTime} - {selectedSession.endTime}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">
-                    Thời lượng
-                  </Typography>
-                  <Typography variant="body1" gutterBottom>
-                    {selectedSession.duration}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">
-                    Môn học
-                  </Typography>
-                  <Typography variant="body1" gutterBottom>
-                    {selectedSession.subject}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle2" color="textSecondary">
-                    Trạng thái
-                  </Typography>
-                  <Typography variant="body1" gutterBottom>
-                    {getStatusChip(selectedSession.date)}
-                  </Typography>
-                </Grid>
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                style={{ borderRadius: '20px', textTransform: 'none' }}
+                onClick={handleOpenCreateDialogLocal}
+              >
+                Đặt lịch mới
+              </Button>
+            </Box>
+            <Typography variant="body2" color="textSecondary">
+              Xem các cuộc gọi sắp tới đã được đặt lịch
+            </Typography>
+          </div>
 
-                <Grid item xs={12}>
-                  <Divider style={{ margin: '16px 0' }} />
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    Người tham gia
-                  </Typography>
-                  <Box display="flex" flexWrap="wrap" gap={1}>
-                    {/* Mock data for participants, as the original mock data didn't have this */}
-                    {/* In a real scenario, you'd fetch participants from the API */}
-                    <Chip
-                      avatar={<Avatar>{selectedSession.partnerName.charAt(0)}</Avatar>}
-                      label={`${selectedSession.partnerName} (${selectedSession.role})`}
-                      variant="outlined"
-                      size="small"
-                    />
-                  </Box>
-                </Grid>
+          {/* Thống kê */}
+          <Grid container spacing={3} className={classes.statsGrid}>
+            <Grid item xs={12} sm={4}>
+              <div className={classes.statCard}>
+                <Schedule className={classes.statIcon} />
+                <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#222' }}>
+                  {statistics.totalScheduled}
+                </Typography>
+                <Typography variant="body2" color="textSecondary" style={{ fontWeight: 500 }}>
+                  Tổng số cuộc gọi đã đặt
+                </Typography>
+              </div>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <div className={classes.statCard}>
+                <CalendarToday className={classes.statIcon} />
+                <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#222' }}>
+                  {statistics.todaySessions}
+                </Typography>
+                <Typography variant="body2" color="textSecondary" style={{ fontWeight: 500 }}>
+                  Cuộc gọi hôm nay
+                </Typography>
+              </div>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <div className={classes.statCard}>
+                <Notifications className={classes.statIcon} />
+                <Typography variant="h4" style={{ fontWeight: 700, marginBottom: '4px', color: '#222' }}>
+                  {statistics.thisWeekSessions}
+                </Typography>
+                <Typography variant="body2" color="textSecondary" style={{ fontWeight: 500 }}>
+                  Cuộc gọi tuần này
+                </Typography>
+              </div>
+            </Grid>
+          </Grid>
 
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    Link cuộc gọi
+          {/* Bảng lịch sắp tới */}
+          <TableContainer component={Paper} className={classes.tableContainer}>
+            <Table size="small">
+              <TableHead className={classes.tableHeader}>
+                <TableRow>
+                  <TableCell style={{ padding: '12px 16px' }}>Cuộc gọi</TableCell>
+                  <TableCell style={{ padding: '12px 16px' }}>Ngày</TableCell>
+                  <TableCell style={{ padding: '12px 16px' }}>Thời gian</TableCell>
+                  <TableCell style={{ padding: '12px 16px' }}>Thời lượng</TableCell>
+                  <TableCell style={{ padding: '12px 16px' }}>Trạng thái</TableCell>
+                  <TableCell style={{ padding: '12px 16px' }}>Môn học</TableCell>
+                  <TableCell style={{ padding: '12px 16px' }}>Chi tiết</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {upcomingSessionsFiltered.map((session) => (
+                  <TableRow key={session.id} hover style={{ height: '60px' }}>
+                    <TableCell style={{ padding: '12px 16px' }}>
+                      <Box display="flex" alignItems="center">
+                        <Event style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '18px' }} />
+                        <Typography variant="body2" style={{ fontWeight: 600 }}>
+                          Cuộc gọi với {session.partnerName} ({session.role})
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell style={{ padding: '12px 16px' }}>
+                      <Chip
+                        icon={<CalendarToday />}
+                        label={formatDate(session.date)}
+                        className={classes.dateChip}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell style={{ padding: '12px 16px' }}>
+                      <Typography variant="body2">
+                        {session.startTime} - {session.endTime}
+                      </Typography>
+                    </TableCell>
+                    <TableCell style={{ padding: '12px 16px' }}>
+                      <Chip
+                        icon={<AccessTime />}
+                        label={session.duration}
+                        className={classes.durationChip}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell style={{ padding: '12px 16px' }}>
+                      {getStatusChip(session.date)}
+                    </TableCell>
+                    <TableCell style={{ padding: '12px 16px' }}>
+                      <Chip
+                        label={session.subject}
+                        size="small"
+                        style={{ 
+                          backgroundColor: '#e8f5e8', 
+                          color: '#2e7d32',
+                          fontWeight: 500,
+                          fontSize: '12px'
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell style={{ padding: '12px 16px' }}>
+                      <IconButton
+                        color="default"
+                        size="small"
+                        style={{ 
+                          backgroundColor: '#f8f9fa',
+                          width: '32px',
+                          height: '32px',
+                          border: '1px solid #e9ecef',
+                          '&:hover': {
+                            backgroundColor: '#e9ecef'
+                          }
+                        }}
+                        onClick={(e) => handleMenuOpen(e, session)}
+                      >
+                        <MoreVert style={{ fontSize: '16px', color: '#6c757d' }} />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {/* Dialog chi tiết cuộc gọi */}
+          <Dialog
+            open={openDialog}
+            onClose={handleCloseDialog}
+            maxWidth="md"
+            fullWidth
+            className="form-dialog"
+          >
+            {selectedSession && (
+              <>
+                <DialogTitle>
+                  <Typography variant="h6">
+                    Chi tiết cuộc gọi: Cuộc gọi với {selectedSession.partnerName} ({selectedSession.role})
                   </Typography>
-                  <Button
-                    variant="outlined"
+                </DialogTitle>
+                <DialogContent>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" color="textSecondary">
+                        Ngày diễn ra
+                      </Typography>
+                      <Typography variant="body1" gutterBottom>
+                        {formatDate(selectedSession.date)}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" color="textSecondary">
+                        Thời gian
+                      </Typography>
+                      <Typography variant="body1" gutterBottom>
+                        {selectedSession.startTime} - {selectedSession.endTime}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" color="textSecondary">
+                        Thời lượng
+                      </Typography>
+                      <Typography variant="body1" gutterBottom>
+                        {selectedSession.duration}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" color="textSecondary">
+                        Môn học
+                      </Typography>
+                      <Typography variant="body1" gutterBottom>
+                        {selectedSession.subject}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2" color="textSecondary">
+                        Trạng thái
+                      </Typography>
+                      <Typography variant="body1" gutterBottom>
+                        {getStatusChip(selectedSession.date)}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Divider style={{ margin: '16px 0' }} />
+                      <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                        Người tham gia
+                      </Typography>
+                      <Box display="flex" flexWrap="wrap" gap={1}>
+                        {/* Mock data for participants, as the original mock data didn't have this */}
+                        {/* In a real scenario, you'd fetch participants from the API */}
+                        <Chip
+                          avatar={<Avatar>{selectedSession.partnerName.charAt(0)}</Avatar>}
+                          label={`${selectedSession.partnerName} (${selectedSession.role})`}
+                          variant="outlined"
+                          size="small"
+                        />
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                        Link cuộc gọi
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={handleJoinVideoCall}
+                        startIcon={<VideoCall />}
+                      >
+                        Tham gia cuộc gọi
+                      </Button>
+                    </Grid>
+                  </Grid>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={handleCloseDialog} color="primary">
+                    Đóng
+                  </Button>
+                  <Button 
+                    variant="contained" 
                     color="primary"
                     onClick={handleJoinVideoCall}
                     startIcon={<VideoCall />}
                   >
-                    Tham gia cuộc gọi
+                    Tham gia ngay
                   </Button>
+                </DialogActions>
+              </>
+            )}
+          </Dialog>
+
+          {/* Dialog tạo mới lịch LUÔN render ở ngoài, không phụ thuộc điều kiện */}
+          <Dialog
+            open={openCreateDialog}
+            onClose={handleCloseCreateDialog}
+            maxWidth="sm"
+            fullWidth
+            className="form-dialog"
+          >
+            <DialogTitle>Thêm lịch cuộc gọi mới</DialogTitle>
+            <DialogContent>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Tiêu đề cuộc gọi"
+                    fullWidth
+                    value={newSession.title}
+                    onChange={e => handleNewSessionChange('title', e.target.value)}
+                    margin="dense"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Ngày"
+                    type="date"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    value={newSession.date}
+                    onChange={e => handleNewSessionChange('date', e.target.value)}
+                    margin="dense"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <TextField
+                    label="Giờ bắt đầu"
+                    type="time"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    value={newSession.startTime}
+                    onChange={e => handleNewSessionChange('startTime', e.target.value)}
+                    margin="dense"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <TextField
+                    label="Giờ kết thúc"
+                    type="time"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    value={newSession.endTime}
+                    onChange={e => handleNewSessionChange('endTime', e.target.value)}
+                    margin="dense"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Tên người gọi"
+                    fullWidth
+                    value={newSession.caller}
+                    onChange={e => handleNewSessionChange('caller', e.target.value)}
+                    margin="dense"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Email người tạo cuộc gọi"
+                    fullWidth
+                    value={newSession.callerEmail}
+                    margin="dense"
+                    type="email"
+                    disabled
+                    helperText="Email được lấy từ tài khoản đăng nhập"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="Email người được mời"
+                    fullWidth
+                    value={newSession.calleeEmail}
+                    onChange={e => handleNewSessionChange('calleeEmail', e.target.value)}
+                    margin="dense"
+                    type="email"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    select
+                    label="Khóa học"
+                    fullWidth
+                    value={newSession.courseId || ''}
+                    onChange={e => handleNewSessionChange('courseId', e.target.value)}
+                    margin="dense"
+                    SelectProps={{ native: true }}
+                    InputLabelProps={{ shrink: true }}
+                  >
+                    <option value="">Chọn khóa học</option>
+                    {courses.map(course => (
+                      <option key={course.id} value={course.id}>
+                        {course.name}
+                      </option>
+                    ))}
+                  </TextField>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Thời lượng"
+                    fullWidth
+                    value={newSession.duration || ''}
+                    margin="dense"
+                    disabled
+                    helperText="Tự động tính toán từ thời gian bắt đầu và kết thúc"
+                    InputLabelProps={{ shrink: true }}
+                  />
                 </Grid>
               </Grid>
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleCloseDialog} color="primary">
-                Đóng
-              </Button>
-              <Button 
-                variant="contained" 
-                color="primary"
-                onClick={handleJoinVideoCall}
-                startIcon={<VideoCall />}
-              >
-                Tham gia ngay
-              </Button>
+              <Button onClick={handleCloseCreateDialog} color="default">Hủy</Button>
+              <Button onClick={handleCreateSession} color="primary" variant="contained">Lưu</Button>
             </DialogActions>
-          </>
-        )}
-      </Dialog>
+          </Dialog>
 
-      {/* Dialog tạo mới lịch */}
-      <Dialog 
-        open={openCreateDialog} 
-        onClose={handleCloseCreateDialog} 
-        maxWidth="sm" 
-        fullWidth
-        className="form-dialog"
-      >
-        <DialogTitle>Thêm lịch cuộc gọi mới</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                label="Tiêu đề cuộc gọi"
-                fullWidth
-                value={newSession.title}
-                onChange={e => handleNewSessionChange('title', e.target.value)}
-                margin="dense"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Ngày"
-                type="date"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                value={newSession.date}
-                onChange={e => handleNewSessionChange('date', e.target.value)}
-                margin="dense"
-              />
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <TextField
-                label="Giờ bắt đầu"
-                type="time"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                value={newSession.startTime}
-                onChange={e => handleNewSessionChange('startTime', e.target.value)}
-                margin="dense"
-              />
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <TextField
-                label="Giờ kết thúc"
-                type="time"
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                value={newSession.endTime}
-                onChange={e => handleNewSessionChange('endTime', e.target.value)}
-                margin="dense"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Tên người gọi"
-                fullWidth
-                value={newSession.caller}
-                onChange={e => handleNewSessionChange('caller', e.target.value)}
-                margin="dense"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Email người tạo cuộc gọi"
-                fullWidth
-                value={newSession.callerEmail}
-                margin="dense"
-                type="email"
-                disabled
-                helperText="Email được lấy từ tài khoản đăng nhập"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Email người được mời"
-                fullWidth
-                value={newSession.calleeEmail}
-                onChange={e => handleNewSessionChange('calleeEmail', e.target.value)}
-                margin="dense"
-                type="email"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                select
-                label="Khóa học"
-                fullWidth
-                value={newSession.courseId}
-                onChange={e => handleNewSessionChange('courseId', e.target.value)}
-                margin="dense"
-                SelectProps={{ native: true }}
-                required
-                InputLabelProps={{ shrink: true }}
-              >
-                <option value="">Chọn khóa học</option>
-                {courses.map(course => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                  </option>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Thời lượng"
-                fullWidth
-                value={newSession.duration}
-                margin="dense"
-                disabled
-                helperText="Tự động tính toán từ thời gian bắt đầu và kết thúc"
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+          {/* Dialog chỉnh sửa lịch */}
+          <Dialog 
+            open={openEditDialog} 
+            onClose={handleCloseEditDialog} 
+            maxWidth="sm" 
+            fullWidth
+            className="form-dialog"
+          >
+            <DialogTitle>Chỉnh sửa lịch cuộc gọi</DialogTitle>
+            <DialogContent>
+              {editingSession && (
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Ngày"
+                      type="date"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                      value={editingSession.date}
+                      onChange={e => handleEditSessionChange('date', e.target.value)}
+                      margin="dense"
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <TextField
+                      label="Giờ bắt đầu"
+                      type="time"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                      value={editingSession.startTime}
+                      onChange={e => handleEditSessionChange('startTime', e.target.value)}
+                      margin="dense"
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <TextField
+                      label="Giờ kết thúc"
+                      type="time"
+                      fullWidth
+                      InputLabelProps={{ shrink: true }}
+                      value={editingSession.endTime}
+                      onChange={e => handleEditSessionChange('endTime', e.target.value)}
+                      margin="dense"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      select
+                      label="Khóa học"
+                      fullWidth
+                      value={editingSession.courseTitle || ''}
+                      onChange={e => handleEditSessionChange('courseTitle', e.target.value)}
+                      margin="dense"
+                      SelectProps={{ native: true }}
+                      required
+                      InputLabelProps={{ shrink: true }}
+                    >
+                      <option value="">Chọn khóa học</option>
+                      {courses.map(course => (
+                        <option key={course.id} value={course.name}>
+                          {course.name}
+                        </option>
+                      ))}
+                    </TextField>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Thời lượng"
+                      fullWidth
+                      value={editingSession.duration || ''}
+                      margin="dense"
+                      disabled
+                      helperText="Tự động tính toán từ thời gian bắt đầu và kết thúc"
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                </Grid>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseEditDialog} color="default">Hủy</Button>
+              <Button onClick={handleSaveEdit} color="primary" variant="contained">Lưu thay đổi</Button>
+            </DialogActions>
+          </Dialog>
 
+          {/* Menu tùy chọn */}
+          <Menu
+            anchorEl={menuAnchor}
+            open={Boolean(menuAnchor)}
+            onClose={handleMenuClose}
+          >
+            <MenuItem onClick={handleViewDetails}>
+              <Typography variant="body2">Xem chi tiết</Typography>
+            </MenuItem>
+            <MenuItem onClick={handleEditSession}>
+              <Typography variant="body2">Chỉnh sửa</Typography>
+            </MenuItem>
+            <MenuItem onClick={handleCancelSession} style={{ color: '#f44336' }}>
+              <Typography variant="body2" style={{ color: '#f44336' }}>Hủy lịch</Typography>
+            </MenuItem>
+          </Menu>
 
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseCreateDialog} color="default">Hủy</Button>
-          <Button onClick={handleCreateSession} color="primary" variant="contained">Lưu</Button>
-        </DialogActions>
-      </Dialog>
+          {/* Dialog xác nhận hủy lịch */}
+          <Dialog open={confirmCancelOpen} onClose={cancelCancel} maxWidth="xs" fullWidth>
+            <DialogTitle>Xác nhận hủy lịch</DialogTitle>
+            <DialogContent>
+              <Typography>Bạn có chắc chắn muốn hủy lịch này không?</Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={cancelCancel} color="default">Không</Button>
+              <Button onClick={confirmCancel} color="secondary" variant="contained">Hủy lịch</Button>
+            </DialogActions>
+          </Dialog>
 
-      {/* Dialog chỉnh sửa lịch */}
-      <Dialog 
-        open={openEditDialog} 
-        onClose={handleCloseEditDialog} 
-        maxWidth="sm" 
-        fullWidth
-        className="form-dialog"
-      >
-        <DialogTitle>Chỉnh sửa lịch cuộc gọi</DialogTitle>
-        <DialogContent>
-          {editingSession && (
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Ngày"
-                  type="date"
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  value={editingSession.date}
-                  onChange={e => handleEditSessionChange('date', e.target.value)}
-                  margin="dense"
-                />
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <TextField
-                  label="Giờ bắt đầu"
-                  type="time"
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  value={editingSession.startTime}
-                  onChange={e => handleEditSessionChange('startTime', e.target.value)}
-                  margin="dense"
-                />
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <TextField
-                  label="Giờ kết thúc"
-                  type="time"
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  value={editingSession.endTime}
-                  onChange={e => handleEditSessionChange('endTime', e.target.value)}
-                  margin="dense"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  select
-                  label="Khóa học"
-                  fullWidth
-                  value={editingSession.courseTitle || ''}
-                  onChange={e => handleEditSessionChange('courseTitle', e.target.value)}
-                  margin="dense"
-                  SelectProps={{ native: true }}
-                  required
-                  InputLabelProps={{ shrink: true }}
-                >
-                  <option value="">Chọn khóa học</option>
-                  {courses.map(course => (
-                    <option key={course.id} value={course.name}>
-                      {course.name}
-                    </option>
-                  ))}
-                </TextField>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Thời lượng"
-                  fullWidth
-                  value={editingSession.duration || ''}
-                  margin="dense"
-                  disabled
-                  helperText="Tự động tính toán từ thời gian bắt đầu và kết thúc"
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseEditDialog} color="default">Hủy</Button>
-          <Button onClick={handleSaveEdit} color="primary" variant="contained">Lưu thay đổi</Button>
-        </DialogActions>
-      </Dialog>
+          {/* Snackbar thông báo lỗi */}
+          <Snackbar
+            open={snackbar.open}
+            autoHideDuration={6000}
+            onClose={handleCloseSnackbar}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            message={snackbar.message}
+          />
 
-      {/* Menu tùy chọn */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleViewDetails}>
-          <Typography variant="body2">Xem chi tiết</Typography>
-        </MenuItem>
-        <MenuItem onClick={handleEditSession}>
-          <Typography variant="body2">Chỉnh sửa</Typography>
-        </MenuItem>
-        <MenuItem onClick={handleCancelSession} style={{ color: '#f44336' }}>
-          <Typography variant="body2" style={{ color: '#f44336' }}>Hủy lịch</Typography>
-        </MenuItem>
-      </Menu>
-
-      {/* Dialog xác nhận hủy lịch */}
-      <Dialog open={confirmCancelOpen} onClose={cancelCancel} maxWidth="xs" fullWidth>
-        <DialogTitle>Xác nhận hủy lịch</DialogTitle>
-        <DialogContent>
-          <Typography>Bạn có chắc chắn muốn hủy lịch này không?</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={cancelCancel} color="default">Không</Button>
-          <Button onClick={confirmCancel} color="secondary" variant="contained">Hủy lịch</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar thông báo lỗi */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        message={snackbar.message}
-      />
-
-    </div>
+        </div>
+      )}
+    </>
   );
 };
 
