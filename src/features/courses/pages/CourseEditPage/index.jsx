@@ -31,6 +31,7 @@ const CourseEditPage = () => {
       description: sanitize(courseData.description),
       categoryId: null, // TODO: ánh xạ categorySlug -> id nếu có danh mục
       level: sanitize(courseData.level),
+      cover: courseData.cover, // Thêm trường cover
       sections: (courseData.sections || []).map((s, idx) => ({
         sectionId: s.sectionId,
         title: s.title,
@@ -76,6 +77,7 @@ const CourseEditPage = () => {
             description: c.description || '',
             categoryId: c.categoryId,
             level: c.level || 'beginner',
+            cover: c.cover || '', // Thêm dòng này để map cover từ API
             sections: (c.sections || []).map(s => ({
               sectionId: s.sectionId,
               title: s.title,
@@ -253,6 +255,12 @@ const CurriculumBuilder = ({ course, setCourse }) => {
     setSectionTitle('');
   };
 
+  // Xoá Section
+  const deleteSection = (sectionIdx) => {
+    const newSections = course.sections.filter((_, idx) => idx !== sectionIdx);
+    setCourse({ ...course, sections: newSections });
+  };
+
   // Thêm Lecture vào một Section
   const addLecture = (sectionIdx) => {
     if (!lectureTitle.trim()) return;
@@ -275,6 +283,13 @@ const CurriculumBuilder = ({ course, setCourse }) => {
     setLectureText('');
     setLectureFile(null);
     setActiveSectionIdx(null);
+  };
+
+  // Xoá Lecture
+  const deleteLecture = (sectionIdx, lectureIdx) => {
+    const newSections = [...course.sections];
+    newSections[sectionIdx].lectures = newSections[sectionIdx].lectures.filter((_, idx) => idx !== lectureIdx);
+    setCourse({ ...course, sections: newSections });
   };
 
   // Xử lý drag & drop
@@ -330,6 +345,14 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                     >
                       <div className="section-header" {...sectionProvided.dragHandleProps}>
                         <h4>{section.title}</h4>
+                        <button
+                          className="btn small"
+                          style={{ marginLeft: 8, color: '#e74c3c', background: 'none', border: 'none' }}
+                          title="Xoá chương"
+                          onClick={() => deleteSection(sIdx)}
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
                       </div>
 
                       {/* Add Lecture input */}
@@ -384,6 +407,14 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                                       ) : (
                                         <small className="file-name">Text</small>
                                       )}
+                                      <button
+                                        className="btn small"
+                                        style={{ marginLeft: 8, color: '#e74c3c', background: 'none', border: 'none' }}
+                                        title="Xoá bài giảng"
+                                        onClick={() => deleteLecture(sIdx, lIdx)}
+                                      >
+                                        <i className="fas fa-trash"></i>
+                                      </button>
                                     </div>
                                   </div>
                                 )}
