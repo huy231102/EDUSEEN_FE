@@ -22,6 +22,20 @@ const CourseEditPage = () => {
   const initTab = allowedTabs.includes(requestedTab) ? requestedTab : 'info';
   const [selectedTab, setSelectedTab] = useState(initTab);
   const [courseData, setCourseData] = useState(null);
+  const [categories, setCategories] = useState([]);
+
+  // Lấy danh sách category từ API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('/api/category');
+        setCategories(res);
+      } catch (err) {
+        setCategories([]);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // -------------------- Save handler --------------------
   const buildPayload = () => {
@@ -29,7 +43,7 @@ const CourseEditPage = () => {
     return {
       title: courseData.name,
       description: sanitize(courseData.description),
-      categoryId: null, // TODO: ánh xạ categorySlug -> id nếu có danh mục
+      categoryId: courseData.categoryId ? Number(courseData.categoryId) : null, // SỬA DÒNG NÀY
       level: sanitize(courseData.level),
       cover: courseData.cover, // Thêm trường cover
       sections: (courseData.sections || []).map((s, idx) => ({
@@ -120,7 +134,7 @@ const CourseEditPage = () => {
     switch (selectedTab) {
       case 'info':
         return (
-          <CourseInfoTab course={courseData} setCourse={setCourseData} onSave={handleSave} isNew={isNew} />
+          <CourseInfoTab course={courseData} setCourse={setCourseData} onSave={handleSave} isNew={isNew} categories={categories} />
         );
       // Curriculum đã gộp vào info
       case 'reviews':
@@ -164,7 +178,7 @@ export default CourseEditPage;
 
 /* -------------------- Sub Components -------------------- */
 
-const CourseInfoTab = ({ course, setCourse, onSave, isNew }) => {
+const CourseInfoTab = ({ course, setCourse, onSave, isNew, categories }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCourse({ ...course, [name]: value });
@@ -193,13 +207,13 @@ const CourseInfoTab = ({ course, setCourse, onSave, isNew }) => {
       <div className="form-group">
         <label>Danh mục</label>
         <select
-          name="categorySlug"
-          value={course.categorySlug}
+          name="categoryId"
+          value={course.categoryId || ''}
           onChange={handleChange}
         >
           <option value="">-- Chọn danh mục --</option>
           {categories.map((cat) => (
-            <option key={cat.slug} value={cat.slug}>
+            <option key={cat.id} value={cat.id}>
               {cat.name}
             </option>
           ))}
