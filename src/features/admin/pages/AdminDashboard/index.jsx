@@ -2277,3 +2277,5 @@ function AdminDashboard(props) {
     </Box>
   );
 }
+
+export default AdminDashboard;
