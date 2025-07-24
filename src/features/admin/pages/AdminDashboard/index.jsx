@@ -31,6 +31,7 @@ import LanguageIcon from '@material-ui/icons/Language';
 import api from "services/api";
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend as RechartsLegend, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell } from 'recharts';
 
 
 ChartJS.register(
@@ -187,30 +188,24 @@ function AdminDashboard(props) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log('Bắt đầu loadData...');
-        
-        // Load users
+        // Đảm bảo fetchUsers chạy xong mới fetchUserStatistics
         await fetchUsers();
-        console.log('fetchUsers hoàn thành');
-        
-        // Load user statistics
         await fetchUserStatistics(chartYear);
-        console.log('fetchUserStatistics hoàn thành');
-        
-        // Load courses và course statistics
         await fetchCourses();
-        console.log('fetchCourses hoàn thành');
-        
         await fetchCourseStatistics(chartYear);
-        console.log('fetchCourseStatistics hoàn thành');
-        
       } catch (error) {
         console.error('Lỗi trong loadData:', error);
       }
     };
-    
     loadData();
   }, [chartYear]);
+
+  // useEffect mới: chỉ gọi fetchUserStatistics khi users đã có dữ liệu
+  useEffect(() => {
+    if (users.length > 0) {
+      fetchUserStatistics(chartYear, users);
+    }
+  }, [users, chartYear]);
 
   // Chỉ load lại course statistics khi courses thay đổi và chưa load
   useEffect(() => {
@@ -381,8 +376,8 @@ function AdminDashboard(props) {
   ];
   // Lấy số liệu user mới từ API, fallback về random nếu không có
   const usersByMonth = (userStatistics.userRegistrationsByMonth && userStatistics.userRegistrationsByMonth.length === 12 && typeof userStatistics.userRegistrationsByMonth[0] === 'object')
-    ? userStatistics.userRegistrationsByMonth.map(item => item.Count)
-    : Array.from({ length: 12 }, () => Math.floor(Math.random() * 50));
+    ? userStatistics.userRegistrationsByMonth.map(item => item.count)
+    : Array.from({ length: 12 }, () => 0);
   // Lấy số liệu khóa học mới từ API, fallback về random nếu không có
   const coursesByMonth = (courseStatistics.courseRegistrationsByMonth && courseStatistics.courseRegistrationsByMonth.length === 12)
     ? courseStatistics.courseRegistrationsByMonth
@@ -725,19 +720,16 @@ function AdminDashboard(props) {
   };
 
   // Fetch user statistics
-  const fetchUserStatistics = async (year = chartYear) => {
+  const fetchUserStatistics = async (year = chartYear, usersList = users) => {
     try {
       const response = await api.get(`/api/admin/user/statistics?year=${year}`);
       const data = response?.data || response;
-      // Lấy danh sách users hiện tại để xác định học sinh
-      // (nếu users chưa load thì fallback về data.students như cũ)
       let studentsCount = 0;
-      if (users && users.length > 0) {
-        studentsCount = users.filter(u => u.role !== 'Quản trị viên' && u.role !== 'Giáo viên').length;
+      if (usersList && usersList.length > 0) {
+        studentsCount = usersList.filter(u => u.role === 'Học sinh' || u.role === 'User').length;
       } else {
         studentsCount = data.students || 0;
       }
-      
       const stats = {
         totalUsers: data.totalUsers || 0,
         activeUsers: data.activeUsers || 0,
@@ -752,21 +744,16 @@ function AdminDashboard(props) {
         usersByStatus: data.usersByStatus || [],
         userRegistrationsByMonth: data.userRegistrationsByMonth || []
       };
-      
-      console.log('User statistics đã được set:', stats);
       setUserStatistics(stats);
     } catch (error) {
-      console.error('Lỗi khi tải thống kê người dùng:', error);
-      console.log('Sử dụng fallback data từ users array...');
-      
-      // Sử dụng dữ liệu từ users nếu API không hoạt động
+      // fallback như cũ
       const fallbackStats = {
-        totalUsers: users.length,
-        activeUsers: users.filter(u => u.status === 'Hoạt động').length,
-        inactiveUsers: users.filter(u => u.status === 'Đã khóa').length,
-        students: users.filter(u => u.role !== 'Quản trị viên' && u.role !== 'Giáo viên').length,
-        teachers: users.filter(u => u.role === 'Giáo viên').length,
-        admins: users.filter(u => u.role === 'Quản trị viên').length,
+        totalUsers: usersList.length,
+        activeUsers: usersList.filter(u => u.status === 'Hoạt động').length,
+        inactiveUsers: usersList.filter(u => u.status === 'Đã khóa').length,
+        students: usersList.filter(u => u.role === 'Học sinh' || u.role === 'User').length,
+        teachers: usersList.filter(u => u.role === 'Giáo viên').length,
+        admins: usersList.filter(u => u.role === 'Quản trị viên').length,
         newUsersThisMonth: 0,
         newUsersThisWeek: 0,
         averageUsersPerDay: 0,
@@ -774,8 +761,6 @@ function AdminDashboard(props) {
         usersByStatus: [],
         userRegistrationsByMonth: []
       };
-      
-      console.log('Fallback user stats:', fallbackStats);
       setUserStatistics(fallbackStats);
     }
   };
@@ -898,8 +883,11 @@ function AdminDashboard(props) {
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    navigate('/login'); // hoặc window.location.href = '/login'; nếu không dùng react-router-dom
+    navigate('/auth'); // Điều hướng về AuthPage
   };
+
+  // Đếm số học sinh trực tiếp từ mảng users
+  const studentsCount = users.filter(u => u.role === 'Học sinh' || u.role === 'User').length;
 
   return (
     <Box sx={{ background: '#f7fafc', minHeight: '100vh' }}>
@@ -1083,6 +1071,43 @@ function AdminDashboard(props) {
                 </motion.div>
               </Grid>
             </Grid>
+
+            {/* Chart: User mới & Khóa học mới theo tháng */}
+            <Box mt={5}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Thống kê User & Khóa học mới theo tháng</Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <RechartsLegend />
+                  <Bar dataKey="User mới" fill="#1eb2a6" />
+                  <Bar dataKey="Khóa học mới" fill="#184d47" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+
+            {/* Bar Chart: Top 5 khóa học đông học viên nhất */}
+            <Box mt={5}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Top 5 khóa học đông học viên nhất</Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={topCourses.map((c, idx) => ({
+                    name: c.name,
+                    'Số học viên': Array.isArray(c.students) ? c.students.length : (c.students || 0),
+                  }))}
+                  layout="vertical"
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" />
+                  <Tooltip />
+                  <Bar dataKey="Số học viên" fill="#1eb2a6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+
             {/* Section thông báo mới */}
             <Box mt={5}>
               <Paper elevation={2} sx={{ p: 3, borderRadius: 4, background: '#e0f7fa', boxShadow: '0 2px 12px rgba(30,178,166,0.08)' }}>
@@ -1265,7 +1290,7 @@ function AdminDashboard(props) {
                   <Box display="flex" justifyContent="space-between" alignItems="center" position="relative" zIndex={1}>
                     <Box>
                       <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, fontSize: '2.5rem' }}>
-                        {userStatistics.students}
+                        {studentsCount}
                       </Typography>
                       <Typography variant="body1" sx={{ opacity: 0.95, fontWeight: 500, fontSize: '0.95rem' }}>
                         Học sinh
@@ -1273,7 +1298,7 @@ function AdminDashboard(props) {
                       <Box display="flex" alignItems="center" gap={1} mt={1}>
                         <School style={{ fontSize: 16, opacity: 0.8 }} />
                         <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                          {userStatistics.totalUsers > 0 ? ((userStatistics.students / userStatistics.totalUsers) * 100).toFixed(1) : 0}% tổng số
+                          {users.length > 0 ? ((userStatistics.students / users.length) * 100).toFixed(1) : 0}% tổng số
                         </Typography>
                       </Box>
                     </Box>
