@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react"
 import './style.css'
-import categoryApi from 'services/categoryApi';
+import { getCategories, createCategory, updateCategory, deleteCategory } from 'services/categoryApi';
 import Heading from 'components/common/Heading';
 import { Link } from "react-router-dom"
 
@@ -13,7 +13,7 @@ const CategoriesList = () => {
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const data = await categoryApi.getCategories();
+        const data = await getCategories();
         setCategories(data);
       } catch (err) {
         setError('Không thể tải danh mục');
