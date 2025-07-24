@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-// import {
-//   PieChart, Pie, Cell, Tooltip as ReTooltip, Legend,
-//   BarChart, Bar, XAxis, YAxis, CartesianGrid,
-// } from 'recharts';
+import {
+  PieChart, Pie, Cell, Tooltip as ReTooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+} from 'recharts';
 import './style.css';
 import { courses } from 'features/courses/data/courseData';
+import api from 'services/api';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28BE6'];
 
@@ -18,54 +19,12 @@ const CourseAnalyticsPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Giả lập gọi API
-        const res = await fetch(`/api/teacher/courses/${courseId}/analysis`);
-        if (!res.ok) throw new Error('Network response failed');
-        const json = await res.json();
-        setData(json);
+        setLoading(true);
+        const data = await api.get(`/api/teacher/course/${courseId}/analysis`);
+        setData(data);
       } catch (err) {
         console.error(err);
-        // Tạo mock dựa trên dữ liệu cục bộ nếu gọi API lỗi
-        const course = courses.find(c => c.id.toString() === courseId);
-        const mockAssignments = [];
-        if (course) {
-          course.sections?.forEach(sec => {
-            sec.lectures?.forEach(lec => {
-              if (lec.assignment) {
-                const totalAssigned = 120;
-                const totalSubmitted = 60 + Math.floor(Math.random() * 60); // 60-119
-                const gradeDistribution = {
-                  '0-5': Math.floor(Math.random() * 10),
-                  '5-7': Math.floor(Math.random() * 20),
-                  '7-8': Math.floor(Math.random() * 30),
-                  '8-9': Math.floor(Math.random() * 30),
-                  '9-10': Math.floor(Math.random() * 20),
-                };
-                mockAssignments.push({
-                  assignmentId: lec.assignment.id,
-                  title: lec.assignment.title,
-                  totalAssigned,
-                  totalSubmitted,
-                  completionRate: totalSubmitted / totalAssigned,
-                  lateSubmissionCount: Math.floor(Math.random() * 15),
-                  lateSubmissionRate: 0.1,
-                  averageGrade: 7 + Math.random() * 3,
-                  gradeDistribution,
-                  gradedCount: totalSubmitted,
-                });
-              }
-            });
-          });
-        }
-
-        setData({
-          courseId,
-          totalEnrollments: 120,
-          completionRate: 0.72,
-          averageRating: 4.5,
-          avgCompletedLectures: 28,
-          assignments: mockAssignments.length ? mockAssignments : [],
-        });
+        setError(err);
       } finally {
         setLoading(false);
       }
@@ -85,7 +44,7 @@ const CourseAnalyticsPage = () => {
     ];
     return (
       <section key={assignment.assignmentId || idx} className="assignment-analytics">
-        <h3>{assignment.title}</h3>
+        <h3 className="assignment-title">{assignment.title}</h3>
         <div className="charts-grid">
           <div className="chart-card">
             <h4>Phân bổ điểm</h4>
@@ -115,32 +74,30 @@ const CourseAnalyticsPage = () => {
   };
 
   return (
-    <div className="analytics-page">
+    <div className="analytics-page course-analytics-page">
       <Link to="/teacher/dashboard" className="back-link">
         <i className="fas fa-arrow-left"></i> Quay lại bảng điều khiển
       </Link>
-      <h2>Thống kê khóa học #{courseId}</h2>
-
+      <h2 className="stats-title">Thống kê khóa học <span className="highlight">#{courseId}</span></h2>
       {/* Tổng quan */}
       <div className="overview-grid">
-        <div className="overview-item">
+        <div className="overview-item stat-card">
           <h3>Tổng học viên</h3>
-          <p>{data.totalEnrollments}</p>
+          <p className="stat-number primary">{data.totalEnrollments}</p>
         </div>
-        <div className="overview-item">
+        <div className="overview-item stat-card">
           <h3>Tỉ lệ hoàn thành</h3>
-          <p>{(data.completionRate * 100).toFixed(1)}%</p>
+          <p className="stat-number info">{(data.completionRate * 100).toFixed(1)}%</p>
         </div>
-        <div className="overview-item">
+        <div className="overview-item stat-card">
           <h3>Điểm trung bình</h3>
-          <p>{data.averageRating.toFixed(1)}</p>
+          <p className="stat-number warning">{data.averageRating.toFixed(1)}</p>
         </div>
-        <div className="overview-item">
+        <div className="overview-item stat-card">
           <h3>Số bài giảng hoàn thành TB</h3>
-          <p>{data.avgCompletedLectures.toFixed(1)}</p>
+          <p className="stat-number success">{data.avgCompletedLectures.toFixed(1)}</p>
         </div>
       </div>
-
       <div className="assignments-grid">
         {data.assignments?.map(renderAssignment)}
       </div>

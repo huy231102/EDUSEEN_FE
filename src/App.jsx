@@ -22,6 +22,8 @@ const CourseAnalyticsPage = lazy(() => import('./features/courses/pages/CourseAn
 const AssignmentsDashboardPage = lazy(() => import('./features/courses/pages/AssignmentsDashboardPage'));
 const AssignmentCreatePage = lazy(() => import('./features/courses/pages/AssignmentCreatePage'));
 const AssignmentGradingPage = lazy(() => import('./features/courses/pages/AssignmentGradingPage'));
+const AssignmentEditPage = lazy(() => import('./features/courses/pages/AssignmentEditPage'));
+const AssignmentStatsPage = lazy(() => import('./features/courses/pages/AssignmentsDashboardPage/AssignmentStatsPage'));
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './features/auth/components/ProtectedRoute';
 import ScrollToTop from './components/common/ScrollToTop';
@@ -45,7 +47,7 @@ const App = () => {
           />
           <Route path="/" element={<MainLayout />}>
             <Route index element={<CourseListPage />} />
-            <Route path="category/:categorySlug" element={<CategoryPage />} />
+            <Route path="category/:categoryId" element={<CategoryPage />} />
             <Route path="courses" element={<CourseListPage />} />
             <Route path="courses/:courseId" element={<CourseDetailPage />} />
             <Route path="courses/:courseId/learn" element={<CourseContentPage />} />
@@ -66,6 +68,8 @@ const App = () => {
                 <Route path=":courseId/assignments" element={<AssignmentsDashboardPage />} />
                 <Route path=":courseId/assignments/new" element={<AssignmentCreatePage />} />
                 <Route path=":courseId/assignments/:assignmentId" element={<AssignmentGradingPage />} />
+                <Route path=":courseId/assignments/:assignmentId/edit" element={<AssignmentEditPage />} />
+                <Route path=":courseId/assignments/:assignmentId/stats" element={<AssignmentStatsPage />} />
               </Route>
             </Route>
           </Route>

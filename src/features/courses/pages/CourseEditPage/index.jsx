@@ -4,6 +4,8 @@ import { categories } from 'features/courses/data/courseData';
 import './style.css';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import api from 'services/api';
+import VideoS3Upload from 'components/common/VideoS3Upload';
+import ImageS3Upload from 'components/common/ImageS3Upload';
 
 const TABS = [
   { id: 'info', label: 'Thông tin & Curriculum' },
@@ -20,6 +22,20 @@ const CourseEditPage = () => {
   const initTab = allowedTabs.includes(requestedTab) ? requestedTab : 'info';
   const [selectedTab, setSelectedTab] = useState(initTab);
   const [courseData, setCourseData] = useState(null);
+  const [categories, setCategories] = useState([]);
+
+  // Lấy danh sách category từ API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get('/api/category');
+        setCategories(res);
+      } catch (err) {
+        setCategories([]);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // -------------------- Save handler --------------------
   const buildPayload = () => {
@@ -27,8 +43,9 @@ const CourseEditPage = () => {
     return {
       title: courseData.name,
       description: sanitize(courseData.description),
-      categoryId: null, // TODO: ánh xạ categorySlug -> id nếu có danh mục
+      categoryId: courseData.categoryId ? Number(courseData.categoryId) : null, // SỬA DÒNG NÀY
       level: sanitize(courseData.level),
+      cover: courseData.cover, // Thêm trường cover
       sections: (courseData.sections || []).map((s, idx) => ({
         sectionId: s.sectionId,
         title: s.title,
@@ -40,6 +57,7 @@ const CourseEditPage = () => {
           contentUrl: l.contentUrl || '',
           duration: l.duration || 0,
           order: l.order ?? lidx + 1,
+          assignmentId: l.assignmentId || null
         })),
       })),
     };
@@ -74,6 +92,7 @@ const CourseEditPage = () => {
             description: c.description || '',
             categoryId: c.categoryId,
             level: c.level || 'beginner',
+            cover: c.cover || '', // Thêm dòng này để map cover từ API
             sections: (c.sections || []).map(s => ({
               sectionId: s.sectionId,
               title: s.title,
@@ -85,6 +104,7 @@ const CourseEditPage = () => {
                 contentUrl: l.contentUrl,
                 duration: l.duration,
                 order: l.order,
+                assignmentId: l.assignmentId || null
               }))
             })),
           };
@@ -116,7 +136,7 @@ const CourseEditPage = () => {
     switch (selectedTab) {
       case 'info':
         return (
-          <CourseInfoTab course={courseData} setCourse={setCourseData} onSave={handleSave} isNew={isNew} />
+          <CourseInfoTab course={courseData} setCourse={setCourseData} onSave={handleSave} isNew={isNew} categories={categories} />
         );
       // Curriculum đã gộp vào info
       case 'reviews':
@@ -160,7 +180,7 @@ export default CourseEditPage;
 
 /* -------------------- Sub Components -------------------- */
 
-const CourseInfoTab = ({ course, setCourse, onSave, isNew }) => {
+const CourseInfoTab = ({ course, setCourse, onSave, isNew, categories }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCourse({ ...course, [name]: value });
@@ -189,13 +209,13 @@ const CourseInfoTab = ({ course, setCourse, onSave, isNew }) => {
       <div className="form-group">
         <label>Danh mục</label>
         <select
-          name="categorySlug"
-          value={course.categorySlug}
+          name="categoryId"
+          value={course.categoryId || ''}
           onChange={handleChange}
         >
           <option value="">-- Chọn danh mục --</option>
           {categories.map((cat) => (
-            <option key={cat.slug} value={cat.slug}>
+            <option key={cat.id} value={cat.id}>
               {cat.name}
             </option>
           ))}
@@ -210,27 +230,12 @@ const CourseInfoTab = ({ course, setCourse, onSave, isNew }) => {
         </select>
       </div>
       <div className="form-group">
-        <label>Ảnh bìa</label>
-        <input
-          type="text"
-          placeholder="URL ảnh bìa hoặc tải lên sau"
-          name="cover"
-          value={course.cover}
-          onChange={handleChange}
+        <label>Ảnh bìa khoá học</label>
+        <ImageS3Upload
+          defaultUrl={course.cover}
+          onUploaded={url => setCourse({ ...course, cover: url })}
         />
       </div>
-      <div className="form-group">
-        <label>Video giới thiệu (YouTube URL hoặc Upload)</label>
-        <input
-          type="text"
-          name="introVideo"
-          placeholder="Hoặc dán link YouTube ở đây"
-          value={course.introVideo || ''}
-          onChange={handleChange}
-        />
-        <input type="file" accept="video/*" onChange={(e)=>setCourse({...course, introVideoFile: e.target.files[0]})} style={{marginTop:'8px'}} />
-      </div>
-
       {/* Curriculum Builder */}
       <h3 style={{marginTop:'30px'}}>Chương trình học</h3>
       <CurriculumBuilder course={course} setCourse={setCourse} />
@@ -266,20 +271,25 @@ const CurriculumBuilder = ({ course, setCourse }) => {
     setSectionTitle('');
   };
 
+  // Xoá Section
+  const deleteSection = (sectionIdx) => {
+    const newSections = course.sections.filter((_, idx) => idx !== sectionIdx);
+    setCourse({ ...course, sections: newSections });
+  };
+
   // Thêm Lecture vào một Section
   const addLecture = (sectionIdx) => {
     if (!lectureTitle.trim()) return;
     const newSections = [...course.sections];
     if (lectureType === 'video' && !lectureFile) {
-      alert('Vui lòng chọn file video');
+      alert('Vui lòng upload video');
       return;
     }
     const lectureObj = {
       title: lectureTitle.trim(),
       contentType: lectureType,
-      contentUrl: '',
+      contentUrl: lectureType === 'video' ? lectureFile : '',
       duration: 0,
-      file: lectureType === 'video' ? lectureFile : null,
       text: lectureType === 'text' ? lectureText : '',
     };
     newSections[sectionIdx].lectures.push(lectureObj);
@@ -289,6 +299,13 @@ const CurriculumBuilder = ({ course, setCourse }) => {
     setLectureText('');
     setLectureFile(null);
     setActiveSectionIdx(null);
+  };
+
+  // Xoá Lecture
+  const deleteLecture = (sectionIdx, lectureIdx) => {
+    const newSections = [...course.sections];
+    newSections[sectionIdx].lectures = newSections[sectionIdx].lectures.filter((_, idx) => idx !== lectureIdx);
+    setCourse({ ...course, sections: newSections });
   };
 
   // Xử lý drag & drop
@@ -344,6 +361,14 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                     >
                       <div className="section-header" {...sectionProvided.dragHandleProps}>
                         <h4>{section.title}</h4>
+                        <button
+                          className="btn small"
+                          style={{ marginLeft: 8, color: '#e74c3c', background: 'none', border: 'none' }}
+                          title="Xoá chương"
+                          onClick={() => deleteSection(sIdx)}
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
                       </div>
 
                       {/* Add Lecture input */}
@@ -361,7 +386,9 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                               <option value="text">Text</option>
                             </select>
                             {lectureType === 'video' ? (
-                              <input type="file" accept="video/*" onChange={(e)=>setLectureFile(e.target.files[0])} />
+                              <VideoS3Upload
+                                onUploaded={url => setLectureFile(url)}
+                              />
                             ) : (
                               <textarea placeholder="Nội dung bài giảng" value={lectureText} onChange={(e)=>setLectureText(e.target.value)} rows={3}></textarea>
                             )}
@@ -388,17 +415,22 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                                     <div className="lecture-content">
                                       <span>{lec.title}</span>
                                       {lec.contentType === 'video' ? (
-                                        lec.file ? (
-                                          <small className="file-name">{lec.file.name}</small>
+                                        lec.contentUrl ? (
+                                          <video src={lec.contentUrl} controls width="200" style={{marginTop:4}} />
                                         ) : (
-                                          <label className="upload-btn">
-                                            <input type="file" accept="video/*" style={{display:'none'}} onChange={(e)=>handleFileUpload(sIdx, lIdx, e.target.files[0])} />
-                                            <i className="fas fa-upload"></i> Upload video
-                                          </label>
+                                          <small className="file-name">Chưa upload video</small>
                                         )
                                       ) : (
                                         <small className="file-name">Text</small>
                                       )}
+                                      <button
+                                        className="btn small"
+                                        style={{ marginLeft: 8, color: '#e74c3c', background: 'none', border: 'none' }}
+                                        title="Xoá bài giảng"
+                                        onClick={() => deleteLecture(sIdx, lIdx)}
+                                      >
+                                        <i className="fas fa-trash"></i>
+                                      </button>
                                     </div>
                                   </div>
                                 )}

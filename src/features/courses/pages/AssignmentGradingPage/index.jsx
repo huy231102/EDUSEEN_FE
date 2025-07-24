@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { courses } from 'features/courses/data/courseData';
+import api from 'services/api';
 import './style.css';
 
 const AssignmentGradingPage = () => {
   const { courseId, assignmentId } = useParams();
   const navigate = useNavigate();
-  const [course, setCourse] = useState(null);
   const [assignment, setAssignment] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -14,73 +13,80 @@ const AssignmentGradingPage = () => {
   const [feedback, setFeedback] = useState('');
 
   useEffect(() => {
-    const foundCourse = courses.find(c => c.id.toString() === courseId);
-    if (!foundCourse) {
-      navigate('/teacher/dashboard');
-      return;
+    async function fetchData() {
+      try {
+        const data = await api.get(`/api/teacher/assignment/${assignmentId}/submissions`);
+        setAssignment({ title: data.title });
+
+        const submittedList = data.submissions.map(s => ({
+          submissionId: s.submissionId || s.SubmissionId,
+          studentId: s.studentId || s.StudentId,
+          studentName: s.studentName || s.StudentName,
+          grade: s.grade ?? s.Grade,
+          feedback: s.feedback ?? s.Feedback,
+        }));
+
+        const notSubmittedList = (data.notSubmittedStudents || data.NotSubmittedStudents || []).map(ns => ({
+          submissionId: null,
+          studentId: ns.studentId || ns.StudentId,
+          studentName: ns.name || ns.Name,
+          grade: null,
+          feedback: null,
+        }));
+
+        const fullList = [...submittedList, ...notSubmittedList];
+
+        const sorted = fullList.sort((a, b) => {
+          // Submitted come first (grade null or not), not submitted (submissionId null) at bottom
+          if (a.submissionId && !b.submissionId) return -1;
+          if (!a.submissionId && b.submissionId) return 1;
+          // Among submitted, ungraded first
+          if (a.grade == null && b.grade != null) return -1;
+          if (a.grade != null && b.grade == null) return 1;
+          return 0;
+        });
+        setSubmissions(sorted);
+        setSelectedIdx(0);
+      } catch (err) {
+        console.error(err);
+        navigate(`/teacher/course/${courseId}/assignments`);
+      }
     }
-    setCourse(foundCourse);
-
-    let foundAssignment = null;
-    foundCourse.sections.forEach(sec => {
-      sec.lectures.forEach(lec => {
-        if (lec.assignment && lec.assignment.id.toString() === assignmentId) {
-          foundAssignment = lec.assignment;
-        }
-      });
-    });
-
-    if (!foundAssignment) {
-      navigate(`/teacher/course/${courseId}/assignments`);
-      return;
-    }
-
-    // If submissions empty -> mock 10 submissions
-    if (!foundAssignment.submissions || !foundAssignment.submissions.length) {
-      const mocks = Array.from({ length: 10 }).map((_, idx) => ({
-        studentId: idx + 1,
-        studentName: `Học viên ${idx + 1}`,
-        file: {
-          name: `submission_${idx + 1}.pdf`,
-          url: '#',
-          type: 'pdf',
-        },
-        score: null,
-        feedback: '',
-      }));
-      foundAssignment.submissions = mocks;
-    }
-
-    // Sort submissions: ungraded first
-    const sorted = [...foundAssignment.submissions].sort((a, b) => {
-      if (a.score == null && b.score != null) return -1;
-      if (a.score != null && b.score == null) return 1;
-      return 0;
-    });
-    setAssignment(foundAssignment);
-    setSubmissions(sorted);
-    setSelectedIdx(0);
+    fetchData();
   }, [courseId, assignmentId, navigate]);
 
   useEffect(() => {
     if (submissions.length) {
       const sub = submissions[selectedIdx];
-      setScore(sub.score ?? '');
+      setScore(sub.grade ?? '');
       setFeedback(sub.feedback ?? '');
     }
   }, [selectedIdx, submissions]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const updated = [...submissions];
     updated[selectedIdx] = {
       ...updated[selectedIdx],
-      score: score === '' ? null : Number(score),
+      grade: score === '' ? null : Number(score),
       feedback: feedback.trim(),
     };
     setSubmissions(updated);
 
+    // Gọi API gửi feedback và điểm
+    if (updated[selectedIdx].submissionId) {
+      try {
+        await api.post(`/api/submission/${updated[selectedIdx].submissionId}/feedback`, {
+          grade: score === '' ? null : Number(score),
+          feedback: feedback.trim(),
+        });
+      } catch (err) {
+        alert('Lỗi khi gửi feedback: ' + (err?.response?.data?.message || err.message));
+        return;
+      }
+    }
+
     // find next ungraded
-    const nextIdx = updated.findIndex((s, idx) => s.score == null && idx > selectedIdx);
+    const nextIdx = updated.findIndex((s, idx) => s.grade == null && idx > selectedIdx);
     if (nextIdx !== -1) {
       setSelectedIdx(nextIdx);
     } else {
@@ -90,7 +96,7 @@ const AssignmentGradingPage = () => {
 
   if (!assignment) return null;
 
-  const current = submissions[selectedIdx];
+  const current = submissions[selectedIdx] || {};
 
   const renderViewer = () => {
     if (!current.file?.url || current.file.url === '#') {
@@ -120,10 +126,14 @@ const AssignmentGradingPage = () => {
                   className={idx === selectedIdx ? 'active' : ''}
                   onClick={() => setSelectedIdx(idx)}>
                 <span className="student-name">{sub.studentName}</span>
-                {sub.score == null ? (
-                  <span className="status ungraded">Chưa chấm</span>
+                {sub.submissionId == null ? (
+                  <span className="status not-submitted">Chưa nộp</span>
                 ) : (
-                  <span className="status graded">Đã chấm</span>
+                  sub.grade == null ? (
+                    <span className="status ungraded">Chưa chấm</span>
+                  ) : (
+                    <span className="status graded">Đã chấm</span>
+                  )
                 )}
               </li>
             ))}
@@ -136,7 +146,7 @@ const AssignmentGradingPage = () => {
             <Link to={`/teacher/course/${courseId}/assignments`} className="back-link"><i className="fas fa-arrow-left"></i> Danh sách bài tập</Link>
           </div>
           <h2>{assignment.title}</h2>
-          <h4>{current.studentName}</h4>
+          <h4>{current.studentName || ''}</h4>
 
           {/* Viewer */}
           <div className="viewer">

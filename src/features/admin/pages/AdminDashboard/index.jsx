@@ -207,7 +207,7 @@ function AdminDashboard(props) {
     }
   }, [users, chartYear]);
 
-  // Chỉ load lại course statistics khi courses thay đổi và chưa load
+  // Chỉ load lại course statistics khi courses thay đổi và chưa load nhes
   useEffect(() => {
     if (courses.length > 0 && !courseStatisticsLoaded) {
       console.log('Courses đã load, load lại course statistics...');
