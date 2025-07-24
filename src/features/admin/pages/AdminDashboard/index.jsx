@@ -32,7 +32,7 @@ import api from "services/api";
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend as RechartsLegend, ResponsiveContainer } from 'recharts';
 import { PieChart, Pie, Cell } from 'recharts';
-
+import { getCategories, createCategory, updateCategory, deleteCategory } from 'services/categoryApi';
 
 ChartJS.register(
   CategoryScale,
@@ -207,7 +207,7 @@ function AdminDashboard(props) {
     }
   }, [users, chartYear]);
 
-  // Chỉ load lại course statistics khi courses thay đổi và chưa load
+  // Chỉ load lại course statistics khi courses thay đổi và chưa load nhes
   useEffect(() => {
     if (courses.length > 0 && !courseStatisticsLoaded) {
       console.log('Courses đã load, load lại course statistics...');
@@ -2260,46 +2260,130 @@ function AdminDashboard(props) {
         )}
         {selectedMenu === "Quản lý danh mục khóa học" && (
           <Paper elevation={3} style={{ padding: 32, maxWidth: 700, margin: '32px auto' }}>
-            <Typography variant="h5" mb={2}>Quản lý danh mục khóa học</Typography>
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Tìm kiếm danh mục..."
-              value={searchCategory}
-              onChange={e => setSearchCategory(e.target.value)}
-              style={{ marginBottom: 16, minWidth: 260 }}
-              InputProps={{ startAdornment: <InputAdornment position="start"><Search /></InputAdornment> }}
-            />
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Icon</TableCell>
-                  <TableCell>Tên danh mục</TableCell>
-                  <TableCell>Số khóa học</TableCell>
-                  <TableCell>Trạng thái</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {categories.filter(cat => cat.name.toLowerCase().includes(searchCategory.toLowerCase())).map((cat) => (
-                  <TableRow key={cat.id}>
-                    <TableCell>{getIconByType(cat.iconType)}</TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center">
-                        <Typography style={{ fontWeight: 600 }}>{cat.name}</Typography>
-                        <Chip label={`${cat.courseCount} KH`} size="small" style={{ marginLeft: 8, background: cat.active ? '#e0f7fa' : '#ffe0e0', color: cat.active ? '#184d47' : '#f44336', fontWeight: 600 }} />
-                      </Box>
-                      <Typography variant="body2" color="textSecondary">{cat.description}</Typography>
-                    </TableCell>
-                    <TableCell>{cat.courseCount}</TableCell>
-                    <TableCell>{cat.active ? "Đang bật" : "Đang tắt"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <CategoryManager />
           </Paper>
         )}
       </Box>
     </Box>
+  );
+}
+
+function CategoryManager() {
+  const [categories, setCategories] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editCategory, setEditCategory] = useState(null);
+  const [form, setForm] = useState({ categoryName: '', cover: null, hoverCover: null });
+
+  useEffect(() => { fetchCategories(); }, []);
+  const fetchCategories = async () => {
+    const res = await getCategories();
+    console.log('Categories from API:', res); // Log dữ liệu trả về
+    setCategories(res);
+  };
+  const handleOpenDialog = (cat = null) => {
+    setEditCategory(cat);
+    setForm({ categoryName: cat?.name || '', cover: null, hoverCover: null });
+    setOpenDialog(true);
+  };
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setEditCategory(null);
+    setForm({ categoryName: '', cover: null, hoverCover: null });
+  };
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    setForm((prev) => ({ ...prev, [name]: files ? files[0] : value }));
+  };
+  const handleSubmit = async () => {
+    const formData = new FormData();
+    formData.append('CategoryName', form.categoryName);
+    if (form.cover) formData.append('Cover', form.cover);
+    if (form.hoverCover) formData.append('HoverCover', form.hoverCover);
+    for (let pair of formData.entries()) {
+      console.log('FormData:', pair[0], pair[1]);
+    }
+    if (editCategory) {
+      await updateCategory(editCategory.id, formData);
+    } else {
+      await createCategory(formData);
+    }
+    fetchCategories();
+    handleCloseDialog();
+  };
+  const handleDelete = async (cat) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
+      await deleteCategory(cat.id);
+      fetchCategories();
+    }
+  };
+  return (
+    <div>
+      <Button variant="contained" color="primary" startIcon={<Add />} onClick={() => handleOpenDialog()}>
+        Thêm danh mục
+      </Button>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Ảnh</TableCell>
+            <TableCell>Tên danh mục</TableCell>
+            <TableCell>Ảnh Hover</TableCell>
+            <TableCell>Số khóa học</TableCell>
+            <TableCell>Hành động</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {(categories || []).map((cat) => (
+            <TableRow key={cat.id}>
+              <TableCell>
+                {cat.cover && <Avatar src={cat.cover} variant="rounded" style={{ width: 60, height: 40 }} />}
+              </TableCell>
+              <TableCell>{cat.name}</TableCell>
+              <TableCell>
+                {cat.hoverCover && <Avatar src={cat.hoverCover} variant="rounded" style={{ width: 60, height: 40 }} />}
+              </TableCell>
+              <TableCell>{cat.courseCount}</TableCell>
+              <TableCell>
+                <IconButton onClick={() => handleOpenDialog(cat)}><Edit /></IconButton>
+                <IconButton onClick={() => handleDelete(cat)}><Delete /></IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>{editCategory ? 'Sửa danh mục' : 'Thêm danh mục'}</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Tên danh mục"
+            name="categoryName"
+            value={form.categoryName}
+            onChange={handleChange}
+            fullWidth
+            margin="dense"
+          />
+          <div style={{ margin: '12px 0' }}>
+            <label>Ảnh chính: </label>
+            <input type="file" name="cover" accept="image/*" onChange={handleChange} />
+            {editCategory && editCategory.cover && (
+              <Avatar src={editCategory.cover} variant="rounded" style={{ width: 60, height: 40, marginLeft: 8 }} />
+            )}
+          </div>
+          <div style={{ margin: '12px 0' }}>
+            <label>Ảnh hover: </label>
+            <input type="file" name="hoverCover" accept="image/*" onChange={handleChange} />
+            {editCategory && editCategory.hoverCover && (
+              <Avatar src={editCategory.hoverCover} variant="rounded" style={{ width: 60, height: 40, marginLeft: 8 }} />
+            )}
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Hủy</Button>
+          <Button onClick={handleSubmit} color="primary" variant="contained">
+            {editCategory ? 'Lưu' : 'Thêm'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
   );
 }
 
