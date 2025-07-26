@@ -219,9 +219,9 @@ const CourseContentPage = () => {
                   {currentLecture.contentUrl && (currentLecture.contentUrl.includes('youtube.com') || currentLecture.contentUrl.includes('youtu.be')) ? (
                     <YouTube
                       videoId={(() => {
-                        // Lấy videoId từ link YouTube
+                        // Lấy videoId từ nhiều dạng link YouTube (watch?v=, youtu.be/, embed/)
                         const url = currentLecture.contentUrl;
-                        const match = url.match(/(?:youtube\.com.*(?:\?|&)v=|youtu\.be\/)([\w-]+)/);
+                        const match = url.match(/(?:youtube\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([\w-]+)/);
                         return match ? match[1] : '';
                       })()}
                       opts={{
