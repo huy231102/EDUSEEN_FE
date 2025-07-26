@@ -3,32 +3,35 @@
 const BASE_URL = process.env.REACT_APP_API_URL || 'https://localhost:7256';
 
 async function request(url, options = {}) {
-  // Lấy token từ localStorage (nếu có) để tự động gửi trong Authorization header
   let authToken = localStorage.getItem('authToken');
   try {
     authToken = authToken ? JSON.parse(authToken) : null;
-  } catch {
-    // ignore parse errors, use raw value
-  }
+  } catch {}
 
-  const headers = {
-    'Content-Type': 'application/json',
+  let headers = {
     'Accept': 'application/json',
     ...(options.headers || {}),
     ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
   };
 
+  let body = options.body;
+  // Nếu là FormData thì KHÔNG set Content-Type và KHÔNG JSON.stringify
+  if (body && typeof body === 'object' && !(body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+    body = JSON.stringify(body);
+  }
+
   const response = await fetch(`${BASE_URL}${url}`, {
     headers,
     credentials: options.credentials || 'omit',
     ...options,
+    body,
   });
 
   let data = null;
   try {
     data = await response.json();
   } catch {
-    // Nếu không phải JSON, thử lấy text
     try {
       data = await response.text();
     } catch {
@@ -51,8 +54,8 @@ async function request(url, options = {}) {
 
 export const api = {
   get: (url, options) => request(url, { method: 'GET', ...options }),
-  post: (url, body, options) => request(url, { method: 'POST', body: JSON.stringify(body), ...options }),
-  put: (url, body, options) => request(url, { method: 'PUT', body: JSON.stringify(body), ...options }),
+  post: (url, body, options) => request(url, { method: 'POST', body, ...options }),
+  put: (url, body, options) => request(url, { method: 'PUT', body, ...options }),
   delete: (url, options) => request(url, { method: 'DELETE', ...options }),
 };
 
