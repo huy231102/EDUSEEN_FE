@@ -3,6 +3,7 @@ import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, AppBar, Toolba
 import { People, Dashboard, Assignment, School, ExitToApp, Add, Edit, Delete, GetApp, PictureAsPdf, Search, Info, Star, BarChart as BarChartIcon, PersonAdd, RateReview, Lock, LockOpen, Refresh, Settings, ExpandLess, ExpandMore, Tune, PlayArrow, AccessTime, TrendingUp, CheckCircle, Group, Person, Block } from "@material-ui/icons";
 import './style.css';
 import { format } from 'date-fns';
+import ImageS3Upload from 'components/common/ImageS3Upload';
 
 import {
   Chart as ChartJS,
@@ -23,6 +24,7 @@ import NotificationsIcon from '@material-ui/icons/Notifications';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import FolderIcon from '@material-ui/icons/Folder';
 import Snackbar from '@material-ui/core/Snackbar';
+import MuiAlert from '@material-ui/lab/Alert';
 
 import EmojiObjectsIcon from '@material-ui/icons/EmojiObjects';
 import BookIcon from '@material-ui/icons/Book';
@@ -2272,48 +2274,91 @@ function CategoryManager() {
   const [categories, setCategories] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [editCategory, setEditCategory] = useState(null);
-  const [form, setForm] = useState({ categoryName: '', cover: null, hoverCover: null });
+  const [form, setForm] = useState({ categoryName: '', cover: '', hoverCover: '' });
+  const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => { fetchCategories(); }, []);
   const fetchCategories = async () => {
-    const res = await getCategories();
-    console.log('Categories from API:', res); // Log dữ liệu trả về
-    setCategories(res);
+    try {
+      const res = await getCategories();
+      console.log('Categories from API:', res); // Log dữ liệu trả về
+      setCategories(res);
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách danh mục:', error);
+      setSnackbar({ open: true, message: 'Không thể tải danh sách danh mục. Vui lòng thử lại!', severity: 'error' });
+    }
   };
   const handleOpenDialog = (cat = null) => {
     setEditCategory(cat);
-    setForm({ categoryName: cat?.name || '', cover: null, hoverCover: null });
+    setForm({ categoryName: cat?.name || '', cover: cat?.cover || '', hoverCover: cat?.hoverCover || '' });
     setOpenDialog(true);
   };
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setEditCategory(null);
-    setForm({ categoryName: '', cover: null, hoverCover: null });
+    setForm({ categoryName: '', cover: '', hoverCover: '' });
+    setLoading(false);
   };
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    setForm((prev) => ({ ...prev, [name]: files ? files[0] : value }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+  const handleCoverUploaded = (url) => {
+    console.log('Cover uploaded:', url);
+    setForm(prev => ({ ...prev, cover: url }));
+  };
+  const handleHoverCoverUploaded = (url) => {
+    console.log('Hover cover uploaded:', url);
+    setForm(prev => ({ ...prev, hoverCover: url }));
   };
   const handleSubmit = async () => {
-    const formData = new FormData();
-    formData.append('CategoryName', form.categoryName);
-    if (form.cover) formData.append('Cover', form.cover);
-    if (form.hoverCover) formData.append('HoverCover', form.hoverCover);
-    for (let pair of formData.entries()) {
-      console.log('FormData:', pair[0], pair[1]);
+    if (!form.categoryName || !form.categoryName.trim()) {
+      setSnackbar({ open: true, message: 'Vui lòng nhập tên danh mục!', severity: 'error' });
+      return;
     }
-    if (editCategory) {
-      await updateCategory(editCategory.id, formData);
-    } else {
-      await createCategory(formData);
+
+    setLoading(true);
+    const categoryData = {
+      CategoryName: form.categoryName.trim(),
+      Cover: form.cover,
+      HoverCover: form.hoverCover
+    };
+    
+    console.log('Category Data:', categoryData);
+    console.log('Form state:', form);
+    console.log('JSON.stringify:', JSON.stringify(categoryData));
+    
+    try {
+      if (editCategory) {
+        await updateCategory(editCategory.id, categoryData);
+        setSnackbar({ open: true, message: 'Cập nhật danh mục thành công!', severity: 'success' });
+      } else {
+        await createCategory(categoryData);
+        setSnackbar({ open: true, message: 'Thêm danh mục thành công!', severity: 'success' });
+      }
+      fetchCategories();
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Lỗi khi lưu danh mục:', error);
+      setSnackbar({ open: true, message: 'Có lỗi xảy ra khi lưu danh mục. Vui lòng thử lại!', severity: 'error' });
+    } finally {
+      setLoading(false);
     }
-    fetchCategories();
-    handleCloseDialog();
   };
   const handleDelete = async (cat) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
-      await deleteCategory(cat.id);
-      fetchCategories();
+      try {
+        setLoading(true);
+        await deleteCategory(cat.id);
+        fetchCategories();
+        setSnackbar({ open: true, message: 'Xóa danh mục thành công!', severity: 'success' });
+      } catch (error) {
+        console.error('Lỗi khi xóa danh mục:', error);
+        setSnackbar({ open: true, message: 'Có lỗi xảy ra khi xóa danh mục. Vui lòng thử lại!', severity: 'error' });
+      } finally {
+        setLoading(false);
+      }
     }
   };
   return (
@@ -2332,14 +2377,36 @@ function CategoryManager() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {(categories || []).map((cat) => (
+          {loading && categories.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} align="center">
+                <Typography variant="body2" color="textSecondary">
+                  Đang tải danh sách danh mục...
+                </Typography>
+              </TableCell>
+            </TableRow>
+          ) : (categories || []).map((cat) => (
             <TableRow key={cat.id}>
               <TableCell>
-                {cat.cover && <Avatar src={cat.cover} variant="rounded" style={{ width: 60, height: 40 }} />}
+                {cat.cover && (
+                  <Avatar 
+                    src={cat.cover} 
+                    variant="rounded" 
+                    className="category-table-avatar"
+                    style={{ width: 60, height: 40, objectFit: 'cover' }} 
+                  />
+                )}
               </TableCell>
               <TableCell>{cat.name}</TableCell>
               <TableCell>
-                {cat.hoverCover && <Avatar src={cat.hoverCover} variant="rounded" style={{ width: 60, height: 40 }} />}
+                {cat.hoverCover && (
+                  <Avatar 
+                    src={cat.hoverCover} 
+                    variant="rounded" 
+                    className="category-table-avatar"
+                    style={{ width: 60, height: 40, objectFit: 'cover' }} 
+                  />
+                )}
               </TableCell>
               <TableCell>{cat.courseCount}</TableCell>
               <TableCell>
@@ -2361,28 +2428,49 @@ function CategoryManager() {
             fullWidth
             margin="dense"
           />
-          <div style={{ margin: '12px 0' }}>
-            <label>Ảnh chính: </label>
-            <input type="file" name="cover" accept="image/*" onChange={handleChange} />
-            {editCategory && editCategory.cover && (
-              <Avatar src={editCategory.cover} variant="rounded" style={{ width: 60, height: 40, marginLeft: 8 }} />
-            )}
+          <div className="category-upload-section">
+            <label className="category-upload-label">Ảnh chính:</label>
+            <ImageS3Upload 
+              onUploaded={handleCoverUploaded} 
+              defaultUrl={form.cover || editCategory?.cover}
+            />
           </div>
-          <div style={{ margin: '12px 0' }}>
-            <label>Ảnh hover: </label>
-            <input type="file" name="hoverCover" accept="image/*" onChange={handleChange} />
-            {editCategory && editCategory.hoverCover && (
-              <Avatar src={editCategory.hoverCover} variant="rounded" style={{ width: 60, height: 40, marginLeft: 8 }} />
-            )}
+          <div className="category-upload-section">
+            <label className="category-upload-label">Ảnh hover:</label>
+            <ImageS3Upload 
+              onUploaded={handleHoverCoverUploaded} 
+              defaultUrl={form.hoverCover || editCategory?.hoverCover}
+            />
           </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Hủy</Button>
-          <Button onClick={handleSubmit} color="primary" variant="contained">
-            {editCategory ? 'Lưu' : 'Thêm'}
+          <Button onClick={handleCloseDialog} disabled={loading}>Hủy</Button>
+          <Button 
+            onClick={handleSubmit} 
+            color="primary" 
+            variant="contained"
+            disabled={loading}
+          >
+            {loading ? 'Đang xử lý...' : (editCategory ? 'Lưu' : 'Thêm')}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <MuiAlert 
+          elevation={6} 
+          variant="filled" 
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+        >
+          {snackbar.message}
+        </MuiAlert>
+      </Snackbar>
     </div>
   );
 }

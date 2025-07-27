@@ -57,4 +57,52 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Category Manager Upload Styles */
+.category-upload-section {
+  margin: 16px 0;
+  padding: 16px;
+  border: 2px dashed #e0e0e0;
+  border-radius: 8px;
+  background: #fafafa;
+  transition: all 0.3s ease;
+}
+
+.category-upload-section:hover {
+  border-color: #1eb2a6;
+  background: #f0f9f8;
+}
+
+.category-upload-label {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.category-upload-preview {
+  margin-top: 12px;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+}
+
+.category-upload-preview img {
+  max-width: 200px;
+  max-height: 120px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.category-table-avatar {
+  border: 2px solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.category-table-avatar:hover {
+  border-color: #1eb2a6;
+  transform: scale(1.05);
 } 
