@@ -9,8 +9,8 @@ const categoryApi = {
 
 export default categoryApi; 
 export const getCategories = () => api.get('/api/category');
-export const createCategory = (formData) =>
-  api.post('/api/category', formData);
-export const updateCategory = (id, formData) =>
-  api.put(`/api/category/${id}`, formData);
+export const createCategory = (categoryData) =>
+  api.post('/api/category', categoryData);
+export const updateCategory = (id, categoryData) =>
+  api.put(`/api/category/${id}`, categoryData);
 export const deleteCategory = (id) => api.delete(`/api/category/${id}`); 
