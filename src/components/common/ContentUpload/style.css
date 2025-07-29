@@ -149,7 +149,8 @@
   cursor: pointer;
   transition: all 0.3s ease;
   flex-shrink: 0;
-  margin-left: 12px;
+  margin: 0px;
+  padding: 0px;
 }
 
 .remove-file-btn:hover {
@@ -166,6 +167,10 @@
 
 .remove-file-btn:hover i {
   color: #f44336;
+}
+
+button i {
+  margin: 0px;
 }
 
 .add-more-files {

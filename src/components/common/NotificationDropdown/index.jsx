@@ -30,11 +30,16 @@ const NotificationDropdown = () => {
   const [toastType, setToastType] = useState('success');
   
   const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      // Kiểm tra xem click có phải bên ngoài dropdown và trigger không
+      if (dropdownRef.current && 
+          !dropdownRef.current.contains(e.target) && 
+          triggerRef.current && 
+          !triggerRef.current.contains(e.target)) {
         setIsOpen(false);
         setSelectedNotifications([]);
       }
@@ -70,6 +75,11 @@ const NotificationDropdown = () => {
     if (!isOpen) {
       refreshNotifications();
     }
+  };
+
+  // Ngăn chặn dropdown đóng khi click bên trong
+  const handleDropdownClick = (e) => {
+    e.stopPropagation();
   };
 
   const handleCreateTestData = async () => {
@@ -122,7 +132,10 @@ const NotificationDropdown = () => {
     }
   };
 
-  const handleSelectNotification = (notificationId) => {
+  const handleSelectNotification = (notificationId, e) => {
+    // Ngăn chặn event bubbling để không đóng dropdown
+    e.stopPropagation();
+    
     setSelectedNotifications(prev => 
       prev.includes(notificationId)
         ? prev.filter(id => id !== notificationId)
@@ -184,13 +197,19 @@ const NotificationDropdown = () => {
     return date.toLocaleDateString('vi-VN');
   };
 
+  // Kiểm tra có thông báo chưa đọc nào được chọn không
+  const hasSelectedUnread = selectedNotifications.some(id => {
+    const notification = notifications.find(n => n.notificationId === id);
+    return notification && !notification.isRead;
+  });
+
   if (!user?.userId) return null;
 
   return (
     <>
       <div 
         className="notification-trigger" 
-        ref={dropdownRef}
+        ref={triggerRef}
         onClick={handleToggleDropdown}
         title="Thông báo"
       >
@@ -200,9 +219,20 @@ const NotificationDropdown = () => {
         )}
 
         {isOpen && (
-          <div className="notification-dropdown">
+          <div 
+            className="notification-dropdown" 
+            ref={dropdownRef}
+            onClick={handleDropdownClick}
+          >
             <div className="notification-header">
-              <h3>Thông báo</h3>
+              <div className="header-left">
+                <h3>Thông báo</h3>
+                {selectedNotifications.length > 0 && (
+                  <span className="selection-count">
+                    Đã chọn {selectedNotifications.length}
+                  </span>
+                )}
+              </div>
               <div className="notification-actions">
                 {notifications.length === 0 && (
                   <button 
@@ -215,13 +245,15 @@ const NotificationDropdown = () => {
                 )}
                 {notifications.length > 0 && (
                   <>
-                    <button 
-                      className="action-btn mark-all-btn"
-                      onClick={handleMarkAllAsRead}
-                      title="Đánh dấu tất cả đã đọc"
-                    >
-                      <i className="fa fa-check-double"></i>
-                    </button>
+                    {hasSelectedUnread && (
+                      <button 
+                        className="action-btn mark-selected-btn"
+                        onClick={handleMarkSelectedAsRead}
+                        title="Đánh dấu đã chọn đã đọc"
+                      >
+                        <i className="fa fa-check-double"></i>
+                      </button>
+                    )}
                     <button 
                       className="action-btn delete-all-btn"
                       onClick={handleDeleteAllNotifications}
@@ -251,85 +283,50 @@ const NotificationDropdown = () => {
                 </button>
               </div>
             ) : (
-              <>
-                {selectedNotifications.length > 0 && (
-                  <div className="notification-selection-bar">
-                    <span>Đã chọn {selectedNotifications.length} thông báo</span>
-                    <div className="selection-actions">
-                      {(() => {
-                        const selectedUnreadCount = notifications.filter(n => 
-                          selectedNotifications.includes(n.notificationId) && !n.isRead
-                        ).length;
-                        
-                        return (
-                          <>
-                            {selectedUnreadCount > 0 && (
-                              <button 
-                                className="mark-selected-read-btn"
-                                onClick={handleMarkSelectedAsRead}
-                                title="Đánh dấu đã đọc"
-                              >
-                                <i className="fa fa-check"></i>
-                              </button>
-                            )}
-                            <button 
-                              className="delete-selected-btn"
-                              onClick={handleDeleteSelected}
-                            >
-                              Xóa đã chọn
-                            </button>
-                          </>
-                        );
-                      })()}
+              <div className="notification-list">
+                {notifications.map(notification => (
+                  <div 
+                    key={notification.notificationId} 
+                    className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
+                  >
+                    <div className="notification-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedNotifications.includes(notification.notificationId)}
+                        onChange={(e) => handleSelectNotification(notification.notificationId, e)}
+                      />
+                    </div>
+                    
+                    <div className="notification-content">
+                      <div className="notification-message">
+                        {notification.message}
+                      </div>
+                      <div className="notification-time">
+                        {formatTime(notification.createdAt)}
+                      </div>
+                    </div>
+                    
+                    <div className="notification-actions">
+                      {!notification.isRead && (
+                        <button 
+                          className="action-btn mark-read-btn"
+                          onClick={() => handleMarkAsRead(notification.notificationId)}
+                          title="Đánh dấu đã đọc"
+                        >
+                          <i className="fa fa-check"></i>
+                        </button>
+                      )}
+                      <button 
+                        className="action-btn delete-btn"
+                        onClick={() => handleDeleteNotification(notification.notificationId)}
+                        title="Xóa thông báo"
+                      >
+                        <i className="fa fa-times"></i>
+                      </button>
                     </div>
                   </div>
-                )}
-                
-                <div className="notification-list">
-                  {notifications.map(notification => (
-                    <div 
-                      key={notification.notificationId} 
-                      className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
-                    >
-                      <div className="notification-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={selectedNotifications.includes(notification.notificationId)}
-                          onChange={() => handleSelectNotification(notification.notificationId)}
-                        />
-                      </div>
-                      
-                      <div className="notification-content">
-                        <div className="notification-message">
-                          {notification.message}
-                        </div>
-                        <div className="notification-time">
-                          {formatTime(notification.createdAt)}
-                        </div>
-                      </div>
-                      
-                      <div className="notification-actions">
-                        {!notification.isRead && (
-                          <button 
-                            className="action-btn mark-read-btn"
-                            onClick={() => handleMarkAsRead(notification.notificationId)}
-                            title="Đánh dấu đã đọc"
-                          >
-                            <i className="fa fa-check"></i>
-                          </button>
-                        )}
-                        <button 
-                          className="action-btn delete-btn"
-                          onClick={() => handleDeleteNotification(notification.notificationId)}
-                          title="Xóa thông báo"
-                        >
-                          <i className="fa fa-times"></i>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
+                ))}
+              </div>
             )}
           </div>
         )}
