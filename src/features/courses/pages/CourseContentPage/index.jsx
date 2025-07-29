@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import courseApi from 'services/courseApi';
 import assignmentApi from 'services/assignmentApi';
+import studentAssignmentApi from 'services/studentAssignmentApi';
 import './style.css';
 import YouTube from 'react-youtube';
 import { useMyCourses } from 'features/courses/contexts/MyCoursesContext';
+import ContentUpload from 'components/common/ContentUpload';
+import { uploadFileToS3 } from 'services/awsS3Upload';
 
 const CourseContentPage = () => {
   const { courseId } = useParams();
@@ -22,13 +25,15 @@ const CourseContentPage = () => {
 
   // Trạng thái liên quan tới video & bài tập
   const [videoCompleted, setVideoCompleted] = useState(false);
-  const [assignmentFile, setAssignmentFile] = useState(null);
+  const [assignmentFiles, setAssignmentFiles] = useState([]);
   const [commentInput, setCommentInput] = useState('');
   const [comments, setComments] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [activeTab, setActiveTab] = useState('video'); // 'video' | 'assignment'
   const [assignment, setAssignment] = useState(null);
   const [assignmentLoading, setAssignmentLoading] = useState(false);
+  const [submissionDetail, setSubmissionDetail] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     if (!course) {
@@ -83,27 +88,61 @@ const CourseContentPage = () => {
   }, [courseId, course]);
 
   useEffect(() => {
-    // Tự động mở section đầu tiên và chọn bài giảng đầu tiên
-    if (course?.sections?.[0]?.lectures?.[0]) {
+    // Kiểm tra xem có lecture tiếp theo được truyền từ CourseDetailPage không
+    const nextLecture = location.state?.nextLecture;
+    
+    if (nextLecture && course) {
+      // Sử dụng lecture tiếp theo được truyền từ CourseDetailPage
+      setCurrentLecture(nextLecture.lecture);
+      
+      // Tìm index của section chứa lecture này để mở section đó
+      const sectionIndex = course.sections.findIndex(section => section.id === nextLecture.sectionId);
+      if (sectionIndex !== -1) {
+        setOpenSections([sectionIndex]);
+      }
+      
+      // Tính allowedIndex dựa trên lecture tiếp theo
+      const flattenedLectures = course.sections.flatMap(section => section.lectures);
+      const lectureIndex = flattenedLectures.findIndex(lecture => lecture.id === nextLecture.lecture.id);
+      setAllowedIndex(lectureIndex);
+      
+      // Nếu lecture đã hoàn thành (từ CourseDetailPage), set videoCompleted = true
+      if (nextLecture.isCompleted) {
+        setVideoCompleted(true);
+      }
+    } else if (course?.sections?.[0]?.lectures?.[0]) {
+      // Fallback: Tự động mở section đầu tiên và chọn bài giảng đầu tiên
       setCurrentLecture(course.sections[0].lectures[0]);
       setOpenSections([0]); // Mở section đầu tiên
       setAllowedIndex(0);
     }
-  }, [course]);
+  }, [course, location.state?.nextLecture]);
 
   // Khi đổi bài giảng thì reset trạng thái liên quan tới video/bài tập
   useEffect(() => {
-    setVideoCompleted(false);
-    setAssignmentFile(null);
+    // Chỉ reset videoCompleted nếu lecture chưa hoàn thành
+    if (!currentLecture?.isCompleted) {
+      setVideoCompleted(false);
+    }
+    setAssignmentFiles([]);
     setCommentInput('');
     setComments([]);
     setSubmitted(false);
-    setActiveTab('video');
+    
+    // Tự động chuyển sang tab "Bài tập" nếu lecture đã hoàn thành và có bài tập
+    if (currentLecture?.isCompleted && currentLecture?.assignmentId) {
+      setActiveTab('assignment');
+    } else {
+      setActiveTab('video');
+    }
+    
     setAssignment(null);
     
     // Fetch thông tin bài tập nếu có assignmentId
     if (currentLecture?.assignmentId) {
       setAssignmentLoading(true);
+      
+      // Fetch thông tin bài tập
       assignmentApi.getDetail(currentLecture.assignmentId)
         .then(data => {
           setAssignment({
@@ -114,12 +153,36 @@ const CourseContentPage = () => {
             maxScore: 10, // Giá trị mặc định, có thể cập nhật sau
             score: data.grade,
             attachments: [], // Có thể cập nhật sau nếu có attachment
-            comments: []
+            comments: [],
+            // Thêm các trường mới từ API response
+            createdByName: data.createdByName,
+            createdAt: data.createdAt,
+            submissionStatus: data.submissionStatus,
+            submittedAt: data.submittedAt,
+            lectureId: data.lectureId,
+            lectureTitle: data.lectureTitle
           });
         })
         .catch(err => {
           console.error('Lỗi khi tải thông tin bài tập:', err);
           setAssignment(null);
+        });
+
+      // Kiểm tra xem học sinh đã nộp bài chưa
+      studentAssignmentApi.getSubmissionDetail(currentLecture.assignmentId)
+        .then(data => {
+          setSubmitted(true);
+          setSubmissionDetail(data);
+          console.log('Đã nộp bài:', data);
+        })
+        .catch(err => {
+          // Nếu lỗi 404 hoặc chưa nộp bài thì giữ trạng thái chưa nộp
+          if (err.response?.status === 404) {
+            setSubmitted(false);
+            setSubmissionDetail(null);
+          } else {
+            console.error('Lỗi khi kiểm tra trạng thái nộp bài:', err);
+          }
         })
         .finally(() => {
           setAssignmentLoading(false);
@@ -151,8 +214,56 @@ const CourseContentPage = () => {
   };
 
   const handleTabClick = (tab) => {
-    if (tab === 'assignment' && !videoCompleted) return;
+    // Cho phép chuyển sang tab assignment nếu video đã hoàn thành HOẶC lecture đã hoàn thành
+    if (tab === 'assignment' && !videoCompleted && !currentLecture?.isCompleted) return;
     setActiveTab(tab);
+  };
+
+  const handleImagePreview = (imageUrl, fileName) => {
+    setPreviewImage({ url: imageUrl, name: fileName });
+  };
+
+  const closeImagePreview = () => {
+    setPreviewImage(null);
+  };
+
+  const handleSubmit = async () => {
+    if (assignmentFiles.length === 0) {
+      alert('Vui lòng chọn ít nhất một file để nộp bài!');
+      return;
+    }
+
+    try {
+      // Upload tất cả file lên S3
+      const uploadedFiles = [];
+      for (const file of assignmentFiles) {
+        const url = await uploadFileToS3(file); // Upload vào folder assignments
+        uploadedFiles.push({
+          fileUrl: url,
+          fileName: file.name
+        });
+      }
+
+      // Chuẩn bị payload theo format của BE
+      const payload = {
+        assignmentId: currentLecture.assignmentId,
+        submissionContent: commentInput || null,
+        files: uploadedFiles
+      };
+
+      // Gọi API backend để nộp bài
+      const response = await studentAssignmentApi.studentSubmitAssignment(
+        currentLecture.assignmentId, 
+        payload
+      );
+
+      setSubmitted(true);
+      setSubmissionDetail(response);
+      alert(response.message || 'Nộp bài thành công!');
+    } catch (err) {
+      console.error('Lỗi khi nộp bài:', err);
+      alert('Lỗi khi nộp bài: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   return (
@@ -202,9 +313,9 @@ const CourseContentPage = () => {
               </button>
               {currentLecture.assignmentId && (
                 <button
-                  className={`tab-item ${activeTab === 'assignment' ? 'active' : ''} ${!videoCompleted ? 'disabled' : ''}`}
+                  className={`tab-item ${activeTab === 'assignment' ? 'active' : ''} ${!videoCompleted && !currentLecture?.isCompleted ? 'disabled' : ''}`}
                   onClick={() => handleTabClick('assignment')}
-                  disabled={!videoCompleted}
+                  disabled={!videoCompleted && !currentLecture?.isCompleted}
                 >
                   Bài tập
                 </button>
@@ -215,6 +326,12 @@ const CourseContentPage = () => {
             {activeTab === 'video' && (
               <>
                 <h1 className="lecture-title">{currentLecture.title}</h1>
+                {currentLecture.isCompleted && currentLecture.assignmentId && (
+                  <div className="lecture-completed-notice">
+                    <i className="fa fa-check-circle"></i>
+                    <span>Bài học này đã hoàn thành. Bạn có thể xem lại video hoặc chuyển sang tab "Bài tập" để xem bài tập đã làm.</span>
+                  </div>
+                )}
                 <div className="video-player-wrapper">
                   {currentLecture.contentUrl && (currentLecture.contentUrl.includes('youtube.com') || currentLecture.contentUrl.includes('youtu.be')) ? (
                     <YouTube
@@ -233,6 +350,10 @@ const CourseContentPage = () => {
                       }}
                       onEnd={() => {
                         setVideoCompleted(true);
+                        // Chỉ tự động chuyển sang bài tập nếu lecture chưa hoàn thành
+                        if (!currentLecture.isCompleted && currentLecture.assignmentId) {
+                          setActiveTab('assignment');
+                        }
                         if (!currentLecture.assignment) {
                           const currentIdx = flattenedLectures.findIndex(l => l.title === currentLecture.title);
                           if (currentIdx === allowedIndex) {
@@ -249,6 +370,10 @@ const CourseContentPage = () => {
                       style={{ maxHeight: 400, background: '#000' }}
                       onEnded={() => {
                         setVideoCompleted(true);
+                        // Chỉ tự động chuyển sang bài tập nếu lecture chưa hoàn thành
+                        if (!currentLecture.isCompleted && currentLecture.assignmentId) {
+                          setActiveTab('assignment');
+                        }
                         if (!currentLecture.assignment) {
                           const currentIdx = flattenedLectures.findIndex(l => l.title === currentLecture.title);
                           if (currentIdx === allowedIndex) {
@@ -264,7 +389,7 @@ const CourseContentPage = () => {
               </>
             )}
 
-                        {activeTab === 'assignment' && currentLecture.assignmentId && videoCompleted && (
+                        {activeTab === 'assignment' && currentLecture.assignmentId && (videoCompleted || currentLecture?.isCompleted) && (
               <div className="assignment-section">
                 {assignmentLoading ? (
                   <div className="assignment-loading">
@@ -294,6 +419,20 @@ const CourseContentPage = () => {
                       <div className="assignment-description">
                         <h3><i className="fa fa-info-circle"></i> Yêu cầu bài tập</h3>
                         <p>{assignment?.description || 'Đang tải mô tả bài tập...'}</p>
+                        
+                        {/* Thông tin bổ sung về bài tập */}
+                        {assignment && (
+                          <div className="assignment-additional-info">
+                            <div className="info-item">
+                              <i className="fa fa-user"></i>
+                              <span>Tạo bởi: <strong>{assignment.createdByName || 'Giáo viên'}</strong></span>
+                            </div>
+                            <div className="info-item">
+                              <i className="fa fa-calendar"></i>
+                              <span>Tạo lúc: <strong>{assignment.createdAt ? new Date(assignment.createdAt).toLocaleString('vi-VN') : 'Chưa có'}</strong></span>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Attachment mẫu (nếu có) */}
@@ -325,73 +464,128 @@ const CourseContentPage = () => {
                         <h3><i className="fa fa-user-edit"></i> Bài tập của bạn</h3>
                         <div className={`submission-status ${submitted ? 'submitted' : 'pending'}`}>
                           <i className={`fa ${submitted ? 'fa-check-circle' : 'fa-clock'}`}></i>
-                          {submitted ? 'Đã nộp' : 'Chưa nộp'}
+                          {submitted ? `Đã nộp (Lần ${submissionDetail?.attemptNumber || 1})` : 'Chưa nộp'}
                         </div>
                       </div>
 
                       <div className="submission-area">
-                        {/* Hiển thị file đã chọn */}
-                        {assignmentFile && (
-                          <div className="submission-file-item">
-                            <div className="file-icon">
-                              <i className="fa fa-file-alt"></i>
-                            </div>
-                            <div className="file-info">
-                              <span className="file-name">{assignmentFile.name}</span>
-                              <span className="file-size">{(assignmentFile.size / 1024).toFixed(1)} KB</span>
-                            </div>
-                            {!submitted && (
-                              <button 
-                                className="remove-file-btn"
-                                onClick={() => setAssignmentFile(null)}
-                              >
-                                <i className="fa fa-times"></i>
-                              </button>
-                            )}
-                          </div>
-                        )}
-
-                        {!assignmentFile && !submitted && (
-                          <label className="file-input-label">
-                            <div className="upload-icon">
-                              <i className="fa fa-cloud-upload-alt"></i>
-                            </div>
-                            <span>Thêm hoặc tạo file</span>
-                            <small>Hỗ trợ: PDF, DOC, DOCX, XLS, XLSX</small>
-                            <input type="file" onChange={(e) => setAssignmentFile(e.target.files[0])} />
+                        {/* Upload files */}
+                        <div className="file-upload-section">
+                          <label>
+                            <i className="fa fa-upload"></i> File đính kèm
                           </label>
-                        )}
+                          <ContentUpload
+                            onFilesChange={(files) => setAssignmentFiles(files)}
+                            acceptedTypes=".pdf,.doc,.docx,.xls,.xlsx,image/*"
+                            multiple={true}
+                          />
+                        </div>
 
                         {/* Nút nộp / hủy nộp */}
-                        <div className="action-buttons">
-                          {!submitted ? (
-                            <button
-                              className="submit-btn"
-                              disabled={!assignmentFile}
-                              onClick={() => {
-                                if (!assignmentFile) return;
-                                setSubmitted(true);
-                                const currentIdx = flattenedLectures.findIndex(l=>l.title===currentLecture.title);
-                                if (currentIdx === allowedIndex) {
-                                  setAllowedIndex(allowedIndex + 1);
-                                }
-                              }}
-                            >
-                              <i className="fa fa-paper-plane"></i> Nộp bài
-                            </button>
+                        <div>
+                          {assignment?.score !== null && assignment?.score !== undefined ? (
+                            <div className="submission-disabled-notice">
+                              <i className="fa fa-lock"></i>
+                              <span>Không thể nộp bài vì bài tập đã được chấm điểm</span>
+                            </div>
                           ) : (
                             <button
-                              className="unsubmit-btn"
-                              onClick={() => {
-                                setSubmitted(false);
-                                setAssignmentFile(null);
-                              }}
+                              className="submit-btn"
+                              disabled={assignmentFiles.length === 0}
+                              onClick={handleSubmit}
                             >
-                              <i className="fa fa-undo"></i> Hủy nộp bài
+                              <i className="fa fa-paper-plane"></i> {submitted ? 'Nộp lại bài' : 'Nộp bài'}
                             </button>
                           )}
                         </div>
                       </div>
+
+                      {/* Thông tin bài nộp */}
+                      {submitted && submissionDetail && (
+                        <div className="submission-info">
+                          <h4><i className="fa fa-info-circle"></i> Thông tin bài nộp</h4>
+                          <div className="submission-details">
+                            <div className="detail-item">
+                              <span className="label">Lần nộp:</span>
+                              <span className="value">Thứ {submissionDetail.attemptNumber}</span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="label">Thời gian nộp:</span>
+                              <span className="value">{new Date(submissionDetail.submittedAt).toLocaleString('vi-VN')}</span>
+                            </div>
+                            {submissionDetail.submissionContent && (
+                              <div className="detail-item">
+                                <span className="label">Nội dung:</span>
+                                <span className="value">{submissionDetail.submissionContent}</span>
+                              </div>
+                            )}
+                            {submissionDetail.files && submissionDetail.files.length > 0 && (
+                              <div className="detail-item">
+                                <span className="label">File đính kèm:</span>
+                                <div className="submission-files">
+                                  {submissionDetail.files.map((file, index) => {
+                                    const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(file.fileName || '');
+                                    const isVideo = /\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i.test(file.fileName || '');
+                                    const isPdf = /\.pdf$/i.test(file.fileName || '');
+                                    const isDocument = /\.(doc|docx|xls|xlsx|ppt|pptx|txt)$/i.test(file.fileName || '');
+                                    
+                                    return (
+                                      <a 
+                                        key={index} 
+                                        href={file.fileUrl} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        className="submission-file"
+                                      >
+                                        <div className="file-thumbnail">
+                                          {isImage ? (
+                                            <img 
+                                              src={file.fileUrl} 
+                                              alt={file.fileName || `File ${index + 1}`}
+                                              className="file-image-thumbnail"
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                handleImagePreview(file.fileUrl, file.fileName);
+                                              }}
+                                              style={{ cursor: 'pointer' }}
+                                            />
+                                          ) : isVideo ? (
+                                            <div className="file-video-thumbnail">
+                                              <i className="fa fa-play-circle"></i>
+                                            </div>
+                                          ) : isPdf ? (
+                                            <div className="file-pdf-thumbnail">
+                                              <i className="fa fa-file-pdf-o"></i>
+                                            </div>
+                                          ) : isDocument ? (
+                                            <div className="file-doc-thumbnail">
+                                              <i className="fa fa-file-text-o"></i>
+                                            </div>
+                                          ) : (
+                                            <div className="file-default-thumbnail">
+                                              <i className="fa fa-file-o"></i>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="file-info">
+                                          <span className="file-name">{file.fileName || `File ${index + 1}`}</span>
+                                          <span className="file-type">
+                                            {isImage ? 'Hình ảnh' : 
+                                             isVideo ? 'Video' : 
+                                             isPdf ? 'PDF' : 
+                                             isDocument ? 'Tài liệu' : 'File'}
+                                          </span>
+                                        </div>
+                                        <i className="fa fa-external-link"></i>
+                                      </a>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Điểm số */}
                       <div className="score-section">
@@ -399,12 +593,34 @@ const CourseContentPage = () => {
                         {assignment?.score !== null && assignment?.score !== undefined ? (
                           <>
                             <div className="score-display">
-                              <span className="score-value">{assignment.score}/{assignment.maxScore}</span>
+                              <span className="score-value">{assignment.score}/{assignment?.maxScore || 10}</span>
                               <span className="score-label">điểm</span>
                             </div>
-                            {assignment?.teacherComment && (
+                            <div className="score-status">
+                              <span className={`status-badge ${assignment.submissionStatus === 'Đã chấm điểm' ? 'graded' : 'pending'}`}>
+                                <i className={`fa ${assignment.submissionStatus === 'Đã chấm điểm' ? 'fa-check-circle' : 'fa-clock'}`}></i>
+                                {assignment.submissionStatus || 'Đang chờ chấm điểm'}
+                              </span>
+                            </div>
+                            {assignment.submissionStatus === 'Đã chấm điểm' && (
+                              <div className="grading-info">
+                                <div className="graded-by">
+                                  <i className="fa fa-user"></i> Chấm bởi: <span>{assignment.createdByName || 'Giáo viên'}</span>
+                                </div>
+                                <div className="graded-at">
+                                  <i className="fa fa-calendar"></i> Chấm lúc: <span>{assignment.submittedAt ? new Date(assignment.submittedAt).toLocaleString('vi-VN') : 'Chưa có'}</span>
+                                </div>
+                              </div>
+                            )}
+                            {/* Nhận xét của giáo viên */}
+                            {submissionDetail?.feedback && (
                               <div className="teacher-comment">
-                                <i className="fa fa-comments"></i> Nhận xét của giáo viên: <span>{assignment.teacherComment}</span>
+                                <i className="fa fa-comments"></i> Nhận xét của giáo viên: <span>{submissionDetail.feedback}</span>
+                              </div>
+                            )}
+                            {!submissionDetail?.feedback && assignment.submissionStatus === 'Đã chấm điểm' && (
+                              <div className="teacher-comment no-feedback">
+                                <i className="fa fa-comments"></i> Giáo viên chưa để lại nhận xét
                               </div>
                             )}
                           </>
@@ -430,7 +646,52 @@ const CourseContentPage = () => {
             <h2>Vui lòng chọn một bài giảng để bắt đầu học</h2>
           </div>
         )}
+
+        {/* Hiển thị thông báo hoàn thành khóa học nếu tất cả lecture đã hoàn thành */}
+        {currentLecture && location.state?.nextLecture?.isCompleted && (
+          <div className="course-completion-notice">
+            <div className="completion-content">
+              <i className="fa fa-trophy"></i>
+              <h3>Chúc mừng!</h3>
+              <p>Bạn đã hoàn thành tất cả bài giảng trong khóa học này.</p>
+              <Link to={`/courses/${courseId}`} className="back-to-course-btn">
+                <i className="fa fa-arrow-left"></i> Quay lại trang chi tiết khóa học
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="image-preview-modal" onClick={closeImagePreview}>
+          <div className="image-preview-content" onClick={(e) => e.stopPropagation()}>
+            <div className="image-preview-header">
+              <h3>{previewImage.name}</h3>
+              <button className="close-preview-btn" onClick={closeImagePreview}>
+                <i className="fa fa-times"></i>
+              </button>
+            </div>
+            <div className="image-preview-body">
+              <img 
+                src={previewImage.url} 
+                alt={previewImage.name}
+                className="preview-image"
+              />
+            </div>
+            <div className="image-preview-footer">
+              <a 
+                href={previewImage.url} 
+                target="_blank" 
+                rel="noreferrer"
+                className="download-btn"
+              >
+                <i className="fa fa-download"></i> Tải xuống
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

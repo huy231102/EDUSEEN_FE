@@ -156,6 +156,33 @@ const CourseDetailPage = () => {
     }
   };
 
+  // Hàm tìm lecture tiếp theo chưa hoàn thành
+  const findNextIncompleteLecture = (courseData) => {
+    if (!courseData?.sections) return null;
+    
+    for (const section of courseData.sections) {
+      for (const lecture of section.lectures) {
+        if (!lecture.isCompleted) {
+          return { lecture, sectionId: section.id, sectionTitle: section.title };
+        }
+      }
+    }
+    
+    // Nếu tất cả lecture đã hoàn thành, trả về lecture cuối cùng
+    const lastSection = courseData.sections[courseData.sections.length - 1];
+    const lastLecture = lastSection?.lectures[lastSection.lectures.length - 1];
+    if (lastLecture) {
+      return { 
+        lecture: lastLecture, 
+        sectionId: lastSection.id, 
+        sectionTitle: lastSection.title,
+        isCompleted: true 
+      };
+    }
+    
+    return null;
+  };
+
   // Hàm xử lý khi bấm nút bắt đầu/tiếp tục học
   const handleStartOrContinue = async () => {
     if (!user) {
@@ -207,14 +234,29 @@ const CourseDetailPage = () => {
             createdAt: review.createdAt
           })) || []
         };
-        // Navigate sang màn học, truyền data mới nhất
-        navigate(`/courses/${courseId}/learn`, { state: { course: mappedCourse } });
+        
+        // Tìm lecture tiếp theo chưa hoàn thành
+        const nextLecture = findNextIncompleteLecture(mappedCourse);
+        
+        // Navigate sang màn học, truyền data mới nhất và lecture tiếp theo
+        navigate(`/courses/${courseId}/learn`, { 
+          state: { 
+            course: mappedCourse,
+            nextLecture: nextLecture
+          } 
+        });
       } catch (err) {
         alert('Đăng ký khoá học thất bại!');
       }
     } else {
-      // Đã enroll, chuyển luôn và truyền data hiện tại
-      navigate(`/courses/${courseId}/learn`, { state: { course } });
+      // Đã enroll, tìm lecture tiếp theo và chuyển
+      const nextLecture = findNextIncompleteLecture(course);
+      navigate(`/courses/${courseId}/learn`, { 
+        state: { 
+          course,
+          nextLecture: nextLecture
+        } 
+      });
     }
   };
 
