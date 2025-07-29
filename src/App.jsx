@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom';
 
 import { ContextProvider } from './features/video-call/contexts/SocketContext';
+import { NotificationProvider } from './features/notifications/contexts/NotificationContext';
 const VideoCallPage = lazy(() => import('./features/video-call/pages/VideoCallPage'));
 const CourseListPage = lazy(() => import('./features/courses/pages/CourseListPage'));
 const CourseDetailPage = lazy(() => import('./features/courses/pages/CourseDetailPage'));
@@ -35,66 +36,68 @@ const App = () => {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Suspense fallback={<Loader />}>
-        <Routes>
-          <Route
-            path="/video-call"
-            element={
-              <ContextProvider>
-                <VideoCallPage />
-              </ContextProvider>
-            }
-          />
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<CourseListPage />} />
-            <Route path="category/:categoryId" element={<CategoryPage />} />
-            <Route path="courses" element={<CourseListPage />} />
-            <Route path="courses/:courseId" element={<CourseDetailPage />} />
-            <Route path="courses/:courseId/learn" element={<CourseContentPage />} />
+      <NotificationProvider>
+        <Suspense fallback={<Loader />}>
+          <Routes>
             <Route
-              path="my-courses"
+              path="/video-call"
+              element={
+                <ContextProvider>
+                  <VideoCallPage />
+                </ContextProvider>
+              }
+            />
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<CourseListPage />} />
+              <Route path="category/:categoryId" element={<CategoryPage />} />
+              <Route path="courses" element={<CourseListPage />} />
+              <Route path="courses/:courseId" element={<CourseDetailPage />} />
+              <Route path="courses/:courseId/learn" element={<CourseContentPage />} />
+              <Route
+                path="my-courses"
+                element={
+                  <ProtectedRoute>
+                    <MyCoursesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="teacher">
+                <Route path="dashboard" element={<TeacherDashboardPage />} />
+                <Route path="course">
+                  <Route path="new" element={<CourseEditPage />} />
+                  <Route path=":courseId/edit" element={<CourseEditPage />} />
+                  <Route path=":courseId/analytics" element={<CourseAnalyticsPage />} />
+                  <Route path=":courseId/assignments" element={<AssignmentsDashboardPage />} />
+                  <Route path=":courseId/assignments/new" element={<AssignmentCreatePage />} />
+                  <Route path=":courseId/assignments/:assignmentId" element={<AssignmentGradingPage />} />
+                  <Route path=":courseId/assignments/:assignmentId/edit" element={<AssignmentEditPage />} />
+                  <Route path=":courseId/assignments/:assignmentId/stats" element={<AssignmentStatsPage />} />
+                </Route>
+              </Route>
+            </Route>
+            <Route
+              path="/profile"
               element={
                 <ProtectedRoute>
-                  <MyCoursesPage />
+                  <ProfilePage />
                 </ProtectedRoute>
               }
             />
-            <Route path="teacher">
-              <Route path="dashboard" element={<TeacherDashboardPage />} />
-              <Route path="course">
-                <Route path="new" element={<CourseEditPage />} />
-                <Route path=":courseId/edit" element={<CourseEditPage />} />
-                <Route path=":courseId/analytics" element={<CourseAnalyticsPage />} />
-                <Route path=":courseId/assignments" element={<AssignmentsDashboardPage />} />
-                <Route path=":courseId/assignments/new" element={<AssignmentCreatePage />} />
-                <Route path=":courseId/assignments/:assignmentId" element={<AssignmentGradingPage />} />
-                <Route path=":courseId/assignments/:assignmentId/edit" element={<AssignmentEditPage />} />
-                <Route path=":courseId/assignments/:assignmentId/stats" element={<AssignmentStatsPage />} />
-              </Route>
-            </Route>
-          </Route>
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute requiredRole={2}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/auth/verify-otp" element={<VerifyOTPPage />} />
-          <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Suspense>
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requiredRole={2}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/auth/verify-otp" element={<VerifyOTPPage />} />
+            <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </NotificationProvider>
     </BrowserRouter>
   );
 };
