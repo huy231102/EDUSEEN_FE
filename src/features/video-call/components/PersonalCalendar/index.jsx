@@ -51,7 +51,6 @@ import './style.css';
 import { useAuth } from 'features/auth/contexts/AuthContext';
 import api from 'services/api';
 import { useToast } from 'components/common/Toast';
-import { courses } from 'features/courses/data/courseData';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -237,7 +236,6 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
   const [loading, setLoading] = useState(true);
   // KHÔNG khai báo lại openCreateDialog ở local, chỉ nhận prop
   const [newSession, setNewSession] = useState({
-    title: '',
     date: '',
     startTime: '',
     endTime: '',
@@ -245,7 +243,6 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
     caller: '',
     callerEmail: '',
     calleeEmail: '',
-    courseId: '', // thay subject thành courseId
     meetingLink: '',
   });
   const [snackbar, setSnackbar] = useState({
@@ -396,9 +393,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
       errors.push('Vui lòng chọn thời gian kết thúc');
     }
     
-    if (!editingSession.courseTitle?.trim()) {
-      errors.push('Vui lòng chọn khóa học');
-    }
+
 
     // 2. Kiểm tra ngày không được trong quá khứ
     if (editingSession.date) {
@@ -582,10 +577,6 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
     const errors = [];
 
     // 1. Kiểm tra thông tin bắt buộc
-    if (!newSession.title?.trim()) {
-      errors.push('Tiêu đề cuộc gọi không được để trống');
-    }
-    
     if (!newSession.date) {
       errors.push('Vui lòng chọn ngày');
     }
@@ -605,7 +596,6 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
     if (!newSession.calleeEmail?.trim()) {
       errors.push('Email người được mời không được để trống');
     }
-    // Đã bỏ kiểm tra bắt buộc khóa học
 
     // 2. Kiểm tra định dạng email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -690,7 +680,6 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
       receiverEmail: newSession.calleeEmail.trim(),
       scheduledTime: `${newSession.date}T${newSession.startTime}`,
       duration: durationMinutes,
-      courseId: newSession.courseId ? parseInt(newSession.courseId, 10) : null,
     };
     
     try {
@@ -698,7 +687,6 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
       handleCloseCreateDialog(); // Đóng dialog sau khi lưu thành công
       // Reset form
       setNewSession({
-        title: '',
         date: '',
         startTime: '',
         endTime: '',
@@ -706,7 +694,6 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
         caller: '',
         callerEmail: '',
         calleeEmail: '',
-        courseId: '',
         meetingLink: '',
       });
     } catch (error) {
@@ -1083,16 +1070,6 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
             <DialogTitle>Thêm lịch cuộc gọi mới</DialogTitle>
             <DialogContent>
               <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    label="Tiêu đề cuộc gọi"
-                    fullWidth
-                    value={newSession.title}
-                    onChange={e => handleNewSessionChange('title', e.target.value)}
-                    margin="dense"
-                    required
-                  />
-                </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
                     label="Ngày"
@@ -1164,25 +1141,6 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
                 </Grid>
                 <Grid item xs={12}>
                   <TextField
-                    select
-                    label="Khóa học"
-                    fullWidth
-                    value={newSession.courseId || ''}
-                    onChange={e => handleNewSessionChange('courseId', e.target.value)}
-                    margin="dense"
-                    SelectProps={{ native: true }}
-                    InputLabelProps={{ shrink: true }}
-                  >
-                    <option value="">Chọn khóa học</option>
-                    {courses.map(course => (
-                      <option key={course.id} value={course.id}>
-                        {course.name}
-                      </option>
-                    ))}
-                  </TextField>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
                     label="Thời lượng"
                     fullWidth
                     value={newSession.duration || ''}
@@ -1245,26 +1203,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
                       margin="dense"
                     />
                   </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      select
-                      label="Khóa học"
-                      fullWidth
-                      value={editingSession.courseTitle || ''}
-                      onChange={e => handleEditSessionChange('courseTitle', e.target.value)}
-                      margin="dense"
-                      SelectProps={{ native: true }}
-                      required
-                      InputLabelProps={{ shrink: true }}
-                    >
-                      <option value="">Chọn khóa học</option>
-                      {courses.map(course => (
-                        <option key={course.id} value={course.name}>
-                          {course.name}
-                        </option>
-                      ))}
-                    </TextField>
-                  </Grid>
+
                   <Grid item xs={12}>
                     <TextField
                       label="Thời lượng"
