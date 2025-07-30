@@ -16,9 +16,37 @@ const LoginForm = ({ onForgotPassword }) => {
   const [showPassword, setShowPassword] = useState(false);
   // Không còn dùng error state để hiển thị ra UI
 
+  // Hàm validate form trước khi gọi API
+  const validateForm = () => {
+    const errors = [];
+
+    // Validate email
+    if (!email.trim()) {
+      errors.push('Email là bắt buộc.');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.push('Email không hợp lệ.');
+    }
+
+    // Validate password
+    if (!password) {
+      errors.push('Mật khẩu là bắt buộc.');
+    }
+
+    return errors;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     // reset bất cứ trạng thái nội bộ nếu cần
+
+    // Validate form trước khi gọi API
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      // Hiển thị lỗi đầu tiên qua Toast
+      showToast(validationErrors[0], 'error');
+      return;
+    }
+
     try {
       const res = await userApi.login(email, password);
       // API trả về { Message, Token: { AccessToken, RefreshToken }, User }
