@@ -19,12 +19,45 @@ const ChangePasswordForm = ({ onClose }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Hàm validate form trước khi gọi API
+  const validateForm = () => {
+    const errors = [];
+
+    // Validate current password
+    if (!formData.currentPassword) {
+      errors.push('Mật khẩu hiện tại là bắt buộc.');
+    }
+
+    // Validate new password
+    if (!formData.newPassword) {
+      errors.push('Mật khẩu mới là bắt buộc.');
+    } else if (formData.newPassword.length < 8) {
+      errors.push('Mật khẩu mới phải có ít nhất 8 ký tự.');
+    } else if (formData.newPassword.length > 128) {
+      errors.push('Mật khẩu mới không được dài quá 128 ký tự.');
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(formData.newPassword)) {
+      errors.push('Mật khẩu mới phải chứa ít nhất 1 chữ cái in hoa, 1 chữ cái thường, 1 số và 1 ký tự đặc biệt (@$!%*?&).');
+    }
+
+    // Validate confirm new password
+    if (formData.newPassword !== formData.confirmNewPassword) {
+      errors.push('Mật khẩu mới nhập lại không khớp.');
+    }
+
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.newPassword !== formData.confirmNewPassword) {
-      showToast('Mật khẩu mới không khớp.', 'error');
+
+    // Validate form trước khi gọi API
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      // Hiển thị lỗi đầu tiên qua Toast
+      showToast(validationErrors[0], 'error');
       return;
     }
+
     try {
       await userApi.changePassword(formData);
       showToast('Đổi mật khẩu thành công!', 'success');

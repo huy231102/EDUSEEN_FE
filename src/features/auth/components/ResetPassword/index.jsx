@@ -25,10 +25,37 @@ const ResetPasswordForm = () => {
     }
   }, [searchParams, navigate, showToast]);
 
+  // Hàm validate form trước khi gọi API
+  const validateForm = () => {
+    const errors = [];
+
+    // Validate password
+    if (!password) {
+      errors.push('Mật khẩu mới là bắt buộc.');
+    } else if (password.length < 8) {
+      errors.push('Mật khẩu mới phải có ít nhất 8 ký tự.');
+    } else if (password.length > 128) {
+      errors.push('Mật khẩu mới không được dài quá 128 ký tự.');
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
+      errors.push('Mật khẩu mới phải chứa ít nhất 1 chữ cái in hoa, 1 chữ cái thường, 1 số và 1 ký tự đặc biệt (@$!%*?&).');
+    }
+
+    // Validate confirm password
+    if (password !== confirmPassword) {
+      errors.push('Mật khẩu nhập lại không khớp.');
+    }
+
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      showToast('Mật khẩu không khớp.', 'error');
+
+    // Validate form trước khi gọi API
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      // Hiển thị lỗi đầu tiên qua Toast
+      showToast(validationErrors[0], 'error');
       return;
     }
 

@@ -7,8 +7,33 @@ const ForgotPasswordForm = ({ onBackToLogin }) => {
   const [email, setEmail] = useState('');
   const { showToast } = useToast();
 
+  // Hàm validate form trước khi gọi API
+  const validateForm = () => {
+    const errors = [];
+
+    // Validate email
+    if (!email.trim()) {
+      errors.push('Email là bắt buộc.');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.push('Email không hợp lệ.');
+    } else if (email.length > 255) {
+      errors.push('Email không được dài quá 255 ký tự.');
+    }
+
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate form trước khi gọi API
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      // Hiển thị lỗi đầu tiên qua Toast
+      showToast(validationErrors[0], 'error');
+      return;
+    }
+
     try {
       await userApi.forgotPassword(email);
       showToast(

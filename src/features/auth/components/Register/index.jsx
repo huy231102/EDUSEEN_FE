@@ -17,13 +17,61 @@ const RegisterForm = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState(null);
 
+  // Hàm validate form trước khi gọi API
+  const validateForm = () => {
+    const errors = [];
+
+    // Validate username
+    if (!username.trim()) {
+      errors.push('Tên người dùng là bắt buộc.');
+    } else if (username.trim().length < 3) {
+      errors.push('Tên người dùng phải có ít nhất 3 ký tự.');
+    } else if (username.trim().length > 50) {
+      errors.push('Tên người dùng không được vượt quá 50 ký tự.');
+    } else if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+      errors.push('Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới.');
+    }
+
+    // Validate email
+    if (!email.trim()) {
+      errors.push('Email là bắt buộc.');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.push('Email không hợp lệ.');
+    } else if (email.length > 255) {
+      errors.push('Email không được dài quá 255 ký tự.');
+    }
+
+    // Validate password
+    if (!password) {
+      errors.push('Mật khẩu là bắt buộc.');
+    } else if (password.length < 8) {
+      errors.push('Mật khẩu phải có ít nhất 8 ký tự.');
+    } else if (password.length > 128) {
+      errors.push('Mật khẩu không được dài quá 128 ký tự.');
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password)) {
+      errors.push('Mật khẩu phải chứa ít nhất 1 chữ cái in hoa, 1 chữ cái thường, 1 số và 1 ký tự đặc biệt (@$!%*?&).');
+    }
+
+    // Validate confirm password
+    if (password !== confirmPassword) {
+      errors.push('Mật khẩu nhập lại không khớp.');
+    }
+
+    return errors;
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setError(null);
-    if (password !== confirmPassword) {
-      showToast('Mật khẩu nhập lại không khớp', 'error');
+
+    // Validate form trước khi gọi API
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      // Hiển thị lỗi đầu tiên qua Toast
+      showToast(validationErrors[0], 'error');
       return;
     }
+
     try {
       await userApi.register({ email, username, password });
       showToast('Đăng ký thành công! Vui lòng kiểm tra email để xác thực OTP.', 'success');

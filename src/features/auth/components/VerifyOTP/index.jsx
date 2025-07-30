@@ -21,8 +21,31 @@ const VerifyOTPForm = () => {
     }
   }, [location.state, navigate, showToast]);
 
+  // Hàm validate form trước khi gọi API
+  const validateForm = () => {
+    const errors = [];
+
+    // Validate OTP
+    if (!otp.trim()) {
+      errors.push('Mã OTP là bắt buộc.');
+    } else if (!/^\d{6}$/.test(otp.trim())) {
+      errors.push('Mã OTP phải có đúng 6 chữ số.');
+    }
+
+    return errors;
+  };
+
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
+
+    // Validate form trước khi gọi API
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      // Hiển thị lỗi đầu tiên qua Toast
+      showToast(validationErrors[0], 'error');
+      return;
+    }
+
     try {
       await userApi.verifyOTP(email, otp);
       showToast('Xác thực OTP thành công! Vui lòng đăng nhập.', 'success');
