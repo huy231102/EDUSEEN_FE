@@ -58,8 +58,8 @@ const AuthPage = () => {
           </>
         ) : (
           <Heading
-            subtitle="Forgot your password?"
-            title="Reset your password"
+            subtitle="Quên mật khẩu?"
+            title="Nhập email của bạn"
           />
         )}
         <div className="auth-content">{renderContent()}</div>
