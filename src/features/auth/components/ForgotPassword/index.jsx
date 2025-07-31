@@ -42,7 +42,13 @@ const ForgotPasswordForm = ({ onBackToLogin }) => {
       );
       onBackToLogin();
     } catch (error) {
-      showToast('Gửi yêu cầu thất bại. Vui lòng thử lại.', 'error');
+      const apiMsg = error?.response?.data?.message || error?.message;
+
+      if (apiMsg === 'No account found with this email.') {
+        showToast('Email không tồn tại. Vui lòng kiểm tra lại.', 'error');
+      } else {
+        showToast(apiMsg || 'Gửi yêu cầu thất bại. Vui lòng thử lại.', 'error');
+      }
     }
   };
 
