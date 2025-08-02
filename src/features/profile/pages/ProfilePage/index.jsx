@@ -4,6 +4,7 @@ import { useAuth } from '../../../auth/contexts/AuthContext';
 import userApi from 'services/userApi';
 import { useToast } from 'components/common/Toast';
 import ChangePasswordForm from '../../components/ChangePasswordForm';
+import ImgContentUpload from 'components/common/ImgContentUpload';
 import './style.css'
 
 const ProfilePage = () => {
@@ -33,6 +34,10 @@ const ProfilePage = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAvatarUpload = (avatarUrl) => {
+    setFormData((prev) => ({ ...prev, avatar_url: avatarUrl }));
   };
 
   const handleSaveChanges = async (e) => {
@@ -81,7 +86,7 @@ const ProfilePage = () => {
           <div className="profile-card-left">
             <div className="avatar-container">
               <img
-                src={formData.avatar_url || 'https://i.pravatar.cc/150'}
+                src={formData.avatar_url || '/images/default-avatar-profile.jpg'}
                 alt="Avatar"
                 className="avatar-image"
               />
@@ -109,20 +114,17 @@ const ProfilePage = () => {
             </button>
           </div>
           <div className="profile-card-right">
-            <h3>User Profile</h3>
+            <h3>Thông tin người dùng</h3>
             <form onSubmit={handleSaveChanges} className="profile-form">
               <div className="form-field">
-                <label htmlFor="avatar_url">Avatar URL</label>
-                <input
-                  type="text"
-                  id="avatar_url"
-                  name="avatar_url"
-                  value={formData.avatar_url}
-                  onChange={handleInputChange}
+                <ImgContentUpload
+                  onUploaded={handleAvatarUpload}
+                  defaultUrl={formData.avatar_url}
+                  label="Ảnh đại diện"
                 />
               </div>
               <div className="form-field">
-                <label htmlFor="first_name">First Name</label>
+                <label htmlFor="first_name">Họ</label>
                 <input
                   type="text"
                   id="first_name"
@@ -132,7 +134,7 @@ const ProfilePage = () => {
                 />
               </div>
               <div className="form-field">
-                <label htmlFor="last_name">Last Name</label>
+                <label htmlFor="last_name">Tên</label>
                 <input
                   type="text"
                   id="last_name"
@@ -142,7 +144,7 @@ const ProfilePage = () => {
                 />
               </div>
               <div className="form-field static">
-                <label>Username</label>
+                <label>Tên người dùng</label>
                 <span>{user.username}</span>
               </div>
               <div className="form-field static">
@@ -150,8 +152,15 @@ const ProfilePage = () => {
                 <span>{user.email}</span>
               </div>
               <div className="form-field static">
-                <label>Role</label>
-                <span>{user.roleName}</span>
+                <label>Vai trò</label>
+                <span>
+                  {user.roleName === 'User' 
+                    ? 'Học sinh' 
+                    : user.roleName === 'Teacher' 
+                    ? 'Giáo viên' 
+                    : 'Quản trị viên'
+                  }
+                </span>
               </div>
               <div className="form-actions">
                 <button type="submit" className="primary-btn save-btn">
