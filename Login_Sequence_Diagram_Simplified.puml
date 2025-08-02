@@ -1,0 +1,70 @@
+@startuml Login Sequence Diagram - Simplified
+!theme plain
+title Sequence Diagram - Login Feature (Simplified)
+
+participant "Client" as C
+participant "LoginPage" as LP
+participant "LoginController" as LC
+participant "UserRepository" as UR
+participant "UserAdmin" as UA
+participant "JwtService" as JS
+participant "CacheService" as CS
+
+== Login Flow ==
+
+C -> LP: 1: enter credentials
+C -> LP: 2: submit login request
+activate LP
+
+LP -> LC: submit login request
+activate LC
+
+LC -> UR: 3: findByEmail
+activate UR
+UR --> LC: 4: user data returned
+deactivate UR
+
+alt [User exists]
+    LC -> UA: 5: checkPassword
+    activate UA
+    
+    alt [Password correct]
+        UA --> LC: password verified
+        deactivate UA
+        
+        LC -> JS: 6: generateToken
+        activate JS
+        JS --> LC: 7: token
+        deactivate JS
+        
+        LC -> CS: 8: caching user data
+        activate CS
+        CS --> LC: cached
+        deactivate CS
+        
+        LC --> LP: 9: login response
+        deactivate LC
+        
+        LP -> C: 12: redirect to dashboard
+        deactivate LP
+        
+    else [Password incorrect]
+        UA --> LC: password invalid
+        deactivate UA
+        
+        LC --> LP: 10: error - wrong password
+        deactivate LC
+        
+        LP -> C: display error message
+        deactivate LP
+    end
+    
+else [User not found]
+    LC --> LP: 11: error - user not found
+    deactivate LC
+    
+    LP -> C: display error message
+    deactivate LP
+end
+
+@enduml 

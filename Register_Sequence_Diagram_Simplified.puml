@@ -1,0 +1,122 @@
+@startuml Register Sequence Diagram - Simplified
+!theme plain
+title Sequence Diagram - Register Feature (Simplified)
+
+participant "Client" as C
+participant "RegisterPage" as RP
+participant "RegisterController" as RC
+participant "UserRepository" as UR
+participant "OtpService" as OS
+participant "EmailService" as ES
+participant "CacheService" as CS
+participant "VerifyOTPPage" as VOP
+participant "VerifyOTPController" as VOC
+
+== Phase 1: Registration ==
+
+C -> RP: 1: enter registration data
+C -> RP: 2: submit registration request
+activate RP
+
+RP -> RC: submit registration request
+activate RC
+
+RC -> RC: 3: validate input data
+note right: Check email format, password strength, etc.
+
+RC -> UR: 4: checkEmailExists(email)
+activate UR
+UR --> RC: 5: email exists (true/false)
+deactivate UR
+
+alt [Email not exists]
+    RC -> UR: 6: checkUsernameExists(username)
+    activate UR
+    UR --> RC: 7: username exists (true/false)
+    deactivate UR
+    
+    alt [Username not exists]
+        RC -> OS: 8: generateOTP()
+        activate OS
+        OS --> RC: 9: OTP code
+        deactivate OS
+        
+        RC -> CS: 10: cacheRegistrationData(email, data)
+        activate CS
+        CS --> RC: 11: cached successfully
+        deactivate CS
+        
+        RC -> ES: 12: sendOTPEmail(email, OTP)
+        activate ES
+        ES --> RC: 13: email sent
+        deactivate ES
+        
+        RC --> RP: 14: registration response (success)
+        deactivate RC
+        
+        RP -> C: 15: redirect to OTP verification
+        deactivate RP
+        
+    else [Username exists]
+        RC --> RP: error - username exists
+        deactivate RC
+        
+        RP -> C: display error message
+        deactivate RP
+    end
+    
+else [Email exists]
+    RC --> RP: error - email exists
+    deactivate RC
+    
+    RP -> C: display error message
+    deactivate RP
+end
+
+== Phase 2: OTP Verification ==
+
+C -> VOP: 16: enter OTP code
+C -> VOP: 17: submit OTP verification
+activate VOP
+
+VOP -> VOC: submit OTP verification
+activate VOC
+
+VOC -> OS: 18: verifyOTP(email, OTP)
+activate OS
+OS --> VOC: 19: OTP valid (true/false)
+deactivate OS
+
+alt [OTP valid]
+    VOC -> CS: 20: getRegistrationData(email)
+    activate CS
+    CS --> VOC: 21: registration data
+    deactivate CS
+    
+    VOC -> UR: 22: createUser(userData)
+    activate UR
+    UR -> UR: 23: hashPassword(password)
+    UR -> UR: 24: saveUserToDatabase()
+    UR --> VOC: 25: user created successfully
+    deactivate UR
+    
+    VOC -> CS: 26: clearRegistrationData(email)
+    activate CS
+    CS --> VOC: 27: data cleared
+    deactivate CS
+    
+    VOC --> VOP: 28: verification response (success)
+    deactivate VOC
+    
+    VOP -> C: 29: redirect to login page
+    deactivate VOP
+    
+else [OTP invalid]
+    VOC --> VOP: error - invalid OTP
+    deactivate VOC
+    
+    VOP -> C: display error message
+    deactivate VOP
+end
+
+@enduml 

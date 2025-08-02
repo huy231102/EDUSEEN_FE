@@ -1,0 +1,79 @@
+@startuml Create Course Sequence Diagram - Simplified
+!theme plain
+title Sequence Diagram - Create Course Feature (Simplified)
+
+participant "Lecturer" as L
+participant "CourseEditPage" as CEP
+participant "AuthContext" as AC
+participant "TeacherCourseController" as TCC
+participant "CourseTeacherService" as CTS
+participant "Database" as DB
+
+== Create Course Flow ==
+
+L -> CEP: 1: navigate to create course page
+activate CEP
+
+CEP -> AC: 2: check lecturer authentication
+activate AC
+AC -> AC: 3: verify lecturer role
+AC --> CEP: 4: lecturer user data
+deactivate AC
+
+alt [Lecturer authenticated]
+    CEP -> CEP: 5: load course creation form
+    note right: Initialize empty course data
+    
+    L -> CEP: 6: fill course information
+    note right: Title, description, category, level
+    
+    L -> CEP: 7: add sections and lectures
+    note right: Curriculum builder
+    
+    L -> CEP: 8: upload course cover image
+    note right: ImageS3Upload component
+    
+    L -> CEP: 9: click save button
+    CEP -> CEP: 10: validate form data
+    note right: Check required fields
+    
+    alt [Form valid]
+        CEP -> TCC: 11: createCourse request
+        activate TCC
+        
+        TCC -> TCC: 12: verify lecturer authorization
+        note right: Check [Authorize] and teacherId
+        
+        TCC -> CTS: 13: createCourseAsync(courseData, teacherId)
+        activate CTS
+        
+        CTS -> CTS: 14: build course entity
+        note right: Map DTO to Course model
+        
+        CTS -> DB: 15: save course to database
+        activate DB
+        DB --> CTS: 16: course created successfully
+        deactivate DB
+        
+        CTS -> CTS: 17: map to CourseDTO
+        CTS --> TCC: 18: course creation response
+        deactivate CTS
+        
+        TCC --> CEP: 19: course created successfully
+        deactivate TCC
+        
+        CEP -> CEP: 20: redirect to teacher dashboard
+        CEP -> L: 21: show success message
+        deactivate CEP
+        
+    else [Form invalid]
+        CEP -> L: 11: show validation error
+        deactivate CEP
+    end
+    
+else [Not lecturer]
+    CEP -> L: redirect to unauthorized page
+    deactivate CEP
+end
+
+@enduml 

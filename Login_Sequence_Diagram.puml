@@ -1,0 +1,181 @@
+@startuml Login Sequence Diagram
+!theme plain
+title Sequence Diagram - Tính năng Đăng nhập (Login Feature)
+
+participant "Client" as C
+participant "LoginForm" as LF
+participant "AuthContext" as AC
+participant "userApi" as UA
+participant "api.js" as API
+participant "AuthController" as AUTH
+participant "AuthService" as AS
+participant "UserRepository" as UR
+participant "TokenService" as TS
+participant "Database" as DB
+participant "MemoryCache" as MC
+
+== Quy trình đăng nhập thành công ==
+
+C -> LF: Nhập email và password
+C -> LF: Submit form
+activate LF
+
+LF -> UA: login(email, password)
+activate UA
+
+UA -> API: POST /api/auth/login
+activate API
+
+API -> AUTH: LoginAsync(LoginDTO)
+activate AUTH
+
+AUTH -> AS: LoginAsync(loginDTO)
+activate AS
+
+AS -> UR: GetByEmailAsync(email)
+activate UR
+UR -> DB: Query Users table
+activate DB
+DB --> UR: User data (if found)
+deactivate DB
+UR --> AS: User object (or null)
+deactivate UR
+
+alt [User exists]
+    AS -> UR: CheckPasswordAsync(user, password)
+    activate UR
+    UR -> UR: BCrypt.Verify(password, user.PasswordHash)
+    UR --> AS: true/false
+    deactivate UR
+    
+    alt [Password correct]
+        alt [User is active]
+            AS -> TS: CreateJWTTokenAsync(user, populateExp: true)
+            activate TS
+            
+            TS -> TS: GetSigningCredentials()
+            TS -> TS: GetClaims(user)
+            TS -> TS: GenerateTokenOptions()
+            TS -> TS: GenerateRefreshToken()
+            TS -> TS: WriteToken(tokenOptions)
+            
+            TS -> UR: UpdateAsync(user)
+            activate UR
+            UR -> DB: Update Users table
+            activate DB
+            DB --> UR: Success
+            deactivate DB
+            UR --> TS: Success
+            deactivate UR
+            
+            TS --> AS: TokenDTO { AccessToken, RefreshToken }
+            deactivate TS
+            
+            AS -> AUTH: SetTokenCookie(tokenDTO, HttpContext)
+            AUTH -> AUTH: Set HTTP-only cookie
+            
+            AS --> AUTH: AuthResponseDTO { IsAuthSuccessful: true, Token, User }
+            deactivate AS
+            
+            AUTH --> API: HTTP 200 OK + { Message, Token, User }
+            deactivate AUTH
+            
+            API --> UA: Response data
+            deactivate API
+            
+            UA --> LF: Response object
+            deactivate UA
+            
+            LF -> AC: login(accessToken, userData)
+            activate AC
+            AC -> AC: setToken(accessToken)
+            AC -> AC: setUser(userData)
+            AC --> LF: Success
+            deactivate AC
+            
+            LF -> LF: showToast('Đăng nhập thành công', 'success')
+            
+            alt [User is Admin (roleId = 2)]
+                LF -> LF: navigate('/admin')
+            else [User is Teacher (roleId = 3)]
+                LF -> LF: navigate('/teacher/dashboard')
+            else [User is Student]
+                LF -> LF: navigate('/')
+            end
+            
+            LF --> C: Redirect to appropriate dashboard
+            deactivate LF
+            
+        else [User is not active]
+            AS --> AUTH: AuthResponseDTO { IsAuthSuccessful: false, ErrorMessage: "Tài khoản không hoạt động" }
+            deactivate AS
+            
+            AUTH --> API: HTTP 401 Unauthorized + { Error: "Tài khoản không hoạt động" }
+            deactivate AUTH
+            
+            API --> UA: Error response
+            deactivate API
+            
+            UA --> LF: Error object
+            deactivate UA
+            
+            LF -> LF: showToast('Tài khoản không hoạt động', 'error')
+            LF --> C: Display error message
+            deactivate LF
+        end
+        
+    else [Password incorrect]
+        AS --> AUTH: AuthResponseDTO { IsAuthSuccessful: false, ErrorMessage: "Email hoặc mật khẩu không hợp lệ" }
+        deactivate AS
+        
+        AUTH --> API: HTTP 401 Unauthorized + { Error: "Email hoặc mật khẩu không hợp lệ" }
+        deactivate AUTH
+        
+        API --> UA: Error response
+        deactivate API
+        
+        UA --> LF: Error object
+        deactivate UA
+        
+        LF -> LF: showToast('Email hoặc mật khẩu không hợp lệ', 'error')
+        LF --> C: Display error message
+        deactivate LF
+    end
+    
+else [User not found]
+    AS --> AUTH: AuthResponseDTO { IsAuthSuccessful: false, ErrorMessage: "Email hoặc mật khẩu không hợp lệ" }
+    deactivate AS
+    
+    AUTH --> API: HTTP 401 Unauthorized + { Error: "Email hoặc mật khẩu không hợp lệ" }
+    deactivate AUTH
+    
+    API --> UA: Error response
+    deactivate API
+    
+    UA --> LF: Error object
+    deactivate UA
+    
+    LF -> LF: showToast('Email hoặc mật khẩu không hợp lệ', 'error')
+    LF --> C: Display error message
+    deactivate LF
+end
+
+== Xử lý lỗi validation ==
+
+alt [Invalid request data]
+    AUTH -> AUTH: ModelState.IsValid = false
+    AUTH --> API: HTTP 400 BadRequest + { Error: "Invalid request data", Details: ModelState }
+    deactivate AUTH
+    
+    API --> UA: Error response
+    deactivate API
+    
+    UA --> LF: Error object
+    deactivate UA
+    
+    LF -> LF: showToast('Dữ liệu không hợp lệ', 'error')
+    LF --> C: Display validation errors
+    deactivate LF
+end
+
+@enduml 

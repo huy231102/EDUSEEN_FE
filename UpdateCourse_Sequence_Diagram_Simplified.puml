@@ -1,0 +1,51 @@
+@startuml Update Course Sequence Diagram - Simplified
+!theme plain
+title Sequence Diagram - Update Course Feature (Simplified)
+
+participant "Lecturer" as L
+participant "CourseEditPage" as CEP
+participant "TeacherCourseController" as TCC
+participant "CourseTeacherService" as CTS
+participant "Database" as DB
+
+== Update Course Flow ==
+
+L -> CEP: 1: navigate to edit course page
+L -> CEP: 2: modify course information
+L -> CEP: 3: click save button
+activate CEP
+
+CEP -> CEP: 4: validate form data
+note right: Check required fields
+
+alt [Form valid]
+    CEP -> TCC: 5: updateCourse request
+    activate TCC
+    
+    TCC -> CTS: 6: updateCourseAsync(courseId, courseData, teacherId)
+    activate CTS
+    
+    CTS -> CTS: 7: verify course ownership
+    note right: Check course belongs to lecturer
+    
+    CTS -> DB: 8: save course changes to database
+    activate DB
+    DB --> CTS: 9: course updated successfully
+    deactivate DB
+    
+    CTS --> TCC: 10: update success response
+    deactivate CTS
+    
+    TCC --> CEP: 11: course updated successfully
+    deactivate TCC
+    
+    CEP -> CEP: 12: redirect to teacher dashboard
+    CEP -> L: 13: show success message
+    deactivate CEP
+    
+else [Form invalid]
+    CEP -> L: 5: show validation error
+    deactivate CEP
+end
+
+@enduml 
