@@ -29,6 +29,13 @@ const userApi = {
     Otp: otp,
   }),
 
+  // Gửi lại OTP (sử dụng lại API register)
+  resendOTP: ({ email, username, password }) => api.post('/api/auth/register', {
+    Email: email,
+    UserName: username,
+    Password: password,
+  }),
+
   // Đổi mật khẩu
   changePassword: (formData) => api.post('/api/auth/change-password', formData),
 
