@@ -1,12 +1,13 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import userApi from 'services/userApi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from 'components/common/Toast';
 import '../common/style.css'
 
 const RegisterForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
 
   const [username, setUsername] = useState('');
@@ -16,6 +17,46 @@ const RegisterForm = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState(null);
+
+  // Khôi phục thông tin đăng ký từ localStorage nếu có
+  useEffect(() => {
+    const savedData = localStorage.getItem('registrationData');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        setUsername(parsedData.username || '');
+        setEmail(parsedData.email || '');
+        setPassword(parsedData.password || '');
+        setConfirmPassword(parsedData.confirmPassword || '');
+        
+        // Xóa dữ liệu đã lưu sau khi khôi phục
+        localStorage.removeItem('registrationData');
+      } catch (error) {
+        console.error('Lỗi khi khôi phục dữ liệu đăng ký:', error);
+      }
+    }
+  }, []);
+
+  // Kiểm tra nếu quay lại từ OTP và có dữ liệu đăng ký
+  useEffect(() => {
+    if (location.state?.fromOTP) {
+      const savedData = localStorage.getItem('registrationData');
+      if (savedData) {
+        try {
+          const parsedData = JSON.parse(savedData);
+          setUsername(parsedData.username || '');
+          setEmail(parsedData.email || '');
+          setPassword(parsedData.password || '');
+          setConfirmPassword(parsedData.confirmPassword || '');
+          
+          // Xóa dữ liệu đã lưu sau khi khôi phục
+          localStorage.removeItem('registrationData');
+        } catch (error) {
+          console.error('Lỗi khi khôi phục dữ liệu đăng ký:', error);
+        }
+      }
+    }
+  }, [location.state]);
 
   // Hàm validate form trước khi gọi API
   const validateForm = () => {
@@ -75,7 +116,21 @@ const RegisterForm = () => {
     try {
       await userApi.register({ email, username, password });
       showToast('Đăng ký thành công! Vui lòng kiểm tra email để xác thực OTP.', 'success');
-      navigate('/auth/verify-otp', { state: { email } });
+      
+      // Lưu thông tin đăng ký để có thể khôi phục nếu cần
+      const registrationData = {
+        username,
+        email,
+        password,
+        confirmPassword
+      };
+      
+      navigate('/auth/verify-otp', { 
+        state: { 
+          email,
+          registrationData 
+        } 
+      });
     } catch (err) {
       console.error(err);
       showToast(err.message || 'Đăng ký thất bại', 'error');

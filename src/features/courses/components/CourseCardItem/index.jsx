@@ -73,7 +73,7 @@ const CourseCardItem = ({ course }) => {
         </div>
       </div>
       <Link to={`/courses/${course.id}`}>
-        <button className='outline-btn'>ĐĂNG KÝ NGAY !</button>
+        <button className='outline-btn'>XEM CHI TIẾT</button>
       </Link>
     </div>
   );

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import LoginForm from 'features/auth/components/Login';
 import RegisterForm from 'features/auth/components/Register';
 import ForgotPasswordForm from 'features/auth/components/ForgotPassword';
@@ -7,7 +7,15 @@ import './style.css'
 import Heading from 'components/common/Heading';
 
 const AuthPage = () => {
+  const location = useLocation();
   const [activeView, setActiveView] = useState('login');
+
+  // Kiểm tra state từ navigation để chuyển về tab đăng ký nếu cần
+  useEffect(() => {
+    if (location.state?.activeView) {
+      setActiveView(location.state.activeView);
+    }
+  }, [location.state]);
 
   const renderContent = () => {
     switch (activeView) {

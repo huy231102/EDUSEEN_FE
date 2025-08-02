@@ -33,6 +33,7 @@
   font-weight: 600;
   transition: background 0.3s ease;
   text-transform: uppercase;
+  margin: 0px;
 }
 
 .primary-btn:hover {
@@ -82,4 +83,56 @@
 
 .toggle-password:hover {
   color: #1eb2a6;
+}
+
+/* Styles cho phần gửi lại OTP */
+.resend-otp-section {
+  margin-top: 20px;
+  text-align: center;
+  padding: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.timer-display {
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.countdown {
+  color: #1eb2a6;
+  font-weight: 500;
+}
+
+.expired {
+  color: #e74c3c;
+  font-weight: 500;
+}
+
+.resend-btn {
+  background: #1eb2a6;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin: 0px;
+}
+
+.resend-btn:hover:not(.disabled) {
+  background: #157e76;
+}
+
+.resend-btn.disabled {
+  background: #e0e0e0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.resend-btn:disabled {
+  background: #e0e0e0;
+  color: #999;
+  cursor: not-allowed;
 } 

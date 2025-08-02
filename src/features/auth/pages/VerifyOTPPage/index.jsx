@@ -16,7 +16,7 @@ const VerifyOTPPage = () => {
             <VerifyOTPForm />
         </div>
         <div className="back-to-home">
-          <Link to="/">Quay lại trang chủ</Link>
+          <Link to="/auth" state={{ fromOTP: true, activeView: 'register' }}>Quay lại đăng ký</Link>
         </div>
       </div>
     </div>
