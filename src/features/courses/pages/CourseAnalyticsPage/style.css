@@ -153,6 +153,204 @@
   margin-bottom: 18px;
   margin-top: 32px;
 }
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-button:hover {
+  background: #f8f9fa;
+  color: #1eb2a6;
+}
+
+.tab-button.active {
+  background: #1eb2a6;
+  color: white;
+}
+
+.tab-button i {
+  font-size: 14px;
+}
+
+/* Students Tab */
+.students-tab {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(30,178,166,0.08);
+  padding: 24px;
+}
+
+.search-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 12px 12px 40px;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #1eb2a6;
+}
+
+.student-count {
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Table Styles */
+.table-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.students-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.students-table th {
+  background: #f8f9fa;
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #eee;
+  font-size: 14px;
+}
+
+.students-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.students-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.student-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.student-email {
+  color: #666;
+  font-size: 13px;
+}
+
+.average-grade {
+  text-align: center;
+}
+
+.grade-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  color: white;
+}
+
+.grade-badge.excellent {
+  background: #27ae60;
+}
+
+.grade-badge.good {
+  background: #2980b9;
+}
+
+.grade-badge.average {
+  background: #f39c12;
+}
+
+.grade-badge.poor {
+  background: #e74c3c;
+}
+
+.completed-assignments {
+  text-align: center;
+  font-weight: 500;
+  color: #333;
+}
+
+.total-assignments {
+  text-align: center;
+  color: #666;
+}
+
+.grade-details {
+  text-align: center;
+}
+
+.view-details-btn {
+  background: #1eb2a6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.view-details-btn:hover {
+  background: #169c91;
+}
+
+.view-details-btn i {
+  font-size: 11px;
+}
+
 @media (max-width: 900px) {
   .course-analytics-page .overview-grid, .course-analytics-page .charts-grid {
     flex-direction: column;
@@ -162,5 +360,275 @@
     min-width: unset;
     max-width: 100%;
     width: 100%;
+  }
+  
+  .tab-navigation {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .tab-button {
+    border-radius: 8px;
+    justify-content: center;
+  }
+  
+  .search-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-box {
+    max-width: 100%;
+  }
+  
+  .students-table {
+    font-size: 12px;
+  }
+  
+  .students-table th,
+  .students-table td {
+    padding: 12px 8px;
+  }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.modal-close:hover {
+  background: #f0f0f0;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.student-info {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.student-info p {
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.assignments-details h4 {
+  margin: 0 0 16px;
+  color: #333;
+  font-size: 16px;
+}
+
+.assignments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.assignment-item {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fff;
+}
+
+.assignment-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.assignment-number {
+  background: #1eb2a6;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.assignment-title {
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.assignment-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+}
+
+.assignment-status.graded {
+  background: #27ae60;
+}
+
+.assignment-status.submitted {
+  background: #2980b9;
+}
+
+.assignment-status.not-submitted {
+  background: #e74c3c;
+}
+
+.assignment-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grade-info,
+.submission-info,
+.grading-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.grade-label,
+.submission-label,
+.grading-label {
+  font-weight: 500;
+  color: #666;
+  min-width: 80px;
+}
+
+.grade-value {
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.grade-value.excellent {
+  background: #27ae60;
+  color: white;
+}
+
+.grade-value.good {
+  background: #2980b9;
+  color: white;
+}
+
+.grade-value.average {
+  background: #f39c12;
+  color: white;
+}
+
+.grade-value.poor {
+  background: #e74c3c;
+  color: white;
+}
+
+.grade-value.not-graded {
+  background: #95a5a6;
+  color: white;
+}
+
+.submission-date,
+.grading-date {
+  color: #333;
+  font-weight: 500;
+}
+
+.modal-footer {
+  padding: 20px 24px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modal-btn.secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.modal-btn.secondary:hover {
+  background: #5a6268;
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    margin: 10px;
+    max-height: 90vh;
+  }
+  
+  .assignment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .assignment-status {
+    align-self: flex-start;
   }
 } 
