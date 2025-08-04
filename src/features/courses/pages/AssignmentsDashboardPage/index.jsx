@@ -8,6 +8,7 @@ const AssignmentsDashboardPage = () => {
   const navigate = useNavigate();
   const [assignments, setAssignments] = useState([]);
   const [course, setCourse] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -25,6 +26,29 @@ const AssignmentsDashboardPage = () => {
     }
     fetchData();
   }, [courseId, navigate]);
+
+  const handleDeleteAssignment = async (assignmentId, assignmentTitle) => {
+    const isConfirmed = window.confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignmentTitle}" chứ?`);
+    
+    if (!isConfirmed) return;
+
+    setIsDeleting(true);
+    try {
+      await api.delete(`/api/assignments/${assignmentId}`);
+      
+      // Cập nhật danh sách assignments sau khi xóa
+      setAssignments(prevAssignments => 
+        prevAssignments.filter(a => a.assignmentId !== assignmentId)
+      );
+      
+      alert('Xóa bài tập thành công!');
+    } catch (error) {
+      console.error('Lỗi khi xóa bài tập:', error);
+      alert('Có lỗi xảy ra khi xóa bài tập. Vui lòng thử lại.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <section className="assignments-dashboard">
@@ -66,6 +90,14 @@ const AssignmentsDashboardPage = () => {
                     <Link to={`/teacher/course/${courseId}/assignments/${a.assignmentId}`} className="btn small">Xem bài nộp</Link>
                     <Link to={`/teacher/course/${courseId}/assignments/${a.assignmentId}/edit`} className="btn small">Chỉnh sửa</Link>
                     <Link to={`/teacher/course/${courseId}/assignments/${a.assignmentId}/stats`} className="btn small">Thống kê</Link>
+                    <button 
+                      onClick={() => handleDeleteAssignment(a.assignmentId, a.title)}
+                      disabled={isDeleting}
+                      className="btn small danger"
+                      style={{ marginLeft: '5px' }}
+                    >
+                      {isDeleting ? 'Đang xóa...' : 'Xóa'}
+                    </button>
                   </td>
                 </tr>
               ))}
