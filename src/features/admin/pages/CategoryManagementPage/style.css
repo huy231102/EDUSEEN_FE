@@ -1,0 +1,331 @@
+/* CategoryManagementPage - CSS riêng cho trang quản lý danh mục */
+
+/* Header Section */
+.category-management-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.category-management-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.category-management-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.category-management-refresh-btn {
+  background-color: #1eb2a6 !important;
+  color: white !important;
+}
+
+.category-management-refresh-btn:hover {
+  background-color: #1a847b !important;
+}
+
+.category-management-add-btn {
+  background-color: #1eb2a6 !important;
+  color: white !important;
+  padding: 8px 16px;
+}
+
+.category-management-add-btn:hover {
+  background-color: #1a847b !important;
+}
+
+/* Table Styles */
+.category-management-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.category-management-table .MuiTableHead-root .MuiTableRow-root {
+  background-color: #f5f5f5;
+}
+
+.category-management-table .MuiTableCell-head {
+  font-weight: 600;
+  color: #333;
+}
+
+.category-management-table .MuiTableRow-root:hover {
+  background-color: #f8f9fa;
+}
+
+/* Category Avatar and Info */
+.category-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.category-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.category-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.category-id {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* Category Description */
+.category-description {
+  color: #666;
+  font-size: 0.875rem;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Category Icon Cell */
+.category-icon-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-icon-label {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* Category Images Cell */
+.category-images-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.category-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+}
+
+.category-no-image {
+  color: #999;
+  font-style: italic;
+}
+
+/* Category Course Count Chip */
+.category-course-count-chip {
+  font-weight: 500;
+  color: white;
+  background-color: #1eb2a6 !important;
+}
+
+/* Action Buttons */
+.category-action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.category-action-btn {
+  padding: 4px;
+}
+
+.category-action-btn.edit {
+  color: #ff9800;
+}
+
+.category-action-btn.delete {
+  color: #f44336;
+}
+
+.category-action-btn:hover {
+  background-color: rgba(0,0,0,0.04);
+}
+
+/* Dialog Styles */
+.category-dialog .MuiDialog-paper {
+  border-radius: 12px;
+}
+
+.category-dialog .MuiDialogTitle-root {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.category-dialog .MuiDialogContent-root {
+  padding: 24px;
+}
+
+.category-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.category-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-form-label {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+}
+
+.category-form-input {
+  border-radius: 8px;
+}
+
+.category-form-input .MuiOutlinedInput-root {
+  border-radius: 8px;
+}
+
+.category-form-input .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: #1eb2a6;
+}
+
+.category-form-input .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #1eb2a6;
+}
+
+/* Icon Selection */
+.category-icon-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-icon-option:hover {
+  border-color: #1eb2a6;
+  background-color: #f0f9f8;
+}
+
+.category-icon-option.selected {
+  border-color: #1eb2a6;
+  background-color: #e0f2f1;
+}
+
+.category-icon-option input[type="radio"] {
+  margin: 0;
+}
+
+/* Image Upload */
+.category-image-upload {
+  border: 2px dashed #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.category-image-upload:hover {
+  border-color: #1eb2a6;
+  background-color: #f0f9f8;
+}
+
+.category-image-upload.dragover {
+  border-color: #1eb2a6;
+  background-color: #e0f2f1;
+}
+
+.category-upload-icon {
+  font-size: 2rem;
+  color: #1eb2a6;
+  margin-bottom: 8px;
+}
+
+.category-upload-text {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* Dialog Actions */
+.category-dialog .MuiDialogActions-root {
+  padding: 16px 24px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+}
+
+.category-dialog-save-btn {
+  background-color: #1eb2a6 !important;
+  color: white !important;
+  padding: 8px 24px;
+}
+
+.category-dialog-save-btn:hover {
+  background-color: #1a847b !important;
+}
+
+.category-dialog-cancel-btn {
+  color: #666;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .category-management-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .category-action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .category-info-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .category-icon-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .category-images-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .category-description {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 600px) {
+  .category-management-header {
+    margin-bottom: 16px;
+  }
+  
+  .category-dialog .MuiDialog-paper {
+    margin: 16px;
+    max-height: calc(100vh - 32px);
+  }
+  
+  .category-dialog .MuiDialogContent-root {
+    padding: 16px;
+  }
+  
+  .category-form {
+    gap: 16px;
+  }
+} 
