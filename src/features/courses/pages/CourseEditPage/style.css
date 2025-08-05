@@ -76,6 +76,67 @@
   resize: vertical;
 }
 
+/* Required field indicator */
+.required {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+/* Tooltip styles */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  margin-left: 8px;
+  cursor: help;
+}
+
+.tooltip i {
+  color: #1eb2a6;
+  font-size: 14px;
+}
+
+.tooltip:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.tooltip:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #333;
+  z-index: 1000;
+}
+
+/* Error styles */
+.form-group input.error,
+.form-group textarea.error,
+.form-group select.error {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.1);
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
 /* ---------- Reviews Styles ---------- */
 .review-item {
   border-bottom: 1px solid #eee;
@@ -192,6 +253,29 @@
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+}
+
+.edit-lecture-form {
+  width: 100%;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.edit-lecture-form input,
+.edit-lecture-form textarea {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.edit-lecture-form input:focus,
+.edit-lecture-form textarea:focus {
+  outline: none;
+  border-color: #1eb2a6;
+  box-shadow: 0 0 0 2px rgba(30, 178, 166, 0.1);
 }
 
 .upload-btn {
