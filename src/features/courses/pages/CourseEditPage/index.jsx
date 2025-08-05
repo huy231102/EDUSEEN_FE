@@ -256,6 +256,7 @@ const CurriculumBuilder = ({ course, setCourse }) => {
   const [lectureText, setLectureText] = useState('');
   const [lectureFile, setLectureFile] = useState(null);
   const [activeSectionIdx, setActiveSectionIdx] = useState(null);
+  const [editingLecture, setEditingLecture] = useState(null); // {sectionIdx, lectureIdx}
 
   // Thêm Section mới
   const addSection = () => {
@@ -306,6 +307,14 @@ const CurriculumBuilder = ({ course, setCourse }) => {
     const newSections = [...course.sections];
     newSections[sectionIdx].lectures = newSections[sectionIdx].lectures.filter((_, idx) => idx !== lectureIdx);
     setCourse({ ...course, sections: newSections });
+  };
+
+  // Cập nhật Lecture
+  const updateLecture = (sectionIdx, lectureIdx, updatedLecture) => {
+    const newSections = [...course.sections];
+    newSections[sectionIdx].lectures[lectureIdx] = { ...newSections[sectionIdx].lectures[lectureIdx], ...updatedLecture };
+    setCourse({ ...course, sections: newSections });
+    setEditingLecture(null);
   };
 
   // Xử lý drag & drop
@@ -413,24 +422,81 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                                     {...lecDragProvided.dragHandleProps}
                                   >
                                     <div className="lecture-content">
-                                      <span>{lec.title}</span>
-                                      {lec.contentType === 'video' ? (
-                                        lec.contentUrl ? (
-                                          <video src={lec.contentUrl} controls width="200" style={{marginTop:4}} />
-                                        ) : (
-                                          <small className="file-name">Chưa upload video</small>
-                                        )
+                                      {editingLecture && editingLecture.sectionIdx === sIdx && editingLecture.lectureIdx === lIdx ? (
+                                        // Chế độ chỉnh sửa
+                                        <div className="edit-lecture-form">
+                                          <input
+                                            type="text"
+                                            value={lec.title}
+                                            onChange={(e) => updateLecture(sIdx, lIdx, { title: e.target.value })}
+                                            style={{ marginBottom: '8px', width: '100%' }}
+                                          />
+                                          {lec.contentType === 'video' ? (
+                                            <div>
+                                              {lec.contentUrl && (
+                                                <video src={lec.contentUrl} controls width="200" style={{marginBottom: '8px'}} />
+                                              )}
+                                              <VideoS3Upload
+                                                onUploaded={url => updateLecture(sIdx, lIdx, { contentUrl: url })}
+                                              />
+                                              <small style={{display: 'block', marginTop: '4px'}}>Upload video mới để thay thế</small>
+                                            </div>
+                                          ) : (
+                                            <textarea 
+                                              value={lec.text || ''} 
+                                              onChange={(e) => updateLecture(sIdx, lIdx, { text: e.target.value })}
+                                              rows={3}
+                                              style={{ width: '100%', marginBottom: '8px' }}
+                                            />
+                                          )}
+                                          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                            <button 
+                                              className="btn small primary" 
+                                              onClick={() => setEditingLecture(null)}
+                                            >
+                                              Hoàn thành
+                                            </button>
+                                            <button 
+                                              className="btn small" 
+                                              onClick={() => setEditingLecture(null)}
+                                            >
+                                              Hủy
+                                            </button>
+                                          </div>
+                                        </div>
                                       ) : (
-                                        <small className="file-name">Text</small>
+                                        // Chế độ xem
+                                        <>
+                                          <span>{lec.title}</span>
+                                          {lec.contentType === 'video' ? (
+                                            lec.contentUrl ? (
+                                              <video src={lec.contentUrl} controls width="200" style={{marginTop:4}} />
+                                            ) : (
+                                              <small className="file-name">Chưa upload video</small>
+                                            )
+                                          ) : (
+                                            <small className="file-name">Text</small>
+                                          )}
+                                          <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+                                            <button
+                                              className="btn small"
+                                              style={{ color: '#1eb2a6', background: 'none', border: 'none' }}
+                                              title="Chỉnh sửa bài giảng"
+                                              onClick={() => setEditingLecture({ sectionIdx: sIdx, lectureIdx: lIdx })}
+                                            >
+                                              <i className="fas fa-edit"></i>
+                                            </button>
+                                            <button
+                                              className="btn small"
+                                              style={{ color: '#e74c3c', background: 'none', border: 'none' }}
+                                              title="Xoá bài giảng"
+                                              onClick={() => deleteLecture(sIdx, lIdx)}
+                                            >
+                                              <i className="fas fa-trash"></i>
+                                            </button>
+                                          </div>
+                                        </>
                                       )}
-                                      <button
-                                        className="btn small"
-                                        style={{ marginLeft: 8, color: '#e74c3c', background: 'none', border: 'none' }}
-                                        title="Xoá bài giảng"
-                                        onClick={() => deleteLecture(sIdx, lIdx)}
-                                      >
-                                        <i className="fas fa-trash"></i>
-                                      </button>
                                     </div>
                                   </div>
                                 )}

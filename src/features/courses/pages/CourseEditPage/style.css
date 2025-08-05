@@ -194,6 +194,29 @@
   gap: 10px;
 }
 
+.edit-lecture-form {
+  width: 100%;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.edit-lecture-form input,
+.edit-lecture-form textarea {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.edit-lecture-form input:focus,
+.edit-lecture-form textarea:focus {
+  outline: none;
+  border-color: #1eb2a6;
+  box-shadow: 0 0 0 2px rgba(30, 178, 166, 0.1);
+}
+
 .upload-btn {
   cursor: pointer;
   color: #1eb2a6;
