@@ -7,6 +7,7 @@ import {
 
 import { ContextProvider } from './features/video-call/contexts/SocketContext';
 import { NotificationProvider } from './features/notifications/contexts/NotificationContext';
+import { ToastProvider } from './components/common/Toast';
 const VideoCallPage = lazy(() => import('./features/video-call/pages/VideoCallPage'));
 const CourseListPage = lazy(() => import('./features/courses/pages/CourseListPage'));
 const CourseDetailPage = lazy(() => import('./features/courses/pages/CourseDetailPage'));
@@ -36,8 +37,9 @@ const App = () => {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <NotificationProvider>
-        <Suspense fallback={<Loader />}>
+      <ToastProvider>
+        <NotificationProvider>
+          <Suspense fallback={<Loader />}>
           <Routes>
             <Route
               path="/video-call"
@@ -97,7 +99,8 @@ const App = () => {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
-      </NotificationProvider>
+        </NotificationProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 };
