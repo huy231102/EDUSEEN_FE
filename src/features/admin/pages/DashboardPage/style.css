@@ -132,6 +132,34 @@
   font-size: 1.5rem;
 }
 
+/* Pie Chart Section */
+.dashboard-pie-chart-section {
+  margin-bottom: 48px;
+}
+
+.dashboard-pie-chart-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border: 1px solid #e0e0e0;
+}
+
+.dashboard-pie-chart-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-pie-chart-icon {
+  color: #1eb2a6;
+  font-size: 1.5rem;
+}
+
 .dashboard-course-list {
   display: flex;
   flex-direction: column;

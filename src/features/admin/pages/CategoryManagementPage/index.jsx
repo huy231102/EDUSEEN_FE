@@ -97,11 +97,9 @@ const CategoryManagementPage = () => {
     setSubmitLoading(true);
     try {
       const categoryData = {
-        name: form.categoryName,
-        description: form.description,
-        iconType: form.iconType,
-        cover: form.cover,
-        hoverCover: form.hoverCover
+        CategoryName: form.categoryName,
+        Cover: form.cover,
+        HoverCover: form.hoverCover
       };
 
       let result;

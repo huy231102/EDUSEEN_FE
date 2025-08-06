@@ -76,7 +76,16 @@ const UserManagementPage = () => {
 
   const handleSaveEdit = async () => {
     try {
-      const result = await updateUser(selectedUser.id, editForm);
+      let userData = {};
+      // Xử lý vai trò
+      if (editForm.role !== selectedUser.role) {
+        userData.RoleId = editForm.role === "Học sinh" ? 1 : editForm.role === "Quản trị viên" ? 2 : 3;
+      }
+      // Xử lý trạng thái
+      if (editForm.status !== selectedUser.status) {
+        userData.IsActive = editForm.status === "Hoạt động";
+      }
+      const result = await updateUser(selectedUser.id, userData);
       if (result.success) {
         setToast({ open: true, message: 'Cập nhật thành công!', severity: 'success' });
         handleCloseEdit();
@@ -97,6 +106,16 @@ const UserManagementPage = () => {
         setToast({ open: true, message: 'Cập nhật trạng thái thất bại!', severity: 'error' });
       }
     } catch (error) {
+      setToast({ open: true, message: 'Cập nhật trạng thái thất bại!', severity: 'error' });
+    }
+  };
+
+  const handleQuickToggleStatus = async (user) => {
+    const result = await updateUser(user.id, { IsActive: user.status !== "Hoạt động" });
+    if (result.success) {
+      fetchUsers();
+      setToast({ open: true, message: 'Cập nhật trạng thái thành công!', severity: 'success' });
+    } else {
       setToast({ open: true, message: 'Cập nhật trạng thái thất bại!', severity: 'error' });
     }
   };
@@ -174,7 +193,6 @@ const UserManagementPage = () => {
               <MenuItem value="">Tất cả</MenuItem>
               <MenuItem value="Hoạt động">Hoạt động</MenuItem>
               <MenuItem value="Đã khóa">Đã khóa</MenuItem>
-              <MenuItem value="Chờ duyệt">Chờ duyệt</MenuItem>
             </Select>
           </FormControl>
 
@@ -274,10 +292,13 @@ const UserManagementPage = () => {
                       <Tooltip title={user.status === "Hoạt động" ? "Khóa tài khoản" : "Mở khóa tài khoản"}>
                         <IconButton
                           size="small"
-                          onClick={() => handleToggleStatus(user.id, user.status)}
+                          onClick={() => handleQuickToggleStatus(user)}
                           className={`user-action-btn ${user.status === "Hoạt động" ? 'lock' : 'unlock'}`}
+                          style={{ color: user.status === "Hoạt động" ? "#f44336" : "#4caf50" }}
                         >
-                          {user.status === "Hoạt động" ? <Lock /> : <LockOpen />}
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="currentColor"/>
+                          </svg>
                         </IconButton>
                       </Tooltip>
                     </Box>
@@ -406,7 +427,6 @@ const UserManagementPage = () => {
               >
                 <MenuItem value="Hoạt động">Hoạt động</MenuItem>
                 <MenuItem value="Đã khóa">Đã khóa</MenuItem>
-                <MenuItem value="Chờ duyệt">Chờ duyệt</MenuItem>
               </Select>
             </FormControl>
           </Box>
