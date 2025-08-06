@@ -5,6 +5,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import api from 'services/api';
 import VideoS3Upload from 'components/common/VideoS3Upload';
 import ImageS3Upload from 'components/common/ImageS3Upload';
+import { useToast } from 'components/common/Toast';
 
 const CourseEditPage = () => {
   const { courseId } = useParams();
