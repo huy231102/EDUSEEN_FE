@@ -95,6 +95,7 @@ const TeacherDashboardPage = () => {
                 <Link to={`/teacher/course/${course.id}/reviews`} className="btn">Quản lý đánh giá</Link>
                 <Link to={`/teacher/course/${course.id}/analytics`} className="btn">Thống kê</Link>
                 <Link to={`/teacher/course/${course.id}/assignments`} className="btn">Quản lý bài tập</Link>
+                <Link to={`/courses/${course.id}`} className="btn outline">Xem trang khóa học</Link>
                 <button
                   className="btn small delete-btn"
                   title="Xoá khoá học"

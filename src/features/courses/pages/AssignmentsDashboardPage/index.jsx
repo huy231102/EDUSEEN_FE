@@ -92,7 +92,7 @@ const handleDeleteAssignment = async (assignmentId, assignmentTitle) => {
                       onClick={() => handleDeleteAssignment(a.assignmentId, a.title)}
                       disabled={isDeleting}
                       className="btn small danger"
-                      style={{ marginLeft: '5px' }}
+                      style={{ margin: '0px' }}
                     >
                       {isDeleting ? 'Đang xóa...' : 'Xóa'}
                     </button>
