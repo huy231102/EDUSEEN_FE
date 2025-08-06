@@ -50,7 +50,7 @@ const handleDeleteAssignment = async (assignmentId, assignmentTitle) => {
   };
   return (
     <section className="assignments-dashboard">
-      <div className="container">
+      <div className="assignments-container">
         <Link to="/teacher/dashboard" className="back-link"><i className="fas fa-arrow-left"></i> Quay lại Dashboard</Link>
         {course && <h2 className="page-title">Bài tập của khoá học: {course.title || course.name}</h2>}
 

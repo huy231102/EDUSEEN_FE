@@ -100,7 +100,7 @@ const AssignmentEditPage = () => {
 
   return (
     <section className="assignment-edit-page">
-      <div className="container">
+      <div className="assignment-edit-container">
         <Link to={`/teacher/course/${courseId}/assignments`} className="back-link"><i className="fas fa-arrow-left"></i> Quay lại danh sách bài tập</Link>
         <h2 className="page-title">Chỉnh sửa bài tập</h2>
 

@@ -19,6 +19,8 @@ import Sidebar from '../../components/Sidebar';
 import Notifications from '../../components/Notifications';
 import PastSessions from '../../components/PastSessions';
 import PersonalCalendar from '../../components/PersonalCalendar';
+import ConnectionStatus from '../../components/ConnectionStatus';
+import LazyVideoCallWrapper from '../../components/LazyVideoCallWrapper';
 import { SessionsProvider } from '../../contexts/SessionsContext';
 import './style.css';
 
@@ -162,6 +164,10 @@ const VideoCallPage = () => {
     setTabValue(newValue);
   };
 
+  const handleVideoCallLoad = () => {
+    console.log('Video call components loaded');
+  };
+
   return (
     <SessionsProvider>
       <div className={`${classes.wrapper} video-call-wrapper`}>
@@ -206,15 +212,21 @@ const VideoCallPage = () => {
           </Tabs>
 
           <TabPanel value={tabValue} index={0} className={classes.tabPanel}>
-            <div className={classes.videoCallContent}>
-              <AppBar className={classes.appBar} position="static" color="inherit">
-                <Typography variant="h4" align="center">Trò chuyện video</Typography>
-              </AppBar>
-              <VideoPlayer />
-              <Sidebar>
-                <Notifications />
-              </Sidebar>
-            </div>
+            <LazyVideoCallWrapper onLoad={handleVideoCallLoad}>
+              <div className={classes.videoCallContent}>
+                <AppBar className={classes.appBar} position="static" color="inherit">
+                  <Typography variant="h4" align="center">Trò chuyện video</Typography>
+                </AppBar>
+                
+                {/* Thêm ConnectionStatus component */}
+                <ConnectionStatus />
+                
+                <VideoPlayer />
+                <Sidebar>
+                  <Notifications />
+                </Sidebar>
+              </div>
+            </LazyVideoCallWrapper>
           </TabPanel>
 
           <TabPanel value={tabValue} index={1} className={classes.tabPanel}>

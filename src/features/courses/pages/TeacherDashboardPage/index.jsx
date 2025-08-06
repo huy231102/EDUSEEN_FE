@@ -55,7 +55,7 @@ const TeacherDashboardPage = () => {
 
   return (
     <section className="teacher-dashboard">
-      <div className="container">
+      <div className="dashboard-container">
         <h2 className="dashboard-title">Quản lý khóa học</h2>
 
         <div className="dashboard-controls">
@@ -92,16 +92,15 @@ const TeacherDashboardPage = () => {
               </div>
               <div className="actions">
                 <Link to={`/teacher/course/${course.id}/edit`} className="btn primary">Chỉnh sửa nội dung</Link>
-                <Link to={`/teacher/course/${course.id}/edit?tab=reviews`} className="btn">Quản lý đánh giá</Link>
+                <Link to={`/teacher/course/${course.id}/reviews`} className="btn">Quản lý đánh giá</Link>
                 <Link to={`/teacher/course/${course.id}/analytics`} className="btn">Thống kê</Link>
                 <Link to={`/teacher/course/${course.id}/assignments`} className="btn">Quản lý bài tập</Link>
                 <button
-                  className="btn small"
-                  style={{ color: '#e74c3c', background: 'none', border: 'none', marginLeft: 8 }}
+                  className="btn small delete-btn"
                   title="Xoá khoá học"
                   onClick={() => handleDeleteCourse(course.id)}
                 >
-                  <i className="fas fa-trash"></i>
+                  <i className="fas fa-trash" style={{ fontSize: '12px' }}></i>
                 </button>
               </div>
             </div>

@@ -79,7 +79,7 @@ const AssignmentCreatePage = () => {
 
   return (
     <section className="assignment-create-page">
-      <div className="container">
+      <div className="assignments-create-container">
         <Link to={`/teacher/course/${courseId}/assignments`} className="back-link"><i className="fas fa-arrow-left"></i> Quay lại danh sách bài tập</Link>
         <h2 className="page-title">Tạo bài tập mới</h2>
 

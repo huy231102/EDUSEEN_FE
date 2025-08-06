@@ -3,6 +3,11 @@
   background: #f9f9f9;
 }
 
+.dashboard-container{
+  max-width: 85%;
+  margin: auto;
+}
+
 .dashboard-title {
   text-align: center;
   margin-bottom: 30px;
@@ -170,6 +175,29 @@
 
 .actions .btn.outline:hover {
   background: #f4fefb;
+}
+
+/* Delete button hover effect */
+.actions .btn.delete-btn {
+  width: 100%;
+  color: #e74c3c !important;
+  background: none !important;
+  border: 1px solid #e74c3c !important;
+  transition: all 0.2s ease;
+  margin: 0 !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 32px !important;
+  height: 32px !important;
+}
+
+.actions .btn.delete-btn:hover {
+  color: #e74c3c !important;
+  background: #f8f9fa !important;
+  border-color: #e74c3c !important;
 }
 
 @media screen and (max-width: 768px) {
