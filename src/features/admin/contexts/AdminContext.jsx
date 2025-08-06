@@ -50,7 +50,7 @@ export const AdminProvider = ({ children }) => {
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
           email: user.email,
           username: user.username,
-          role: user.roleId === 0 ? "Học sinh" : user.roleId === 1 ? "Giáo viên" : "Quản trị viên",
+          role: user.roleId === 1 ? "Học sinh" : user.roleId === 2 ? "Quản trị viên" : "Giáo viên",
           status: user.isActive ? "Hoạt động" : "Đã khóa",
           joined: user.createdAt,
           lastActive: user.updatedAt || "Chưa đăng nhập",
