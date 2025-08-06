@@ -3,38 +3,133 @@ import { Box, Typography, Grid, Paper } from "@material-ui/core";
 import { motion } from 'framer-motion';
 import CountUp from 'react-countup';
 import { FaUserAlt, FaBookOpen, FaUserPlus, FaRegStar, FaUserGraduate } from 'react-icons/fa';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 import { Info } from "@material-ui/icons";
 
 // Import CSS
 import './style.css';
 
 import { useAdmin } from "../../contexts/AdminContext";
+import api from "services/api";
 
 const DashboardPage = () => {
   const { users, courses, userStatistics, courseStatistics } = useAdmin();
   const [chartData, setChartData] = useState([]);
   const [topCourses, setTopCourses] = useState([]);
+  const [userRoleData, setUserRoleData] = useState([]);
+
+  // Màu sắc cho từng vai trò
+  const roleColors = {
+    'Học sinh': '#1eb2a6',
+    'Giáo viên': '#ff9800', 
+    'Quản trị viên': '#f44336',
+    'User': '#1eb2a6',
+    'Teacher': '#ff9800',
+    'Admin': '#f44336'
+  };
 
   useEffect(() => {
-    // Mock data cho biểu đồ
-    const mockChartData = [
-      { name: 'T1', 'User mới': 12, 'Khóa học mới': 5 },
-      { name: 'T2', 'User mới': 19, 'Khóa học mới': 8 },
-      { name: 'T3', 'User mới': 15, 'Khóa học mới': 12 },
-      { name: 'T4', 'User mới': 25, 'Khóa học mới': 15 },
-      { name: 'T5', 'User mới': 22, 'Khóa học mới': 18 },
-      { name: 'T6', 'User mới': 30, 'Khóa học mới': 20 },
-    ];
-    setChartData(mockChartData);
-
-    // Top courses
-    const sortedCourses = [...courses].sort((a, b) => 
-      (Array.isArray(b.students) ? b.students.length : (b.students || 0)) - 
-      (Array.isArray(a.students) ? a.students.length : (a.students || 0))
-    ).slice(0, 5);
-    setTopCourses(sortedCourses);
-  }, [courses]);
+    const fetchChartData = async () => {
+      try {
+        // Lấy user statistics
+        const userStats = await api.get('/api/admin/user/statistics');
+        // Lấy course statistics  
+        const courseStats = await api.get('/api/admin/course/statistics');
+        // Lấy danh sách courses từ API
+        const coursesList = await api.get('/api/admin/course');
+        
+        console.log('userStats:', userStats);
+        console.log('courseStats:', courseStats);
+        console.log('coursesList:', coursesList);
+        
+        // Xử lý dữ liệu phân bố vai trò user
+        const roleDistribution = userStats.usersByRole || [];
+        const pieData = roleDistribution.map(role => {
+          // Map tên vai trò từ tiếng Anh sang tiếng Việt
+          let roleName = role.roleName;
+          if (role.roleName === 'User') roleName = 'Học sinh';
+          else if (role.roleName === 'Teacher') roleName = 'Giáo viên';
+          else if (role.roleName === 'Admin') roleName = 'Quản trị viên';
+          
+          return {
+            name: roleName,
+            value: role.count,
+            percentage: role.percentage
+          };
+        });
+        setUserRoleData(pieData);
+        console.log('userRoleData:', pieData);
+        
+        // Tạo mảng tháng chuẩn (T1-T12)
+        const months = [
+          'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'
+        ];
+        
+        // Map dữ liệu user (nếu không có UserRegistrationsByMonth thì dùng mock hoặc 0)
+        const userByMonth = userStats.UserRegistrationsByMonth || userStats.userRegistrationsByMonth || [];
+        
+        // Map dữ liệu course từ monthlyStats
+        const courseByMonth = courseStats.monthlyStats || courseStats.MonthlyStats || [];
+        
+        // Tạo chart data
+        const chartData = months.map(m => {
+          // Tìm user count cho tháng này
+          let userCount = 0;
+          if (userByMonth.length > 0) {
+            const userData = userByMonth.find(u => 
+              (u.Month || u.month) === m || 
+              (u.Month || u.month) === `Th${m.substring(1)}`
+            );
+            userCount = userData ? (userData.Count || userData.count || 0) : 0;
+          }
+          
+          // Tìm course count cho tháng này
+          let courseCount = 0;
+          if (courseByMonth.length > 0) {
+            // Map tháng T1-T12 sang format 2025-01, 2025-02, etc.
+            const currentYear = new Date().getFullYear();
+            const monthNumber = m.substring(1); // Lấy số từ T1 -> 1
+            const backendMonthFormat = `${currentYear}-${monthNumber.padStart(2, '0')}`;
+            
+            const courseData = courseByMonth.find(c => 
+              (c.Month || c.month) === backendMonthFormat ||
+              (c.Month || c.month) === m ||
+              (c.Month || c.month) === `Th${monthNumber}`
+            );
+            courseCount = courseData ? (courseData.NewCourses || courseData.newCourses || 0) : 0;
+          }
+          
+          return {
+            name: m,
+            'User mới': userCount,
+            'Khóa học mới': courseCount
+          };
+        });
+        
+        console.log('chartData:', chartData);
+        setChartData(chartData);
+        
+        // Top courses từ API
+        const sortedCourses = [...coursesList]
+          .map(c => ({
+            ...c,
+            studentCount: c.studentCount || 0,
+            courseName: c.title || c.name || ''
+          }))
+          .sort((a, b) => b.studentCount - a.studentCount)
+          .slice(0, 5);
+        
+        console.log('sortedCourses:', sortedCourses);
+        setTopCourses(sortedCourses);
+      } catch (err) {
+        console.error('Error fetching chart data:', err);
+        setChartData([]);
+        setTopCourses([]);
+        setUserRoleData([]);
+      }
+    };
+    fetchChartData();
+  }, []);
 
   const newUsersThisMonth = userStatistics?.newUsersThisMonth || 0;
   const pendingCourses = courseStatistics?.pendingCourses || 0;
@@ -166,6 +261,37 @@ const DashboardPage = () => {
         </Paper>
       </Box>
 
+      {/* Pie Chart: Phân bố vai trò user */}
+      <Box className="dashboard-pie-chart-section">
+        <Paper className="dashboard-pie-chart-card">
+          <Typography className="dashboard-pie-chart-title">
+            <FaUserAlt className="dashboard-pie-chart-icon" />
+            Phân bố vai trò người dùng
+          </Typography>
+          <Box className="dashboard-chart-container">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={userRoleData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percentage }) => `${name}: ${percentage.toFixed(1)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {userRoleData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={roleColors[entry.name] || ['#1eb2a6', '#ff9800', '#f44336', '#9c27b0'][index % 4]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value, name) => [value, name]} />
+              </PieChart>
+            </ResponsiveContainer>
+          </Box>
+        </Paper>
+      </Box>
+
       {/* Bar Chart: Top 5 khóa học đông học viên nhất */}
       <Box className="dashboard-top-courses">
         <Paper className="dashboard-top-courses-card">
@@ -176,9 +302,9 @@ const DashboardPage = () => {
           <Box className="dashboard-chart-container">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={topCourses.map((c, idx) => ({
-                  name: c.name,
-                  'Số học viên': Array.isArray(c.students) ? c.students.length : (c.students || 0),
+                data={topCourses.map(c => ({
+                  name: c.courseName,
+                  soHocVien: c.studentCount
                 }))}
                 layout="vertical"
               >
@@ -186,7 +312,7 @@ const DashboardPage = () => {
                 <XAxis type="number" />
                 <YAxis dataKey="name" type="category" />
                 <Tooltip />
-                <Bar dataKey="Số học viên" fill="#1eb2a6" />
+                <Bar dataKey="soHocVien" fill="#1eb2a6" />
               </BarChart>
             </ResponsiveContainer>
           </Box>
