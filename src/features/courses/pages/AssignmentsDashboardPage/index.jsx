@@ -26,8 +26,7 @@ const AssignmentsDashboardPage = () => {
     }
     fetchData();
   }, [courseId, navigate]);
-
-  const handleDeleteAssignment = async (assignmentId, assignmentTitle) => {
+const handleDeleteAssignment = async (assignmentId, assignmentTitle) => {
     const isConfirmed = window.confirm(`Bạn có chắc chắn muốn xóa bài tập "${assignmentTitle}" chứ?`);
     
     if (!isConfirmed) return;
@@ -49,7 +48,6 @@ const AssignmentsDashboardPage = () => {
       setIsDeleting(false);
     }
   };
-
   return (
     <section className="assignments-dashboard">
       <div className="container">

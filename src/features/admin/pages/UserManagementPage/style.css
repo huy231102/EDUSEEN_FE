@@ -1,0 +1,265 @@
+/* UserManagementPage - CSS riêng cho trang quản lý người dùng */
+
+/* Header Section */
+.user-management-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.user-management-refresh-btn {
+  background-color: #1eb2a6 !important;
+  color: white !important;
+}
+
+.user-management-refresh-btn:hover {
+  background-color: #1a847b !important;
+}
+
+/* Filters Section */
+.user-management-filters {
+  padding: 24px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.user-management-filters .MuiBox-root {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.user-management-search-field {
+  min-width: 250px;
+}
+
+.user-management-filter-select {
+  width: 150px;
+}
+
+/* Table Styles */
+.user-management-table {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.user-management-table .MuiTableHead-root .MuiTableRow-root {
+  background-color: #f5f5f5;
+}
+
+.user-management-table .MuiTableCell-head {
+  font-weight: 600;
+  color: #333;
+}
+
+.user-management-table .MuiTableRow-root:hover {
+  background-color: #f8f9fa;
+}
+
+/* User Avatar and Info */
+.user-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.user-username {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+/* Status and Role Chips */
+.status-chip {
+  font-weight: 500;
+  color: white;
+  max-width: 120px;
+  width: fit-content;
+}
+
+/* Override Material-UI Chip root styles */
+.status-chip.MuiChip-root,
+.role-chip.MuiChip-root {
+  color: white !important;
+}
+
+.status-active {
+  background-color: #4caf50 !important;
+}
+
+.status-locked {
+  background-color: #f44336 !important;
+}
+
+.status-pending {
+  background-color: #ff9800 !important;
+}
+
+.status-approved {
+  background-color: #1eb2a6 !important;
+}
+
+.role-chip {
+  font-weight: 500;
+  color: white;
+  max-width: 120px;
+  width: fit-content;
+}
+
+.role-admin {
+  background-color: #ff9800 !important;
+}
+
+.role-teacher {
+  background-color: #1eb2a6 !important;
+}
+
+.role-student {
+  background-color: #4caf50 !important;
+}
+
+/* Action Buttons */
+.user-action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.user-action-btn {
+  padding: 4px;
+}
+
+.user-action-btn.info {
+  color: #1eb2a6;
+}
+
+.user-action-btn.edit {
+  color: #ff9800;
+}
+
+.user-action-btn.lock {
+  color: #f44336;
+}
+
+.user-action-btn.unlock {
+  color: #4caf50;
+}
+
+.user-action-btn:hover {
+  background-color: rgba(0,0,0,0.04);
+}
+
+/* Dialog Styles */
+.user-detail-dialog .MuiDialog-paper {
+  border-radius: 12px;
+}
+
+.user-detail-dialog .MuiDialogTitle-root {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.user-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.user-detail-avatar {
+  width: 80px;
+  height: 80px;
+}
+
+.user-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.user-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-detail-label {
+  color: #666;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* Edit Dialog */
+.user-edit-dialog .MuiDialog-paper {
+  border-radius: 12px;
+}
+
+.user-edit-dialog .MuiDialogTitle-root {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.user-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 18px;
+}
+
+.user-edit-save-btn {
+  background-color: #1eb2a6 !important;
+  color: white !important;
+}
+
+.user-edit-save-btn:hover {
+  background-color: #1a847b !important;
+}
+
+/* Pagination */
+.user-management-pagination {
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .user-management-filters .MuiBox-root {
+    flex-direction: column;
+  }
+  
+  .user-management-search-field,
+  .user-management-filter-select {
+    min-width: 100%;
+  }
+  
+  .user-action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .user-info-cell {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .user-management-filters {
+    padding: 16px;
+  }
+  
+  .user-management-header {
+    margin-bottom: 16px;
+  }
+} 

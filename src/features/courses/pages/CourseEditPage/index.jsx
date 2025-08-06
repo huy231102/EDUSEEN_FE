@@ -6,6 +6,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import api from 'services/api';
 import VideoS3Upload from 'components/common/VideoS3Upload';
 import ImageS3Upload from 'components/common/ImageS3Upload';
+import { useToast } from 'components/common/Toast';
 
 const TABS = [
   { id: 'info', label: 'Thông tin & Curriculum' },
@@ -23,6 +24,8 @@ const CourseEditPage = () => {
   const [selectedTab, setSelectedTab] = useState(initTab);
   const [courseData, setCourseData] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [validationErrors, setValidationErrors] = useState({});
+  const { showToast } = useToast();
 
   // Lấy danh sách category từ API
   useEffect(() => {
@@ -63,22 +66,96 @@ const CourseEditPage = () => {
     };
   };
 
-  const handleSave = async () => {
+  // Validation function
+  const validateCourseData = () => {
+    const errors = [];
+    const fieldErrors = {};
+    
     if (!courseData?.name?.trim()) {
-      alert('Vui lòng nhập tên khoá học');
+      errors.push('Tên khóa học là bắt buộc');
+      fieldErrors.name = 'Tên khóa học là bắt buộc';
+    }
+    
+    if (!courseData?.description?.trim()) {
+      errors.push('Mô tả khóa học là bắt buộc');
+      fieldErrors.description = 'Mô tả khóa học là bắt buộc';
+    }
+    
+         if (!courseData?.categoryId) {
+       errors.push('Danh mục khóa học là bắt buộc');
+       fieldErrors.categoryId = 'Danh mục khóa học là bắt buộc';
+     }
+     
+     if (!courseData?.level) {
+       errors.push('Cấp độ khóa học là bắt buộc');
+       fieldErrors.level = 'Cấp độ khóa học là bắt buộc';
+     }
+    
+    if (!courseData?.cover) {
+      errors.push('Ảnh bìa khóa học là bắt buộc');
+      fieldErrors.cover = 'Ảnh bìa khóa học là bắt buộc';
+    }
+    
+    if (!courseData?.sections || courseData.sections.length === 0) {
+      errors.push('Khóa học phải có ít nhất 1 chương');
+      fieldErrors.sections = 'Khóa học phải có ít nhất 1 chương';
+    } else {
+      // Kiểm tra từng section và lecture
+      courseData.sections.forEach((section, sectionIdx) => {
+        if (!section.title?.trim()) {
+          errors.push(`Chương ${sectionIdx + 1}: Tên chương là bắt buộc`);
+        }
+        
+        if (!section.lectures || section.lectures.length === 0) {
+          errors.push(`Chương ${sectionIdx + 1}: Phải có ít nhất 1 bài giảng`);
+        } else {
+          section.lectures.forEach((lecture, lectureIdx) => {
+            if (!lecture.title?.trim()) {
+              errors.push(`Chương ${sectionIdx + 1} - Bài ${lectureIdx + 1}: Tên bài giảng là bắt buộc`);
+            }
+            
+            if (lecture.contentType === 'video' && !lecture.contentUrl) {
+              errors.push(`Chương ${sectionIdx + 1} - Bài ${lectureIdx + 1}: Video là bắt buộc`);
+            }
+          });
+        }
+      });
+    }
+    
+    setValidationErrors(fieldErrors);
+    return errors;
+  };
+
+  const showToastMessage = (message, type = 'success') => {
+    showToast(message, type, 3000);
+  };
+
+  const handleSave = async () => {
+    const validationErrors = validateCourseData();
+    
+    if (validationErrors.length > 0) {
+      showToastMessage(validationErrors.join('\n'), 'error');
       return;
+    }
+
+    if (isNew) {
+      const isConfirmed = window.confirm('Bạn có chắc chắn muốn tạo khóa học này?');
+      if (!isConfirmed) return;
     }
 
     try {
       if (isNew) {
         await api.post('/api/teacher/course', buildPayload());
+        showToastMessage('Khóa học đã được tạo thành công!', 'success');
+        setTimeout(() => navigate('/teacher/dashboard'), 1500);
       } else {
         await api.put(`/api/teacher/course/${courseId}`, buildPayload());
+        showToastMessage('Khóa học đã được cập nhật thành công!', 'success');
+        setTimeout(() => navigate('/teacher/dashboard'), 1500);
       }
-      navigate('/teacher/dashboard');
     } catch (err) {
       console.error(err);
-      alert('Không thể lưu khoá học: ' + err.message);
+      showToastMessage('Không thể lưu khóa học: ' + err.message, 'error');
     }
   };
 
@@ -87,12 +164,12 @@ const CourseEditPage = () => {
       const fetchCourse = async () => {
         try {
           const c = await api.get(`/api/teacher/course/${courseId}`);
-          const mapped = {
-            name: c.title,
-            description: c.description || '',
-            categoryId: c.categoryId,
-            level: c.level || 'beginner',
-            cover: c.cover || '', // Thêm dòng này để map cover từ API
+                     const mapped = {
+             name: c.title,
+             description: c.description || '',
+             categoryId: c.categoryId,
+             level: c.level || '',
+             cover: c.cover || '', // Thêm dòng này để map cover từ API
             sections: (c.sections || []).map(s => ({
               sectionId: s.sectionId,
               title: s.title,
@@ -115,19 +192,19 @@ const CourseEditPage = () => {
         }
       };
       fetchCourse();
-    } else {
-      setCourseData({
-        name: '',
-        subtitle: '',
-        description: '',
-        categorySlug: '',
-        level: 'beginner',
-        cover: '',
-        introVideo: '',
-        sections: [],
-        reviews: [],
-      });
-    }
+         } else {
+       setCourseData({
+         name: '',
+         subtitle: '',
+         description: '',
+         categorySlug: '',
+         level: '',
+         cover: '',
+         introVideo: '',
+         sections: [],
+         reviews: [],
+       });
+     }
   }, [courseId, isNew, navigate]);
 
   if (!courseData) return null;
@@ -136,7 +213,14 @@ const CourseEditPage = () => {
     switch (selectedTab) {
       case 'info':
         return (
-          <CourseInfoTab course={courseData} setCourse={setCourseData} onSave={handleSave} isNew={isNew} categories={categories} />
+          <CourseInfoTab 
+            course={courseData} 
+            setCourse={setCourseData} 
+            onSave={handleSave} 
+            isNew={isNew} 
+            categories={categories}
+            validationErrors={validationErrors}
+          />
         );
       // Curriculum đã gộp vào info
       case 'reviews':
@@ -172,6 +256,8 @@ const CourseEditPage = () => {
 
         <main className="tab-content">{renderTabContent()}</main>
       </div>
+      
+      {/* Toast Notification sẽ được render bởi ToastProvider */}
     </section>
   );
 };
@@ -180,7 +266,7 @@ export default CourseEditPage;
 
 /* -------------------- Sub Components -------------------- */
 
-const CourseInfoTab = ({ course, setCourse, onSave, isNew, categories }) => {
+const CourseInfoTab = ({ course, setCourse, onSave, isNew, categories, validationErrors }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setCourse({ ...course, [name]: value });
@@ -189,56 +275,115 @@ const CourseInfoTab = ({ course, setCourse, onSave, isNew, categories }) => {
   return (
     <div className="course-info-tab">
       <div className="form-group">
-        <label>Tên khoá học</label>
-        <input
-          type="text"
-          name="name"
-          value={course.name}
-          onChange={handleChange}
-        />
+        <label>
+          Tên khoá học <span className="required">*</span>
+          <span className="tooltip" title="Tên khóa học là bắt buộc và phải có ít nhất 3 ký tự">
+            <i className="fas fa-info-circle"></i>
+          </span>
+        </label>
+                 <input
+           type="text"
+           name="name"
+           value={course.name}
+           onChange={handleChange}
+           placeholder="Nhập tên khóa học..."
+           className={validationErrors.name ? 'error' : ''}
+         />
+         {validationErrors.name && (
+           <small className="error-message">{validationErrors.name}</small>
+         )}
       </div>
       <div className="form-group">
-        <label>Mô tả chi tiết</label>
-        <textarea
-          name="description"
-          value={course.description}
-          onChange={handleChange}
-          rows={6}
-        ></textarea>
+        <label>
+          Mô tả chi tiết <span className="required">*</span>
+          <span className="tooltip" title="Mô tả khóa học là bắt buộc và phải có ít nhất 10 ký tự">
+            <i className="fas fa-info-circle"></i>
+          </span>
+        </label>
+                 <textarea
+           name="description"
+           value={course.description}
+           onChange={handleChange}
+           rows={6}
+           placeholder="Nhập mô tả chi tiết về khóa học..."
+           className={validationErrors.description ? 'error' : ''}
+         ></textarea>
+         {validationErrors.description && (
+           <small className="error-message">{validationErrors.description}</small>
+         )}
       </div>
       <div className="form-group">
-        <label>Danh mục</label>
-        <select
-          name="categoryId"
-          value={course.categoryId || ''}
-          onChange={handleChange}
-        >
-          <option value="">-- Chọn danh mục --</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-      </div>
+        <label>
+          Danh mục <span className="required">*</span>
+          <span className="tooltip" title="Danh mục khóa học là bắt buộc">
+            <i className="fas fa-info-circle"></i>
+          </span>
+        </label>
+                          <select
+           name="categoryId"
+           value={course.categoryId || ''}
+           onChange={handleChange}
+           className={validationErrors.categoryId ? 'error' : ''}
+         >
+           <option value="" disabled>-- Chọn danh mục --</option>
+           {categories.map((cat) => (
+             <option key={cat.id} value={cat.id}>
+               {cat.name}
+             </option>
+           ))}
+         </select>
+         {validationErrors.categoryId && (
+           <small className="error-message">{validationErrors.categoryId}</small>
+         )}
+       </div>
+             <div className="form-group">
+         <label>
+           Cấp độ khóa học <span className="required">*</span>
+           <span className="tooltip" title="Cấp độ khóa học là bắt buộc">
+             <i className="fas fa-info-circle"></i>
+           </span>
+         </label>
+         <select 
+           name="level" 
+           value={course.level || ''} 
+           onChange={handleChange}
+           className={validationErrors.level ? 'error' : ''}
+         >
+           <option value="" disabled>-- Chọn cấp độ --</option>
+           <option value="beginner">Beginner</option>
+           <option value="intermediate">Intermediate</option>
+           <option value="advanced">Advanced</option>
+         </select>
+         {validationErrors.level && (
+           <small className="error-message">{validationErrors.level}</small>
+         )}
+       </div>
       <div className="form-group">
-        <label>Cấp độ khóa học</label>
-        <select name="level" value={course.level} onChange={handleChange}>
-          <option value="beginner">Beginner</option>
-          <option value="intermediate">Intermediate</option>
-          <option value="advanced">Advanced</option>
-        </select>
-      </div>
-      <div className="form-group">
-        <label>Ảnh bìa khoá học</label>
-        <ImageS3Upload
-          defaultUrl={course.cover}
-          onUploaded={url => setCourse({ ...course, cover: url })}
-        />
+        <label>
+          Ảnh bìa khoá học <span className="required">*</span>
+          <span className="tooltip" title="Ảnh bìa khóa học là bắt buộc">
+            <i className="fas fa-info-circle"></i>
+          </span>
+        </label>
+                 <ImageS3Upload
+           defaultUrl={course.cover}
+           onUploaded={url => setCourse({ ...course, cover: url })}
+         />
+         {validationErrors.cover && (
+           <small className="error-message">{validationErrors.cover}</small>
+         )}
       </div>
       {/* Curriculum Builder */}
-      <h3 style={{marginTop:'30px'}}>Chương trình học</h3>
-      <CurriculumBuilder course={course} setCourse={setCourse} />
+             <h3 style={{marginTop:'30px'}}>
+         Chương trình học <span className="required">*</span>
+         <span className="tooltip" title="Khóa học phải có ít nhất 1 chương và mỗi chương phải có ít nhất 1 bài giảng">
+           <i className="fas fa-info-circle"></i>
+         </span>
+       </h3>
+       {validationErrors.sections && (
+         <small className="error-message" style={{display: 'block', marginBottom: '10px'}}>{validationErrors.sections}</small>
+       )}
+       <CurriculumBuilder course={course} setCourse={setCourse} />
       {/* Nút lưu */}
       <div style={{ marginTop: '24px', textAlign: 'right' }}>
         <button className="btn primary" onClick={onSave}>{isNew ? 'Tạo khoá học' : 'Lưu thay đổi'}</button>
@@ -256,6 +401,7 @@ const CurriculumBuilder = ({ course, setCourse }) => {
   const [lectureText, setLectureText] = useState('');
   const [lectureFile, setLectureFile] = useState(null);
   const [activeSectionIdx, setActiveSectionIdx] = useState(null);
+  const [editingLecture, setEditingLecture] = useState(null); // {sectionIdx, lectureIdx}
 
   // Thêm Section mới
   const addSection = () => {
@@ -287,16 +433,13 @@ const CurriculumBuilder = ({ course, setCourse }) => {
     }
     const lectureObj = {
       title: lectureTitle.trim(),
-      contentType: lectureType,
-      contentUrl: lectureType === 'video' ? lectureFile : '',
+      contentType: 'video',
+      contentUrl: lectureFile,
       duration: 0,
-      text: lectureType === 'text' ? lectureText : '',
     };
     newSections[sectionIdx].lectures.push(lectureObj);
     setCourse({ ...course, sections: newSections });
     setLectureTitle('');
-    setLectureType('video');
-    setLectureText('');
     setLectureFile(null);
     setActiveSectionIdx(null);
   };
@@ -306,6 +449,14 @@ const CurriculumBuilder = ({ course, setCourse }) => {
     const newSections = [...course.sections];
     newSections[sectionIdx].lectures = newSections[sectionIdx].lectures.filter((_, idx) => idx !== lectureIdx);
     setCourse({ ...course, sections: newSections });
+  };
+
+  // Cập nhật Lecture
+  const updateLecture = (sectionIdx, lectureIdx, updatedLecture) => {
+    const newSections = [...course.sections];
+    newSections[sectionIdx].lectures[lectureIdx] = { ...newSections[sectionIdx].lectures[lectureIdx], ...updatedLecture };
+    setCourse({ ...course, sections: newSections });
+    setEditingLecture(null);
   };
 
   // Xử lý drag & drop
@@ -344,7 +495,9 @@ const CurriculumBuilder = ({ course, setCourse }) => {
           value={sectionTitle}
           onChange={(e) => setSectionTitle(e.target.value)}
         />
-        <button className="btn primary" onClick={addSection}>Thêm chương</button>
+        <button className="btn primary" onClick={addSection} disabled={!sectionTitle.trim()}>
+          Thêm chương
+        </button>
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
@@ -381,9 +534,8 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                               value={lectureTitle}
                               onChange={(e) => setLectureTitle(e.target.value)}
                             />
-                            <select value={lectureType} onChange={(e)=>setLectureType(e.target.value)}>
+                            <select value={lectureType} disabled>
                               <option value="video">Video</option>
-                              <option value="text">Text</option>
                             </select>
                             {lectureType === 'video' ? (
                               <VideoS3Upload
@@ -392,7 +544,13 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                             ) : (
                               <textarea placeholder="Nội dung bài giảng" value={lectureText} onChange={(e)=>setLectureText(e.target.value)} rows={3}></textarea>
                             )}
-                            <button className="btn primary" onClick={() => addLecture(sIdx)}>Thêm bài</button>
+                                                         <button 
+                               className="btn primary" 
+                               onClick={() => addLecture(sIdx)}
+                               disabled={!lectureTitle.trim() || !lectureFile}
+                             >
+                               Thêm bài
+                             </button>
                           </div>
                         </div>
                       ) : (
@@ -413,24 +571,68 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                                     {...lecDragProvided.dragHandleProps}
                                   >
                                     <div className="lecture-content">
-                                      <span>{lec.title}</span>
-                                      {lec.contentType === 'video' ? (
-                                        lec.contentUrl ? (
-                                          <video src={lec.contentUrl} controls width="200" style={{marginTop:4}} />
-                                        ) : (
-                                          <small className="file-name">Chưa upload video</small>
-                                        )
+                                      {editingLecture && editingLecture.sectionIdx === sIdx && editingLecture.lectureIdx === lIdx ? (
+                                        // Chế độ chỉnh sửa
+                                        <div className="edit-lecture-form">
+                                          <input
+                                            type="text"
+                                            value={lec.title}
+                                            onChange={(e) => updateLecture(sIdx, lIdx, { title: e.target.value })}
+                                            style={{ marginBottom: '8px', width: '100%' }}
+                                          />
+                                          <div>
+                                            {lec.contentUrl && (
+                                              <video src={lec.contentUrl} controls width="200" style={{marginBottom: '8px'}} />
+                                            )}
+                                            <VideoS3Upload
+                                              onUploaded={url => updateLecture(sIdx, lIdx, { contentUrl: url })}
+                                            />
+                                            <small style={{display: 'block', marginTop: '4px'}}>Upload video mới để thay thế</small>
+                                          </div>
+                                          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                            <button 
+                                              className="btn small primary" 
+                                              onClick={() => setEditingLecture(null)}
+                                            >
+                                              Hoàn thành
+                                            </button>
+                                            <button 
+                                              className="btn small" 
+                                              onClick={() => setEditingLecture(null)}
+                                            >
+                                              Hủy
+                                            </button>
+                                          </div>
+                                        </div>
                                       ) : (
-                                        <small className="file-name">Text</small>
+                                        // Chế độ xem
+                                        <>
+                                          <span>{lec.title}</span>
+                                          {lec.contentUrl ? (
+                                            <video src={lec.contentUrl} controls width="200" style={{marginTop:4}} />
+                                          ) : (
+                                            <small className="file-name">Chưa upload video</small>
+                                          )}
+                                          <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+                                            <button
+                                              className="btn small"
+                                              style={{ color: '#1eb2a6', background: 'none', border: 'none' }}
+                                              title="Chỉnh sửa bài giảng"
+                                              onClick={() => setEditingLecture({ sectionIdx: sIdx, lectureIdx: lIdx })}
+                                            >
+                                              <i className="fas fa-edit"></i>
+                                            </button>
+                                            <button
+                                              className="btn small"
+                                              style={{ color: '#e74c3c', background: 'none', border: 'none' }}
+                                              title="Xoá bài giảng"
+                                              onClick={() => deleteLecture(sIdx, lIdx)}
+                                            >
+                                              <i className="fas fa-trash"></i>
+                                            </button>
+                                          </div>
+                                        </>
                                       )}
-                                      <button
-                                        className="btn small"
-                                        style={{ marginLeft: 8, color: '#e74c3c', background: 'none', border: 'none' }}
-                                        title="Xoá bài giảng"
-                                        onClick={() => deleteLecture(sIdx, lIdx)}
-                                      >
-                                        <i className="fas fa-trash"></i>
-                                      </button>
                                     </div>
                                   </div>
                                 )}

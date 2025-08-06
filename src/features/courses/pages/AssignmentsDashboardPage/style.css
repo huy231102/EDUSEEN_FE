@@ -109,7 +109,6 @@
 .btn.primary:hover {
   background: #17a094;
 }
-
 .btn.danger {
   background: #e74c3c;
   color: #fff;
@@ -123,7 +122,6 @@
   background: #bdc3c7;
   cursor: not-allowed;
 }
-
 .top-actions {
   display: flex;
   justify-content: flex-end;
