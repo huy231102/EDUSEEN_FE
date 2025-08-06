@@ -3,6 +3,11 @@
   background: #f9f9f9;
 }
 
+.assignments-container{
+  max-width: 1200px;
+  margin: auto;
+}
+
 .page-title {
   margin: 20px 0 30px;
   font-size: 28px;
@@ -145,8 +150,8 @@
 .assignment-stats-page .stat-number {
   font-size: 2.2rem;
   font-weight: 700;
-  margin-top: 8px;
-  margin-bottom: 0;
+  margin-top: 20px;
+  padding: 0px;
 }
 .assignment-stats-page .stat-number.primary { color: #1eb2a6; }
 .assignment-stats-page .stat-number.success { color: #27ae60; }
@@ -158,7 +163,7 @@
   flex-wrap: wrap;
   gap: 32px;
   justify-content: center;
-  margin-top: 32px;
+  margin-bottom: 32px;
 }
 .assignment-stats-page .chart-card {
   background: #fff;

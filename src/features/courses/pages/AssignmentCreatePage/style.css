@@ -2,6 +2,11 @@
   padding: 40px 0;
 }
 
+.assignments-create-container{
+  max-width: 1200px;
+  margin: auto;
+}
+
 .page-title {
   margin: 20px 0 30px;
   font-size: 28px;

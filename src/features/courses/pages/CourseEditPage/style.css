@@ -3,51 +3,33 @@
 }
 
 .edit-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.edit-content {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.page-header {
   display: flex;
-  gap: 30px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px;
+  border-bottom: 1px solid #eee;
+  background: #fafafa;
 }
 
-.sidebar {
-  width: 240px;
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 20px;
-  height: fit-content;
+.page-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
 }
 
-.sidebar-title {
-  font-size: 20px;
-  margin-bottom: 20px;
-}
-
-.tab-list {
-  list-style: none;
-  padding: 0;
-}
-
-.tab-list li {
-  padding: 10px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-bottom: 8px;
-  transition: background 0.2s;
-}
-
-.tab-list li:hover {
-  background: #f4f4f4;
-}
-
-.tab-list li.active {
-  background: #1eb2a6;
-  color: #fff;
-}
-
-.tab-content {
-  flex-grow: 1;
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
+.course-info-form {
   padding: 30px;
 }
 
@@ -61,6 +43,7 @@
 .form-group label {
   font-weight: 600;
   margin-bottom: 8px;
+  color: #333;
 }
 
 .form-group input,
@@ -70,27 +53,20 @@
   border: 1px solid #ddd;
   border-radius: 5px;
   font-size: 15px;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #1eb2a6;
+  box-shadow: 0 0 0 2px rgba(30, 178, 166, 0.1);
 }
 
 .form-group textarea {
   resize: vertical;
-}
-
-/* ---------- Reviews Styles ---------- */
-.review-item {
-  border-bottom: 1px solid #eee;
-  padding: 15px 0;
-}
-
-.review-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.review-content {
-  color: #555;
+  min-height: 120px;
 }
 
 /* ---------- Curriculum Tab ---------- */
@@ -98,6 +74,10 @@
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
 }
 
 .add-section input {
@@ -118,6 +98,11 @@
   border-radius: 6px;
   background: #fafafa;
   padding: 15px;
+  transition: box-shadow 0.2s;
+}
+
+.section-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .section-header {
@@ -127,11 +112,18 @@
   margin-bottom: 10px;
 }
 
+.section-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
 .add-lecture {
   background: #f9f9f9;
   border: 1px solid #ddd;
   border-radius: 6px;
   padding: 15px;
+  margin-bottom: 10px;
 }
 
 .add-lecture-grid {
@@ -185,6 +177,11 @@
   border: 1px solid #eee;
   border-radius: 4px;
   padding: 8px 12px;
+  transition: background-color 0.2s;
+}
+
+.lecture-item:hover {
+  background: #f8f9fa;
 }
 
 .lecture-content {
@@ -192,6 +189,11 @@
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+}
+
+.lecture-content span {
+  font-weight: 500;
+  color: #333;
 }
 
 .upload-btn {
@@ -214,121 +216,6 @@
   font-size: 13px;
 }
 
-.review-filter {
-  margin-bottom: 20px;
-}
-.review-filter select {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-.teacher-reply {
-  background: #f4fefb;
-  border-left: 3px solid #1eb2a6;
-  padding: 10px 12px;
-  margin-top: 8px;
-  font-size: 14px;
-  color: #333;
-}
-.reply-box {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.reply-box textarea {
-  padding: 8px 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  resize: vertical;
-}
-.btn.small {
-  align-self: flex-end;
-  padding: 6px 12px;
-  font-size: 13px;
-}
-.review-date {
-  color: #777;
-  font-size: 13px;
-  margin-left: 4px;
-}
-
-.reply-input-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.reply-send-btn {
-  align-self: flex-end;
-  padding: 8px 16px;
-  background: linear-gradient(135deg, #1eb2a6, #16a085);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(30, 178, 166, 0.3);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.reply-send-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(30, 178, 166, 0.4);
-}
-
-.reply-send-btn:disabled {
-  background: #e9ecef;
-  color: #6c757d;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.review-conversation {
-  margin-top: 12px;
-}
-.comment-item {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 8px;
-  border: 1px solid rgba(30, 178, 166, 0.1);
-}
-.comment-item.teacher {
-  background: rgba(30, 178, 166, 0.1);
-}
-.comment-avatar {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #1eb2a6, #16a085);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-.comment-content {
-  flex: 1;
-}
-.comment-author {
-  font-weight: 600;
-  color: #1eb2a6;
-  font-size: 14px;
-}
-.comment-text {
-  margin: 4px 0 0 0;
-  color: #495057;
-  line-height: 1.5;
-}
-
 /* ---------- Back link ---------- */
 .back-link {
   display: inline-flex;
@@ -346,7 +233,7 @@
 
 .back-link i {
   margin-right: 6px;
-} 
+}
 
 /* ---------- Global button styles for edit page ---------- */
 .btn {
@@ -359,7 +246,8 @@
   font-size: 15px;
   cursor: pointer;
   font-weight: 500;
-  transition: background 0.2s, opacity 0.2s;
+  transition: all 0.2s;
+  text-decoration: none;
 }
 
 .btn.primary {
@@ -369,9 +257,27 @@
 
 .btn.primary:hover {
   background: #17a094;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 178, 166, 0.3);
+}
+
+.btn:not(.primary) {
+  background: #f8f9fa;
+  color: #495057;
+  border: 1px solid #dee2e6;
+}
+
+.btn:not(.primary):hover {
+  background: #e9ecef;
+  color: #212529;
 }
 
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+}
+
+.btn i {
+  margin-right: 6px;
 } 

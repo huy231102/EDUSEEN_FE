@@ -115,8 +115,9 @@ const AssignmentGradingPage = () => {
   };
 
   return (
-    <section className="grading-page">
-      <div className="container two-panel">
+    <section className="container grading-page">
+      <Link to={`/teacher/course/${courseId}/assignments`} className="back-link"><i className="fas fa-arrow-left"></i> Danh sách bài tập</Link>
+      <div className="assignment-grading-container two-panel">
         {/* Left panel */}
         <aside className="submissions-list">
           <h3 className="panel-title">Danh sách bài nộp</h3>
@@ -142,9 +143,6 @@ const AssignmentGradingPage = () => {
 
         {/* Right panel */}
         <main className="grading-detail">
-          <div className="breadcrumbs">
-            <Link to={`/teacher/course/${courseId}/assignments`} className="back-link"><i className="fas fa-arrow-left"></i> Danh sách bài tập</Link>
-          </div>
           <h2>{assignment.title}</h2>
           <h4>{current.studentName || ''}</h4>
 

@@ -19,6 +19,7 @@ const ResetPasswordPage = lazy(() => import('./features/auth/pages/ResetPassword
 const ProfilePage = lazy(() => import('./features/profile/pages/ProfilePage'));
 const TeacherDashboardPage = lazy(() => import('./features/courses/pages/TeacherDashboardPage'));
 const CourseEditPage = lazy(() => import('./features/courses/pages/CourseEditPage'));
+const CourseReviewsPage = lazy(() => import('./features/courses/pages/CourseReviewsPage'));
 const CourseAnalyticsPage = lazy(() => import('./features/courses/pages/CourseAnalyticsPage'));
 const AssignmentsDashboardPage = lazy(() => import('./features/courses/pages/AssignmentsDashboardPage'));
 const AssignmentCreatePage = lazy(() => import('./features/courses/pages/AssignmentCreatePage'));
@@ -66,6 +67,7 @@ const App = () => {
                 <Route path="course">
                   <Route path="new" element={<CourseEditPage />} />
                   <Route path=":courseId/edit" element={<CourseEditPage />} />
+                  <Route path=":courseId/reviews" element={<CourseReviewsPage />} />
                   <Route path=":courseId/analytics" element={<CourseAnalyticsPage />} />
                   <Route path=":courseId/assignments" element={<AssignmentsDashboardPage />} />
                   <Route path=":courseId/assignments/new" element={<AssignmentCreatePage />} />
