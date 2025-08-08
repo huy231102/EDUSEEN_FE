@@ -161,49 +161,55 @@ const PastSessions = () => {
     setOpenDialog(true);
   };
 
-  // Function gọi API lấy lịch sử cuộc gọi
+  // Function kiểm tra xem schedule có quá hạn không
+  const isScheduleOverdue = (session) => {
+    if (!session.scheduledTime || !session.durationMinutes) return false;
+    
+    const startTime = new Date(session.scheduledTime);
+    const endTime = new Date(startTime.getTime() + session.durationMinutes * 60000);
+    const now = new Date();
+    
+    return endTime < now;
+  };
+
+  // Function gọi API lấy lịch sử cuộc gọi và lịch quá hạn
   const fetchCallHistory = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/videocall/history');
-      console.log('API Response:', response); // Debug log
+      // Fetch video call history
+      const historyResponse = await api.get('/api/videocall/history');
+      console.log('Video Call History API Response:', historyResponse);
       
-      // Kiểm tra cấu trúc response và lấy data
-      const data = response.data || response;
+      // Fetch all schedules to find overdue ones
+      const schedulesResponse = await api.get('/api/schedule/mySchedules');
+      console.log('Schedules API Response:', schedulesResponse);
       
-      if (!Array.isArray(data)) {
-        console.error('Response không phải là array:', data);
-        throw new Error('Response không phải là array');
-      }
-      
-      const mappedSessions = data.map(item => {
-        console.log('Mapping item:', item); // Debug log
+      // Process video call history
+      const historyData = historyResponse.data || historyResponse;
+      const videoCallSessions = Array.isArray(historyData) ? historyData.map(item => {
+        console.log('Mapping video call item:', item);
         
-        // Validate và parse dates
         let startDate, endDate;
         try {
           startDate = new Date(item.startTime);
           endDate = new Date(item.endTime);
           
           if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            console.warn('Invalid date for item:', item);
+            console.warn('Invalid date for video call item:', item);
             startDate = new Date();
             endDate = new Date();
           }
         } catch (error) {
-          console.warn('Error parsing dates for item:', item, error);
+          console.warn('Error parsing dates for video call item:', item, error);
           startDate = new Date();
           endDate = new Date();
         }
         
-        // Validate duration
         const durationMinutes = item.durationMinutes || 0;
-        if (typeof durationMinutes !== 'number' || durationMinutes < 0) {
-          console.warn('Invalid duration for item:', item);
-        }
         
         return {
-          id: item.callId || Math.random().toString(),
+          id: `video_${item.callId || Math.random().toString()}`,
+          type: 'video_call',
           date: startDate.toISOString().slice(0, 10),
           startTime: startDate.toLocaleTimeString('vi-VN', { 
             hour: '2-digit', 
@@ -222,10 +228,50 @@ const PastSessions = () => {
             { name: item.studentName || 'Học sinh', role: 'Học sinh' }
           ],
           notes: item.note || '',
-          status: item.note || 'Hoàn thành'
+          status: 'Hoàn thành',
+          scheduledTime: item.startTime,
+          durationMinutes: durationMinutes
         };
+      }) : [];
+
+      // Process overdue schedules
+      const schedulesData = schedulesResponse.data || schedulesResponse;
+      const overdueSchedules = Array.isArray(schedulesData) ? schedulesData
+        .map(item => {
+          const startDate = new Date(item.scheduledTime);
+          const timeStart = startDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+          const endDate = new Date(startDate.getTime() + item.duration * 60000);
+          const timeEnd = endDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+          
+          return {
+            id: item.scheduleId,
+            type: 'overdue_schedule',
+            date: startDate.toISOString().slice(0, 10),
+            startTime: timeStart,
+            endTime: timeEnd,
+            duration: `${Math.floor(item.duration/60) > 0 ? Math.floor(item.duration/60) + ' giờ ' : ''}${item.duration%60 > 0 ? item.duration%60 + ' phút' : ''}`.trim(),
+            subject: item.courseTitle || 'Tư vấn',
+            status: 'Quá hạn',
+            partnerName: item.partnerName,
+            role: item.role,
+            scheduledTime: item.scheduledTime,
+            durationMinutes: item.duration,
+            participants: [
+              { name: item.partnerName || 'Đối tác', role: item.role || 'Người tham gia' }
+            ],
+            notes: 'Cuộc gọi đã quá hạn và không được thực hiện'
+          };
+        })
+        .filter(schedule => isScheduleOverdue(schedule)) : [];
+
+      // Combine and sort by date (newest first)
+      const allSessions = [...videoCallSessions, ...overdueSchedules].sort((a, b) => {
+        const dateA = new Date(a.scheduledTime || a.date);
+        const dateB = new Date(b.scheduledTime || b.date);
+        return dateB - dateA;
       });
-      setSessions(mappedSessions);
+
+      setSessions(allSessions);
     } catch (error) {
       console.error('Error fetching call history:', error);
       if (error.message.includes('401')) {
@@ -236,7 +282,6 @@ const PastSessions = () => {
         showToast('Lỗi tải lịch sử cuộc gọi!', 'error');
       }
       
-      // Set empty array để tránh lỗi render
       setSessions([]);
     } finally {
       setLoading(false);
@@ -280,6 +325,9 @@ const PastSessions = () => {
   // Function tính toán thống kê
   const getStatistics = () => {
     const totalSessions = sessions.length;
+    const completedCalls = sessions.filter(s => s.type === 'video_call').length;
+    const overdueSchedules = sessions.filter(s => s.type === 'overdue_schedule').length;
+    
     const totalDuration = sessions.reduce((total, session) => {
       const durationStr = session.duration;
       const hours = durationStr.match(/(\d+)\s*giờ/)?.[1] || 0;
@@ -289,6 +337,8 @@ const PastSessions = () => {
     
     return {
       totalSessions,
+      completedCalls,
+      overdueSchedules,
       totalDuration: formatDuration(totalDuration)
     };
   };
@@ -435,7 +485,7 @@ const PastSessions = () => {
 
       {/* Thống kê */}
       <Grid container spacing={2} className={classes.statsGrid}>
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12} sm={3}>
           <div className={classes.statCard}>
             <ScheduleIcon className={classes.statIcon} />
             <Typography variant="h5" style={{ fontWeight: 600, marginBottom: '4px' }}>
@@ -446,7 +496,29 @@ const PastSessions = () => {
             </Typography>
           </div>
         </Grid>
-        <Grid item xs={12} sm={6}>
+        <Grid item xs={12} sm={3}>
+          <div className={classes.statCard}>
+            <VideoCallIcon className={classes.statIcon} />
+            <Typography variant="h5" style={{ fontWeight: 600, marginBottom: '4px' }}>
+              {statistics.completedCalls}
+            </Typography>
+            <Typography variant="caption" color="textSecondary">
+              Cuộc gọi hoàn thành
+            </Typography>
+          </div>
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <div className={classes.statCard}>
+            <HistoryIcon className={classes.statIcon} />
+            <Typography variant="h5" style={{ fontWeight: 600, marginBottom: '4px' }}>
+              {statistics.overdueSchedules}
+            </Typography>
+            <Typography variant="caption" color="textSecondary">
+              Cuộc gọi quá hạn
+            </Typography>
+          </div>
+        </Grid>
+        <Grid item xs={12} sm={3}>
           <div className={classes.statCard}>
             <TimerIcon className={classes.statIcon} />
             <Typography variant="h5" style={{ fontWeight: 600, marginBottom: '4px' }}>
@@ -468,6 +540,7 @@ const PastSessions = () => {
               <TableCell style={{ padding: '12px 16px' }}>Ngày</TableCell>
               <TableCell style={{ padding: '12px 16px' }}>Thời gian</TableCell>
               <TableCell style={{ padding: '12px 16px' }}>Thời lượng</TableCell>
+              <TableCell style={{ padding: '12px 16px' }}>Trạng thái</TableCell>
               <TableCell style={{ padding: '12px 16px' }}>Môn học</TableCell>
               <TableCell style={{ padding: '12px 16px' }}>Chi tiết</TableCell>
             </TableRow>
@@ -481,7 +554,10 @@ const PastSessions = () => {
                   <Box display="flex" alignItems="center">
                     <VideoCallIcon style={{ marginRight: '8px', color: '#1eb2a6', fontSize: '18px' }} />
                     <Typography variant="body2" style={{ fontWeight: 600 }}>
-                      {generateCallTitle(session.participants)}
+                      {session.type === 'overdue_schedule' 
+                        ? `Cuộc gọi với ${session.partnerName} (${session.role})`
+                        : generateCallTitle(session.participants)
+                      }
                     </Typography>
                   </Box>
                 </TableCell>
@@ -506,7 +582,18 @@ const PastSessions = () => {
                     size="small"
                   />
                 </TableCell>
-
+                <TableCell style={{ padding: '12px 16px' }}>
+                  <Chip
+                    label={session.status}
+                    size="small"
+                    style={{ 
+                      backgroundColor: session.status === 'Quá hạn' ? '#ffebee' : '#e8f5e8', 
+                      color: session.status === 'Quá hạn' ? '#c62828' : '#2e7d32',
+                      fontWeight: 500,
+                      fontSize: '12px'
+                    }}
+                  />
+                </TableCell>
                 <TableCell style={{ padding: '12px 16px' }}>
                   <Chip
                     label={session.subject}
@@ -559,7 +646,10 @@ const PastSessions = () => {
           <>
             <DialogTitle>
               <Typography variant="h6">
-                Chi tiết cuộc gọi: {generateCallTitle(selectedSession.participants)}
+                Chi tiết cuộc gọi: {selectedSession.type === 'overdue_schedule' 
+                  ? `Cuộc gọi với ${selectedSession.partnerName} (${selectedSession.role})`
+                  : generateCallTitle(selectedSession.participants)
+                }
               </Typography>
             </DialogTitle>
             <DialogContent>
@@ -590,6 +680,23 @@ const PastSessions = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="subtitle2" color="textSecondary">
+                    Trạng thái
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <Chip
+                      label={selectedSession.status}
+                      size="small"
+                      style={{ 
+                        backgroundColor: selectedSession.status === 'Quá hạn' ? '#ffebee' : '#e8f5e8', 
+                        color: selectedSession.status === 'Quá hạn' ? '#c62828' : '#2e7d32',
+                        fontWeight: 500,
+                        fontSize: '12px'
+                      }}
+                    />
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="subtitle2" color="textSecondary">
                     Môn học
                   </Typography>
                   <Typography variant="body1" gutterBottom>
@@ -613,7 +720,16 @@ const PastSessions = () => {
                     ))}
                   </Box>
                 </Grid>
-
+                {selectedSession.notes && (
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                      Ghi chú
+                    </Typography>
+                    <Typography variant="body1" gutterBottom>
+                      {selectedSession.notes}
+                    </Typography>
+                  </Grid>
+                )}
               </Grid>
             </DialogContent>
             <DialogActions>

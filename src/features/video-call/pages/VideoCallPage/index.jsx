@@ -5,7 +5,14 @@ import {
   Button, 
   Tabs, 
   Tab, 
-  Box 
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Grid,
+  Snackbar
 } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import { Link } from 'react-router-dom';
@@ -20,6 +27,9 @@ import Notifications from '../../components/Notifications';
 import PastSessions from '../../components/PastSessions';
 import PersonalCalendar from '../../components/PersonalCalendar';
 import { SessionsProvider } from '../../contexts/SessionsContext';
+import { useAuth } from 'features/auth/contexts/AuthContext';
+import { useToast } from 'components/common/Toast';
+import api from 'services/api';
 import './style.css';
 
 const useStyles = makeStyles((theme) => ({
@@ -148,18 +158,210 @@ function TabPanel(props) {
 const VideoCallPage = () => {
   const classes = useStyles();
   const [tabValue, setTabValue] = useState(0);
+  const { user } = useAuth();
+  const { showToast } = useToast();
 
   // Thêm log để debug state dialog
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   console.log("VideoCallPage render, openCreateDialog:", openCreateDialog);
+  
+  const [newSession, setNewSession] = useState({
+    date: '',
+    startTime: '',
+    endTime: '',
+    duration: '',
+    caller: '',
+    callerEmail: '',
+    calleeEmail: '',
+    meetingLink: '',
+  });
+  
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'error'
+  });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
   const handleOpenCreateDialog = () => {
     console.log("Gọi setOpenCreateDialog(true)");
+    let defaultName = '';
+    if (user) {
+      if (user.name) defaultName = user.name;
+      else if (user.username) defaultName = user.username;
+      else if (user.email) defaultName = user.email.split('@')[0];
+    }
+    setNewSession((prev) => ({
+      ...prev,
+      caller: defaultName,
+      callerEmail: user?.email || '',
+    }));
     setOpenCreateDialog(true);
   };
+  
   const handleCloseCreateDialog = () => setOpenCreateDialog(false);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  // Function tính toán thời lượng từ startTime và endTime
+  const calculateDuration = (startTime, endTime) => {
+    if (!startTime || !endTime) return '';
+    
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    
+    if (end <= start) return 'Thời gian không hợp lệ';
+    
+    const diffMs = end - start;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
+    
+    if (hours > 0 && minutes > 0) {
+      return `${hours} giờ ${minutes} phút`;
+    } else if (hours > 0) {
+      return `${hours} giờ`;
+    } else {
+      return `${minutes} phút`;
+    }
+  };
+
+  const handleNewSessionChange = (field, value) => {
+    setNewSession((prev) => {
+      const updated = { ...prev, [field]: value };
+      
+      // Tự động tính toán thời lượng khi thay đổi startTime hoặc endTime
+      if (field === 'startTime' || field === 'endTime') {
+        const duration = calculateDuration(updated.startTime, updated.endTime);
+        updated.duration = duration;
+      }
+      
+      return updated;
+    });
+  };
+
+  // Function validation toàn diện
+  const validateCreateSession = () => {
+    const errors = [];
+
+    // 1. Kiểm tra thông tin bắt buộc
+    if (!newSession.date) {
+      errors.push('Vui lòng chọn ngày');
+    }
+    
+    if (!newSession.startTime) {
+      errors.push('Vui lòng chọn thời gian bắt đầu');
+    }
+    
+    if (!newSession.endTime) {
+      errors.push('Vui lòng chọn thời gian kết thúc');
+    }
+    
+    if (!newSession.caller?.trim()) {
+      errors.push('Tên người gọi không được để trống');
+    }
+    
+    if (!newSession.calleeEmail?.trim()) {
+      errors.push('Email người được mời không được để trống');
+    }
+
+    // 2. Kiểm tra định dạng email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (newSession.calleeEmail && !emailRegex.test(newSession.calleeEmail)) {
+      errors.push('Email người được mời không đúng định dạng');
+    }
+
+    // 3. Kiểm tra ngày không được trong quá khứ
+    if (newSession.date) {
+      const selectedDate = new Date(newSession.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        errors.push('Không thể đặt lịch cho ngày trong quá khứ');
+      }
+    }
+
+    // 4. Kiểm tra thời gian hợp lệ
+    if (newSession.startTime && newSession.endTime) {
+      const start = new Date(`2000-01-01T${newSession.startTime}`);
+      const end = new Date(`2000-01-01T${newSession.endTime}`);
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        errors.push('Thời gian không hợp lệ');
+      } else if (start >= end) {
+        errors.push('Thời gian kết thúc phải sau thời gian bắt đầu');
+      } else {
+        const diffMs = end - start;
+        const durationMinutes = Math.floor(diffMs / (1000 * 60));
+        
+        if (durationMinutes < 15) {
+          errors.push('Thời lượng cuộc gọi phải ít nhất 15 phút');
+        }
+        
+        if (durationMinutes > 480) { // 8 giờ
+          errors.push('Thời lượng cuộc gọi không được quá 8 giờ');
+        }
+      }
+    }
+
+    return errors;
+  };
+
+  const handleCreateSession = async () => {
+    // Validation toàn diện
+    const validationErrors = validateCreateSession();
+    
+    if (validationErrors.length > 0) {
+      setSnackbar({
+        open: true,
+        message: validationErrors[0], // Hiển thị lỗi đầu tiên
+        severity: 'error'
+      });
+      return;
+    }
+
+    // Tính toán duration từ startTime và endTime
+    const start = new Date(`2000-01-01T${newSession.startTime}`);
+    const end = new Date(`2000-01-01T${newSession.endTime}`);
+    const diffMs = end - start;
+    const durationMinutes = Math.floor(diffMs / (1000 * 60));
+    
+    const scheduleData = {
+      receiverEmail: newSession.calleeEmail.trim(),
+      scheduledTime: `${newSession.date}T${newSession.startTime}`,
+      duration: durationMinutes,
+    };
+    
+    try {
+      const res = await api.post('/api/schedule/set', scheduleData);
+      showToast(res.message || 'Đặt lịch thành công!', 'success');
+      handleCloseCreateDialog(); // Đóng dialog sau khi lưu thành công
+      // Reset form
+      setNewSession({
+        date: '',
+        startTime: '',
+        endTime: '',
+        duration: '',
+        caller: '',
+        callerEmail: '',
+        calleeEmail: '',
+        meetingLink: '',
+      });
+      // Chuyển sang tab Lịch cá nhân để xem lịch mới
+      setTabValue(2);
+      // Trigger refresh dữ liệu trong PersonalCalendar
+      setRefreshTrigger(prev => prev + 1);
+    } catch (err) {
+      showToast(err.message || 'Đặt lịch thất bại!', 'error');
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
   };
 
   return (
@@ -227,10 +429,117 @@ const VideoCallPage = () => {
               openCreateDialog={openCreateDialog}
               handleOpenCreateDialog={handleOpenCreateDialog}
               handleCloseCreateDialog={handleCloseCreateDialog}
+              refreshTrigger={refreshTrigger}
             />
           </TabPanel>
         </div>
         {/* Luôn render Dialog tạo mới lịch ở ngoài */}
+        <Dialog
+          open={openCreateDialog}
+          onClose={handleCloseCreateDialog}
+          maxWidth="sm"
+          fullWidth
+          className="form-dialog"
+        >
+          <DialogTitle>Thêm lịch cuộc gọi mới</DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Ngày"
+                  type="date"
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  value={newSession.date}
+                  onChange={e => handleNewSessionChange('date', e.target.value)}
+                  margin="dense"
+                  required
+                />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField
+                  label="Giờ bắt đầu"
+                  type="time"
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  value={newSession.startTime}
+                  onChange={e => handleNewSessionChange('startTime', e.target.value)}
+                  margin="dense"
+                  required
+                />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField
+                  label="Giờ kết thúc"
+                  type="time"
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  value={newSession.endTime}
+                  onChange={e => handleNewSessionChange('endTime', e.target.value)}
+                  margin="dense"
+                  required
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Tên người gọi"
+                  fullWidth
+                  value={newSession.caller}
+                  onChange={e => handleNewSessionChange('caller', e.target.value)}
+                  margin="dense"
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Email người tạo cuộc gọi"
+                  fullWidth
+                  value={newSession.callerEmail}
+                  margin="dense"
+                  type="email"
+                  disabled
+                  helperText="Email được lấy từ tài khoản đăng nhập"
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Email người được mời"
+                  fullWidth
+                  value={newSession.calleeEmail}
+                  onChange={e => handleNewSessionChange('calleeEmail', e.target.value)}
+                  margin="dense"
+                  type="email"
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Thời lượng"
+                  fullWidth
+                  value={newSession.duration || ''}
+                  margin="dense"
+                  disabled
+                  helperText="Tự động tính toán từ thời gian bắt đầu và kết thúc"
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseCreateDialog} color="default">Hủy</Button>
+            <Button onClick={handleCreateSession} color="primary" variant="contained">Lưu</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Snackbar thông báo lỗi */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          message={snackbar.message}
+        />
       </div>
     </SessionsProvider>
   );
