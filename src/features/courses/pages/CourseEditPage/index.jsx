@@ -402,6 +402,7 @@ const CurriculumBuilder = ({ course, setCourse }) => {
   const [lectureFile, setLectureFile] = useState(null);
   const [activeSectionIdx, setActiveSectionIdx] = useState(null);
   const [editingLecture, setEditingLecture] = useState(null); // {sectionIdx, lectureIdx}
+  const [originalLectureData, setOriginalLectureData] = useState(null); // Lưu dữ liệu ban đầu để có thể khôi phục
 
   // Thêm Section mới
   const addSection = () => {
@@ -456,7 +457,32 @@ const CurriculumBuilder = ({ course, setCourse }) => {
     const newSections = [...course.sections];
     newSections[sectionIdx].lectures[lectureIdx] = { ...newSections[sectionIdx].lectures[lectureIdx], ...updatedLecture };
     setCourse({ ...course, sections: newSections });
+    // Không tự động đóng form chỉnh sửa nữa
+  };
+
+  // Bắt đầu chỉnh sửa lecture
+  const startEditingLecture = (sectionIdx, lectureIdx) => {
+    const lecture = course.sections[sectionIdx].lectures[lectureIdx];
+    setOriginalLectureData({ ...lecture }); // Lưu dữ liệu ban đầu
+    setEditingLecture({ sectionIdx, lectureIdx });
+  };
+
+  // Hoàn thành chỉnh sửa
+  const finishEditingLecture = () => {
     setEditingLecture(null);
+    setOriginalLectureData(null);
+  };
+
+  // Hủy chỉnh sửa và khôi phục dữ liệu ban đầu
+  const cancelEditingLecture = () => {
+    if (originalLectureData && editingLecture) {
+      const { sectionIdx, lectureIdx } = editingLecture;
+      const newSections = [...course.sections];
+      newSections[sectionIdx].lectures[lectureIdx] = { ...originalLectureData };
+      setCourse({ ...course, sections: newSections });
+    }
+    setEditingLecture(null);
+    setOriginalLectureData(null);
   };
 
   // Xử lý drag & drop
@@ -592,13 +618,13 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                                           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                                             <button 
                                               className="btn small primary" 
-                                              onClick={() => setEditingLecture(null)}
+                                              onClick={finishEditingLecture}
                                             >
                                               Hoàn thành
                                             </button>
                                             <button 
                                               className="btn small" 
-                                              onClick={() => setEditingLecture(null)}
+                                              onClick={cancelEditingLecture}
                                             >
                                               Hủy
                                             </button>
@@ -618,7 +644,7 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                                               className="btn small"
                                               style={{ color: '#1eb2a6', background: 'none', border: 'none' }}
                                               title="Chỉnh sửa bài giảng"
-                                              onClick={() => setEditingLecture({ sectionIdx: sIdx, lectureIdx: lIdx })}
+                                              onClick={() => startEditingLecture(sIdx, lIdx)}
                                             >
                                               <i className="fas fa-edit"></i>
                                             </button>

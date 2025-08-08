@@ -410,7 +410,7 @@ const CourseContentPage = () => {
                               <i className="fa fa-star"></i> {assignment?.maxScore || 10} điểm
                             </span>
                             <span className="due-date">
-                              <i className="fa fa-calendar"></i> Đến hạn {assignment?.dueDate ? new Date(assignment.dueDate).toLocaleDateString('vi-VN') : 'Chưa có'}
+                              <i className="fa fa-calendar"></i> Đến hạn {assignment?.dueDate ? new Date(assignment.dueDate).toLocaleString('vi-VN') : 'Chưa có'}
                             </span>
                           </div>
                         </div>
