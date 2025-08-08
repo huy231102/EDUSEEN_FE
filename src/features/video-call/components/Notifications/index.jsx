@@ -12,16 +12,24 @@ const useStyles = makeStyles(() => ({
 }));
 
 const Notifications = () => {
-  const { answerCall, call, callAccepted } = useContext(SocketContext);
+  const { answerCall, call, callAccepted, isSocketConnected, initializeSocket } = useContext(SocketContext);
   const classes = useStyles();
+
+  const handleAnswerCall = () => {
+    // Khởi tạo socket connection nếu chưa có
+    if (!isSocketConnected) {
+      initializeSocket();
+    }
+    answerCall();
+  };
 
   return (
     <>
       {call.isReceivingCall && !callAccepted && (
         <div className={classes.container}>
-          <Typography variant="h6">{call.name} is calling:</Typography>
-          <Button variant="contained" color="primary" onClick={answerCall}>
-            Answer
+          <Typography variant="h6">{call.name} đang gọi:</Typography>
+          <Button variant="contained" color="primary" onClick={handleAnswerCall}>
+            Trả lời
           </Button>
         </div>
       )}

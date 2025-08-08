@@ -5,7 +5,6 @@ import Peer from 'simple-peer';
 const SocketContext = createContext();
 
 const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000';
-const socket = io(serverUrl);
 
 const peerConfig = {
   iceServers: [
@@ -24,12 +23,63 @@ const ContextProvider = ({ children }) => {
   const [partnerName, setPartnerName] = useState('');
   const [callPartnerId, setCallPartnerId] = useState('');
   const [subtitles, setSubtitles] = useState('');
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
   const callAcceptedCallback = useRef();
   const socketAIRef = useRef(null);
+  const socketRef = useRef(null);
+
+  // Khởi tạo socket connection chỉ khi cần thiết
+  const initializeSocket = () => {
+    if (!socketRef.current) {
+      socketRef.current = io(serverUrl);
+      
+      socketRef.current.on('connect', () => {
+        setIsSocketConnected(true);
+      });
+
+      socketRef.current.on('disconnect', () => {
+        setIsSocketConnected(false);
+      });
+
+      socketRef.current.on('me', (id) => {
+        setMe(id);
+      });
+
+      socketRef.current.on('callUser', ({ from, name: callerName, signal }) => {
+        setCall({ isReceivingCall: true, from, name: callerName, signal });
+      });
+
+      socketRef.current.on('callAccepted', (data) => {
+        if (callAcceptedCallback.current) {
+          callAcceptedCallback.current(data);
+        }
+      });
+
+      socketRef.current.on('callEnded', () => {
+        leaveCall();
+      });
+
+      socketRef.current.on('iceCandidateReceived', ({ candidate }) => {
+        if (connectionRef.current) {
+          connectionRef.current.signal({ candidate });
+        }
+      });
+    }
+    return socketRef.current;
+  };
+
+  // Cleanup socket connection
+  const cleanupSocket = () => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+      setIsSocketConnected(false);
+    }
+  };
 
   const leaveCall = () => {
     setCallEnded(true);
@@ -37,12 +87,11 @@ const ContextProvider = ({ children }) => {
     setCall({});
     setPartnerName('');
 
-    if (callPartnerId) {
-      socket.emit('hangup', { to: callPartnerId });
+    if (callPartnerId && socketRef.current) {
+      socketRef.current.emit('hangup', { to: callPartnerId });
     }
 
     callAcceptedCallback.current = null;
-
     setCallPartnerId('');
 
     if (connectionRef.current) {
@@ -54,6 +103,7 @@ const ContextProvider = ({ children }) => {
     }
   };
 
+  // Chỉ khởi tạo media stream khi component mount
   useEffect(() => {
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then((currentStream) => {
@@ -68,32 +118,16 @@ const ContextProvider = ({ children }) => {
         // alert('You denied access to your camera and microphone. Please allow access to use the video chat.');
       });
 
-    socket.on('me', (id) => {
-      // console.log('Socket event "me" received with id:', id);
-      setMe(id);
-    });
-
-    socket.on('callUser', ({ from, name: callerName, signal }) => {
-      setCall({ isReceivingCall: true, from, name: callerName, signal });
-    });
-
-    socket.on('callAccepted', (data) => {
-      if (callAcceptedCallback.current) {
-        callAcceptedCallback.current(data);
+    // Cleanup khi component unmount
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
-    });
-
-    socket.on('callEnded', () => {
-      leaveCall();
-    });
-
-    socket.on('iceCandidateReceived', ({ candidate }) => {
-      if (connectionRef.current) {
-        connectionRef.current.signal({ candidate });
-      }
-    });
+      cleanupSocket();
+    };
   }, []);
 
+  // Khởi tạo AI WebSocket chỉ khi cần thiết
   useEffect(() => {
     socketAIRef.current = new WebSocket('ws://localhost:8001/ws/translate');
 
@@ -150,6 +184,7 @@ const ContextProvider = ({ children }) => {
   }, [stream]);
 
   const answerCall = () => {
+    const socket = initializeSocket();
     setCallAccepted(true);
     setCallEnded(false);
     setPartnerName(call.name);
@@ -175,6 +210,7 @@ const ContextProvider = ({ children }) => {
   };
 
   const callUser = (id, currentUserName) => {
+    const socket = initializeSocket();
     const peer = new Peer({ initiator: true, trickle: true, stream, config: peerConfig });
     setCallEnded(false);
     setCallPartnerId(id);
@@ -217,6 +253,9 @@ const ContextProvider = ({ children }) => {
       answerCall,
       partnerName,
       subtitles,
+      isSocketConnected,
+      initializeSocket,
+      cleanupSocket,
     }}
     >
       {children}

@@ -24,6 +24,7 @@ const AssignmentGradingPage = () => {
           studentName: s.studentName || s.StudentName,
           grade: s.grade ?? s.Grade,
           feedback: s.feedback ?? s.Feedback,
+          files: s.files || s.Files || [],
         }));
 
         const notSubmittedList = (data.notSubmittedStudents || data.NotSubmittedStudents || []).map(ns => ({
@@ -99,24 +100,45 @@ const AssignmentGradingPage = () => {
   const current = submissions[selectedIdx] || {};
 
   const renderViewer = () => {
-    if (!current.file?.url || current.file.url === '#') {
+    if (!current.files || current.files.length === 0) {
       return <p className="no-file">Chưa có tệp đính kèm hoặc định dạng không hỗ trợ.</p>;
     }
-    if (current.file.type === 'pdf') {
-      return (
-        <object data={current.file.url} type="application/pdf" width="100%" height="500px">
-          <p>Không hiển thị được PDF. <a href={current.file.url} target="_blank" rel="noopener noreferrer">Tải xuống</a></p>
-        </object>
-      );
-    }
+
     return (
-      <a href={current.file.url} download>{current.file.name} - Download</a>
+      <div className="submission-files">
+        {current.files.map((file, index) => {
+          const isPdf = /\.pdf$/i.test(file.fileName || '');
+          const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(file.fileName || '');
+          const isVideo = /\.(mp4|avi|mov|wmv|flv|webm|mkv)$/i.test(file.fileName || '');
+          
+          return (
+            <div key={index} className="submission-file">
+              {isPdf ? (
+                <object data={file.fileUrl} type="application/pdf" width="100%" height="500px">
+                  <p>Không hiển thị được PDF. <a href={file.fileUrl} target="_blank" rel="noopener noreferrer">Tải xuống</a></p>
+                </object>
+              ) : isImage ? (
+                <img src={file.fileUrl} alt={file.fileName || `File ${index + 1}`} style={{ maxWidth: '100%', maxHeight: '400px' }} />
+              ) : isVideo ? (
+                <video src={file.fileUrl} controls width="100%" style={{ maxHeight: '400px' }} />
+              ) : (
+                <div className="file-download">
+                  <a href={file.fileUrl} target="_blank" rel="noopener noreferrer" className="download-link">
+                    <i className="fa fa-download"></i> {file.fileName || `File ${index + 1}`} - Tải xuống
+                  </a>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     );
   };
 
   return (
-    <section className="grading-page">
-      <div className="container two-panel">
+    <section className="container grading-page">
+      <Link to={`/teacher/course/${courseId}/assignments`} className="back-link"><i className="fas fa-arrow-left"></i> Danh sách bài tập</Link>
+      <div className="assignment-grading-container two-panel">
         {/* Left panel */}
         <aside className="submissions-list">
           <h3 className="panel-title">Danh sách bài nộp</h3>
@@ -142,9 +164,6 @@ const AssignmentGradingPage = () => {
 
         {/* Right panel */}
         <main className="grading-detail">
-          <div className="breadcrumbs">
-            <Link to={`/teacher/course/${courseId}/assignments`} className="back-link"><i className="fas fa-arrow-left"></i> Danh sách bài tập</Link>
-          </div>
           <h2>{assignment.title}</h2>
           <h4>{current.studentName || ''}</h4>
 

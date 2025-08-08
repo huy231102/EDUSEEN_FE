@@ -16,6 +16,7 @@ const AssignmentCreatePage = () => {
     description: '',
     dueDate: '',
   });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -40,12 +41,35 @@ const AssignmentCreatePage = () => {
   };
 
   const handleSave = async () => {
+    // Reset errors
+    setErrors({});
+    
+    // Validate form
+    const newErrors = {};
+    
     if (sectionIdx === '' || lectureIdx === '') {
       alert('Vui lòng chọn bài giảng');
       return;
     }
+    
     if (!form.title.trim()) {
-      alert('Vui lòng nhập tiêu đề bài tập');
+      newErrors.title = 'Vui lòng nhập tiêu đề bài tập';
+    }
+    
+    if (!form.dueDate) {
+      newErrors.dueDate = 'Vui lòng chọn hạn nộp bài tập';
+    } else {
+      // Kiểm tra hạn nộp không được trong quá khứ
+      const selectedDate = new Date(form.dueDate);
+      const now = new Date();
+      if (selectedDate <= now) {
+        newErrors.dueDate = 'Hạn nộp phải sau thời gian hiện tại';
+      }
+    }
+    
+    // Nếu có lỗi, hiển thị và dừng
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
     const secIdx = parseInt(sectionIdx);
@@ -79,7 +103,7 @@ const AssignmentCreatePage = () => {
 
   return (
     <section className="assignment-create-page">
-      <div className="container">
+      <div className="assignments-create-container">
         <Link to={`/teacher/course/${courseId}/assignments`} className="back-link"><i className="fas fa-arrow-left"></i> Quay lại danh sách bài tập</Link>
         <h2 className="page-title">Tạo bài tập mới</h2>
 
@@ -106,14 +130,23 @@ const AssignmentCreatePage = () => {
         <div className="form-group">
           <label>Tiêu đề bài tập</label>
           <input name="title" value={form.title} onChange={handleChange} />
+          {errors.title && <div className="error-message">{errors.title}</div>}
         </div>
         <div className="form-group">
           <label>Mô tả</label>
           <textarea name="description" rows={5} value={form.description} onChange={handleChange}></textarea>
         </div>
         <div className="form-group">
-          <label>Hạn nộp</label>
-          <input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} />
+          <label>Hạn nộp <span className="required">*</span></label>
+          <input 
+            type="datetime-local" 
+            name="dueDate" 
+            value={form.dueDate} 
+            onChange={handleChange}
+            min={new Date().toISOString().slice(0, 16)} // Không cho phép chọn thời gian trong quá khứ
+            required
+          />
+          {errors.dueDate && <div className="error-message">{errors.dueDate}</div>}
         </div>
 
         <div style={{textAlign:'right'}}>
