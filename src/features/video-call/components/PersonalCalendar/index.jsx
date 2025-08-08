@@ -604,7 +604,7 @@ const PersonalCalendar = ({ onSwitchToVideoCall, openCreateDialog, handleOpenCre
             Chưa có cuộc gọi nào được đặt lịch
           </Typography>
           <Typography variant="body1" color="textSecondary" align="center">
-            Hãy đặt lịch cuộc gọi đầu tiên với giáo viên!
+            Hãy đặt lịch cuộc gọi đầu tiên!
           </Typography>
           <Button
             variant="contained"
