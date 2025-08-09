@@ -12,7 +12,8 @@ const CourseListPage = () => {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('default');
-  const [displayCourses, setDisplayCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]); // Dữ liệu gốc từ API
+  const [displayCourses, setDisplayCourses] = useState([]); // Dữ liệu sau khi filter/sort
   const [topReviews, setTopReviews] = useState([]);
   const [loadingReview, setLoadingReview] = useState(true);
   const [loadingCourses, setLoadingCourses] = useState(true);
@@ -49,10 +50,12 @@ const CourseListPage = () => {
           // Sử dụng avatar từ API hoặc fallback
           tcover: dto.teacherAvatarUrl || '/images/team/t1.webp'
         }));
-        setDisplayCourses(mapped);
+        setAllCourses(mapped); // Lưu dữ liệu gốc
+        setDisplayCourses(mapped); // Hiển thị ban đầu
       } catch (err) {
         console.error(err);
         setError('Không thể tải danh sách khóa học');
+        setAllCourses([]);
         setDisplayCourses([]);
       } finally {
         setLoadingCourses(false);
@@ -63,7 +66,13 @@ const CourseListPage = () => {
 
   // Tính toán danh sách hiển thị sau khi search & sort
   useEffect(() => {
-    const searched = displayCourses.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    if (allCourses.length === 0) return; // Đợi dữ liệu gốc load xong
+    
+    // Luôn filter từ dữ liệu gốc
+    const searched = allCourses.filter(c => 
+      c.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
     const sorted = [...searched];
     switch (sortOption) {
       case 'rating_desc':
@@ -80,7 +89,7 @@ const CourseListPage = () => {
         break;
     }
     setDisplayCourses(sorted);
-  }, [searchTerm, sortOption]);
+  }, [searchTerm, sortOption, allCourses]); // Thêm allCourses vào dependency
 
   useEffect(() => {
     // Chỉ fetch top review ở trang này

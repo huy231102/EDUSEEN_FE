@@ -21,6 +21,12 @@ const Head = () => {
               <i className='fa fa-video icon'></i>
             </Link>
             
+            {isLoggedIn && (
+              <Link to='/my-courses' title="Khóa học của tôi">
+                <i className='fa fa-book icon'></i>
+              </Link>
+            )}
+            
             {isLoggedIn && <NotificationDropdown />}
             
             <Link to={isLoggedIn ? '/profile' : '/auth'} title="Account">
