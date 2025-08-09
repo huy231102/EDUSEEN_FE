@@ -18,6 +18,7 @@ const AssignmentEditPage = () => {
     description: '',
     dueDate: '',
   });
+  const [errors, setErrors] = useState({});
 
   // ---------------- Fetch data ----------------
   useEffect(() => {
@@ -33,7 +34,7 @@ const AssignmentEditPage = () => {
         setForm({
           title: assignmentData.title || '',
           description: assignmentData.description || '',
-          dueDate: assignmentData.dueDate ? assignmentData.dueDate.split('T')[0] : '',
+          dueDate: assignmentData.dueDate ? assignmentData.dueDate.slice(0, 16) : '', // Format cho datetime-local
         });
         // Detect section / lecture indices
         if (courseData?.sections) {
@@ -65,12 +66,35 @@ const AssignmentEditPage = () => {
   };
 
   const handleSave = async () => {
+    // Reset errors
+    setErrors({});
+    
+    // Validate form
+    const newErrors = {};
+    
     if (sectionIdx === '' || lectureIdx === '') {
       alert('Vui lòng chọn bài giảng');
       return;
     }
+    
     if (!form.title.trim()) {
-      alert('Vui lòng nhập tiêu đề bài tập');
+      newErrors.title = 'Vui lòng nhập tiêu đề bài tập';
+    }
+    
+    if (!form.dueDate) {
+      newErrors.dueDate = 'Vui lòng chọn hạn nộp bài tập';
+    } else {
+      // Kiểm tra hạn nộp không được trong quá khứ
+      const selectedDate = new Date(form.dueDate);
+      const now = new Date();
+      if (selectedDate <= now) {
+        newErrors.dueDate = 'Hạn nộp phải sau thời gian hiện tại';
+      }
+    }
+    
+    // Nếu có lỗi, hiển thị và dừng
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -127,14 +151,23 @@ const AssignmentEditPage = () => {
         <div className="form-group">
           <label>Tiêu đề bài tập</label>
           <input name="title" value={form.title} onChange={handleChange} />
+          {errors.title && <div className="error-message">{errors.title}</div>}
         </div>
         <div className="form-group">
           <label>Mô tả</label>
           <textarea name="description" rows={5} value={form.description} onChange={handleChange}></textarea>
         </div>
         <div className="form-group">
-          <label>Hạn nộp</label>
-          <input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} />
+          <label>Hạn nộp <span className="required">*</span></label>
+          <input 
+            type="datetime-local" 
+            name="dueDate" 
+            value={form.dueDate} 
+            onChange={handleChange}
+            min={new Date().toISOString().slice(0, 16)}
+            required
+          />
+          {errors.dueDate && <div className="error-message">{errors.dueDate}</div>}
         </div>
 
         <div style={{ textAlign: 'right' }}>
