@@ -36,7 +36,7 @@ const CourseManagementPage = () => {
 
   useEffect(() => {
     fetchCourses();
-  }, [fetchCourses]);
+  }, []);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
