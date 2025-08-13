@@ -6,8 +6,7 @@ import {
   InputLabel, Select, MenuItem
 } from "@material-ui/core";
 import { 
-  Add, Edit, Delete, Refresh, Folder, Book, 
-  EmojiObjects, Language 
+  Add, Edit, Delete, Refresh
 } from "@material-ui/icons";
 import ImageS3Upload from 'components/common/ImageS3Upload';
 
@@ -23,23 +22,17 @@ const CategoryManagementPage = () => {
   const [form, setForm] = useState({ 
     categoryName: '', 
     description: '', 
-    iconType: 'folder',
     cover: '', 
     hoverCover: '' 
   });
   const [submitLoading, setSubmitLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const iconOptions = [
-    { label: 'Folder', value: 'folder', icon: <Folder style={{ color: '#1eb2a6' }} /> },
-    { label: 'Book', value: 'book', icon: <Book style={{ color: '#ff9800' }} /> },
-    { label: 'Lightbulb', value: 'light', icon: <EmojiObjects style={{ color: '#fbc02d' }} /> },
-    { label: 'Language', value: 'lang', icon: <Language style={{ color: '#2196f3' }} /> },
-  ];
+
 
   useEffect(() => {
     fetchCategories();
-  }, [fetchCategories]);
+  }, []);
 
   const handleOpenDialog = (cat = null) => {
     if (cat) {
@@ -47,7 +40,6 @@ const CategoryManagementPage = () => {
       setForm({
         categoryName: cat.name,
         description: cat.description || '',
-        iconType: cat.iconType || 'folder',
         cover: cat.cover || '',
         hoverCover: cat.hoverCover || ''
       });
@@ -56,7 +48,6 @@ const CategoryManagementPage = () => {
       setForm({
         categoryName: '',
         description: '',
-        iconType: 'folder',
         cover: '',
         hoverCover: ''
       });
@@ -70,7 +61,6 @@ const CategoryManagementPage = () => {
     setForm({
       categoryName: '',
       description: '',
-      iconType: 'folder',
       cover: '',
       hoverCover: ''
     });
@@ -150,10 +140,7 @@ const CategoryManagementPage = () => {
     }
   };
 
-  const getIconByType = (type) => {
-    const found = iconOptions.find(i => i.value === type);
-    return found ? found.icon : <Folder style={{ color: '#1eb2a6' }} />;
-  };
+
 
   return (
     <Box>
@@ -188,7 +175,7 @@ const CategoryManagementPage = () => {
               <TableRow>
                 <TableCell>Danh mục</TableCell>
                 <TableCell>Mô tả</TableCell>
-                <TableCell>Icon</TableCell>
+                
                 <TableCell>Ảnh cover</TableCell>
                 <TableCell>Số khóa học</TableCell>
                 <TableCell>Thao tác</TableCell>
@@ -204,7 +191,7 @@ const CategoryManagementPage = () => {
                         variant="rounded"
                         className="category-avatar"
                       >
-                        {getIconByType(category.iconType)}
+                        {category.name.charAt(0).toUpperCase()}
                       </Avatar>
                       <Box>
                         <Typography variant="subtitle2" className="category-name">
@@ -221,14 +208,7 @@ const CategoryManagementPage = () => {
                       {category.description || 'Không có mô tả'}
                     </Typography>
                   </TableCell>
-                  <TableCell>
-                    <Box className="category-icon-cell">
-                      {getIconByType(category.iconType)}
-                      <Typography variant="body2" className="category-icon-label">
-                        {iconOptions.find(i => i.value === category.iconType)?.label || 'Folder'}
-                      </Typography>
-                    </Box>
-                  </TableCell>
+
                   <TableCell>
                     <Box className="category-images-cell">
                       {category.cover && (
@@ -295,7 +275,7 @@ const CategoryManagementPage = () => {
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={3} className="category-form">
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <TextField
                 name="categoryName"
                 label="Tên danh mục"
@@ -307,27 +287,7 @@ const CategoryManagementPage = () => {
                 className="category-form-input"
               />
             </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl variant="outlined" fullWidth>
-                <InputLabel>Loại icon</InputLabel>
-                <Select
-                  name="iconType"
-                  value={form.iconType}
-                  onChange={handleChange}
-                  label="Loại icon"
-                  className="category-form-input"
-                >
-                  {iconOptions.map(option => (
-                    <MenuItem key={option.value} value={option.value}>
-                      <Box className="category-icon-option">
-                        {option.icon}
-                        {option.label}
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+
             <Grid item xs={12}>
               <TextField
                 name="description"
