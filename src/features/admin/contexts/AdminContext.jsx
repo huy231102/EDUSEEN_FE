@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from 'services/api';
 import { getCategories, createCategory, updateCategory, deleteCategory } from 'services/categoryApi';
 
@@ -39,7 +39,7 @@ export const AdminProvider = ({ children }) => {
   };
 
   // Fetch users
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await api.get("/api/admin/user");
       const data = Array.isArray(response) ? response : (response?.data || []);
@@ -64,10 +64,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi tải danh sách người dùng:', error);
       setUsers([]);
     }
-  };
+  }, []);
 
   // Fetch courses
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     try {
       const response = await api.get("/api/admin/course");
       const data = Array.isArray(response) ? response : (response?.data || []);
@@ -98,10 +98,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi tải danh sách khóa học:', error);
       setCourses([]);
     }
-  };
+  }, []);
 
   // Fetch categories
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await getCategories();
       setCategories(response || []);
@@ -109,10 +109,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi tải danh mục:', error);
       setCategories([]);
     }
-  };
+  }, []);
 
   // Fetch user statistics
-  const fetchUserStatistics = async () => {
+  const fetchUserStatistics = useCallback(async () => {
     try {
       const response = await api.get("/api/admin/user/statistics");
       const data = response?.data || response;
@@ -121,10 +121,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi tải thống kê người dùng:', error);
       setUserStatistics({});
     }
-  };
+  }, []);
 
   // Fetch course statistics
-  const fetchCourseStatistics = async () => {
+  const fetchCourseStatistics = useCallback(async () => {
     try {
       const response = await api.get("/api/admin/course/statistics");
       setCourseStatistics(response.data || {});
@@ -132,7 +132,7 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi tải thống kê khóa học:', error);
       setCourseStatistics({});
     }
-  };
+  }, []);
 
   // Update user
   const updateUser = async (userId, userData) => {
@@ -234,7 +234,7 @@ export const AdminProvider = ({ children }) => {
 
   useEffect(() => {
     fetchAllData();
-  }, []);
+  }, [fetchUsers, fetchCourses, fetchCategories, fetchUserStatistics, fetchCourseStatistics]);
 
   const value = {
     users,

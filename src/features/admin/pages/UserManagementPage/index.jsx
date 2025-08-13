@@ -39,7 +39,7 @@ const UserManagementPage = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+  }, []);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -265,7 +265,7 @@ const UserManagementPage = () => {
                   </TableCell>
                   <TableCell>
                     {user.lastActive !== "Chưa đăng nhập" 
-                      ? format(new Date(user.lastActive), 'dd/MM/yyyy HH:mm')
+                      ? format(new Date(user.lastActive), 'dd/MM/yyyy')
                       : user.lastActive
                     }
                   </TableCell>
@@ -366,14 +366,14 @@ const UserManagementPage = () => {
                 <Box className="user-detail-field">
                   <Typography variant="subtitle2" className="user-detail-label">Ngày tham gia</Typography>
                   <Typography>
-                    {selectedUser.joined ? format(new Date(selectedUser.joined), 'dd/MM/yyyy HH:mm') : 'N/A'}
+                    {selectedUser.joined ? format(new Date(selectedUser.joined), 'dd/MM/yyyy') : 'N/A'}
                   </Typography>
                 </Box>
                 <Box className="user-detail-field">
                   <Typography variant="subtitle2" className="user-detail-label">Hoạt động cuối</Typography>
                   <Typography>
                     {selectedUser.lastActive !== "Chưa đăng nhập" 
-                      ? format(new Date(selectedUser.lastActive), 'dd/MM/yyyy HH:mm')
+                      ? format(new Date(selectedUser.lastActive), 'dd/MM/yyyy')
                       : selectedUser.lastActive
                     }
                   </Typography>
