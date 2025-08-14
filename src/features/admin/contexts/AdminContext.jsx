@@ -20,24 +20,6 @@ export const AdminProvider = ({ children }) => {
   const [courseStatistics, setCourseStatistics] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // Fetch all data
-  const fetchAllData = async () => {
-    setLoading(true);
-    try {
-      await Promise.all([
-        fetchUsers(),
-        fetchCourses(),
-        fetchCategories(),
-        fetchUserStatistics(),
-        fetchCourseStatistics()
-      ]);
-    } catch (error) {
-      console.error('Error fetching admin data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Fetch users
   const fetchUsers = useCallback(async () => {
     try {
@@ -135,7 +117,7 @@ export const AdminProvider = ({ children }) => {
   }, []);
 
   // Update user
-  const updateUser = async (userId, userData) => {
+  const updateUser = useCallback(async (userId, userData) => {
     try {
       await api.put(`/api/admin/user/${userId}`, userData);
       await fetchUsers();
@@ -144,10 +126,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi cập nhật người dùng:', error);
       return { success: false, error: error.message };
     }
-  };
+  }, [fetchUsers]);
 
   // Update course
-  const updateCourse = async (courseId, courseData) => {
+  const updateCourse = useCallback(async (courseId, courseData) => {
     try {
       await api.put(`/api/admin/course/${courseId}`, courseData);
       await fetchCourses();
@@ -156,10 +138,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi cập nhật khóa học:', error);
       return { success: false, error: error.message };
     }
-  };
+  }, [fetchCourses]);
 
   // Delete course
-  const deleteCourse = async (courseId) => {
+  const deleteCourse = useCallback(async (courseId) => {
     try {
       await api.delete(`/api/admin/course/${courseId}`);
       await fetchCourses();
@@ -168,10 +150,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi xóa khóa học:', error);
       return { success: false, error: error.message };
     }
-  };
+  }, [fetchCourses]);
 
   // Toggle user status
-  const toggleUserStatus = async (userId, currentStatus) => {
+  const toggleUserStatus = useCallback(async (userId, currentStatus) => {
     try {
       const newStatus = currentStatus === "Hoạt động" ? "Đã khóa" : "Hoạt động";
       await api.put(`/api/admin/user/${userId}/status`, { status: newStatus });
@@ -181,10 +163,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi cập nhật trạng thái người dùng:', error);
       return { success: false, error: error.message };
     }
-  };
+  }, [fetchUsers]);
 
   // Toggle course status
-  const toggleCourseStatus = async (courseId, currentStatus) => {
+  const toggleCourseStatus = useCallback(async (courseId, currentStatus) => {
     try {
       const newStatus = currentStatus === "Đã duyệt" ? "Chờ duyệt" : "Đã duyệt";
       await api.put(`/api/admin/course/${courseId}/status`, { status: newStatus });
@@ -194,10 +176,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi cập nhật trạng thái khóa học:', error);
       return { success: false, error: error.message };
     }
-  };
+  }, [fetchCourses]);
 
   // Create category
-  const createCategoryHandler = async (categoryData) => {
+  const createCategoryHandler = useCallback(async (categoryData) => {
     try {
       await createCategory(categoryData);
       await fetchCategories();
@@ -206,10 +188,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi tạo danh mục:', error);
       return { success: false, error: error.message };
     }
-  };
+  }, [fetchCategories]);
 
   // Update category
-  const updateCategoryHandler = async (categoryId, categoryData) => {
+  const updateCategoryHandler = useCallback(async (categoryId, categoryData) => {
     try {
       await updateCategory(categoryId, categoryData);
       await fetchCategories();
@@ -218,10 +200,10 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi cập nhật danh mục:', error);
       return { success: false, error: error.message };
     }
-  };
+  }, [fetchCategories]);
 
   // Delete category
-  const deleteCategoryHandler = async (categoryId) => {
+  const deleteCategoryHandler = useCallback(async (categoryId) => {
     try {
       await deleteCategory(categoryId);
       await fetchCategories();
@@ -230,7 +212,7 @@ export const AdminProvider = ({ children }) => {
       console.error('Lỗi khi xóa danh mục:', error);
       return { success: false, error: error.message };
     }
-  };
+  }, [fetchCategories]);
 
   useEffect(() => {
     fetchAllData();
