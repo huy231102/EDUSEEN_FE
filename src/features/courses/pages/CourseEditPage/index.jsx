@@ -292,7 +292,7 @@ const CurriculumBuilder = ({ course, setCourse }) => {
   const [lectureTitle, setLectureTitle] = useState('');
   const [lectureType, setLectureType] = useState('video');
   const [lectureText, setLectureText] = useState('');
-  const [lectureFile, setLectureFile] = useState(null);
+  const [lectureFiles, setLectureFiles] = useState({}); // Lưu file cho từng section: {sectionIdx: fileUrl}
   const [activeSectionIdx, setActiveSectionIdx] = useState(null);
   const [editingLecture, setEditingLecture] = useState(null); // {sectionIdx, lectureIdx}
   const [originalLectureData, setOriginalLectureData] = useState(null); // Lưu dữ liệu ban đầu để có thể khôi phục
@@ -315,26 +315,38 @@ const CurriculumBuilder = ({ course, setCourse }) => {
   const deleteSection = (sectionIdx) => {
     const newSections = course.sections.filter((_, idx) => idx !== sectionIdx);
     setCourse({ ...course, sections: newSections });
+    // Xóa file video tương ứng với section này
+    setLectureFiles(prev => {
+      const newFiles = { ...prev };
+      delete newFiles[sectionIdx];
+      return newFiles;
+    });
   };
 
   // Thêm Lecture vào một Section
   const addLecture = (sectionIdx) => {
     if (!lectureTitle.trim()) return;
     const newSections = [...course.sections];
-    if (lectureType === 'video' && !lectureFile) {
+    const currentFile = lectureFiles[sectionIdx];
+    if (lectureType === 'video' && !currentFile) {
       alert('Vui lòng upload video');
       return;
     }
     const lectureObj = {
       title: lectureTitle.trim(),
       contentType: 'video',
-      contentUrl: lectureFile,
+      contentUrl: currentFile,
       duration: 0,
     };
     newSections[sectionIdx].lectures.push(lectureObj);
     setCourse({ ...course, sections: newSections });
     setLectureTitle('');
-    setLectureFile(null);
+    // Xóa file đã sử dụng cho section này
+    setLectureFiles(prev => {
+      const newFiles = { ...prev };
+      delete newFiles[sectionIdx];
+      return newFiles;
+    });
     setActiveSectionIdx(null);
   };
 
@@ -437,38 +449,96 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                         </button>
                       </div>
 
-                      {/* Add Lecture input */}
-                      {activeSectionIdx === sIdx ? (
-                        <div className="add-lecture">
-                          <div className="add-lecture-grid">
-                            <input
-                              type="text"
-                              placeholder="Tên bài giảng..."
-                              value={lectureTitle}
-                              onChange={(e) => setLectureTitle(e.target.value)}
-                            />
-                            <select value={lectureType} disabled>
-                              <option value="video">Video</option>
-                            </select>
-                            {lectureType === 'video' ? (
-                              <VideoS3Upload
-                                onUploaded={url => setLectureFile(url)}
-                              />
-                            ) : (
-                              <textarea placeholder="Nội dung bài giảng" value={lectureText} onChange={(e)=>setLectureText(e.target.value)} rows={3}></textarea>
+                                             {/* Add Lecture input */}
+                       {activeSectionIdx === sIdx ? (
+                         <div className="add-lecture">
+                           <div className="add-lecture-grid">
+                             <input
+                               type="text"
+                               placeholder="Tên bài giảng..."
+                               value={lectureTitle}
+                               onChange={(e) => setLectureTitle(e.target.value)}
+                             />
+                             <select value={lectureType} disabled>
+                               <option value="video">Video</option>
+                             </select>
+                             {lectureType === 'video' ? (
+                               <div>
+                                 <VideoS3Upload
+                                   onUploaded={url => setLectureFiles(prev => ({ ...prev, [sIdx]: url }))}
+                                 />
+                                 {lectureFiles[sIdx] && (
+                                   <div style={{ marginTop: '8px' }}>
+                                     <video src={lectureFiles[sIdx]} controls width="200" />
+                                     <small style={{ display: 'block', marginTop: '4px', color: '#28a745' }}>
+                                       ✓ Video đã upload thành công
+                                     </small>
+                                   </div>
+                                 )}
+                               </div>
+                             ) : (
+                               <textarea placeholder="Nội dung bài giảng" value={lectureText} onChange={(e)=>setLectureText(e.target.value)} rows={3}></textarea>
+                             )}
+                                                           <div className="button-group">
+                                <button 
+                                  className="btn primary" 
+                                  onClick={() => addLecture(sIdx)}
+                                  disabled={!lectureTitle.trim() || !lectureFiles[sIdx]}
+                                >
+                                  <i className="fas fa-plus"></i>
+                                  Thêm bài
+                                </button>
+                                <button 
+                                  className="btn small" 
+                                  onClick={() => {
+                                    setActiveSectionIdx(null);
+                                    setLectureTitle('');
+                                    // Không xóa file video khi hủy, chỉ đóng form
+                                  }}
+                                >
+                                  <i className="fas fa-times"></i>
+                                  Hủy
+                                </button>
+                              </div>
+                           </div>
+                         </div>
+                       ) : (
+                         <div>
+                           <button className="btn small" onClick={() => setActiveSectionIdx(sIdx)}>+ Thêm bài giảng</button>
+                                                       {/* Hiển thị video đã upload nhưng chưa thêm bài */}
+                            {lectureFiles[sIdx] && (
+                              <div className="video-preview-container">
+                                <div className="preview-header">
+                                  <i className="fas fa-check-circle"></i>
+                                  Video đã upload (chưa thêm bài)
+                                </div>
+                                <video src={lectureFiles[sIdx]} controls width="200" />
+                                <div className="preview-actions">
+                                  <button 
+                                    className="btn small continue" 
+                                    onClick={() => setActiveSectionIdx(sIdx)}
+                                  >
+                                    <i className="fas fa-plus"></i>
+                                    Tiếp tục thêm bài
+                                  </button>
+                                  <button 
+                                    className="btn small delete" 
+                                    onClick={() => {
+                                      setLectureFiles(prev => {
+                                        const newFiles = { ...prev };
+                                        delete newFiles[sIdx];
+                                        return newFiles;
+                                      });
+                                    }}
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                    Xóa video
+                                  </button>
+                                </div>
+                              </div>
                             )}
-                                                         <button 
-                               className="btn primary" 
-                               onClick={() => addLecture(sIdx)}
-                               disabled={!lectureTitle.trim() || !lectureFile}
-                             >
-                               Thêm bài
-                             </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button className="btn small" onClick={() => setActiveSectionIdx(sIdx)}>+ Thêm bài giảng</button>
-                      )}
+                         </div>
+                       )}
 
                       {/* Lectures list */}
                       <Droppable droppableId={`section-${sIdx}`} type="lecture">
@@ -491,42 +561,48 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                                             type="text"
                                             value={lec.title}
                                             onChange={(e) => updateLecture(sIdx, lIdx, { title: e.target.value })}
-                                            style={{ marginBottom: '8px', width: '100%' }}
+                                            placeholder="Tên bài giảng..."
                                           />
                                           <div>
                                             {lec.contentUrl && (
-                                              <video src={lec.contentUrl} controls width="200" style={{marginBottom: '8px'}} />
+                                              <video src={lec.contentUrl} controls width="200" />
                                             )}
                                             <VideoS3Upload
                                               onUploaded={url => updateLecture(sIdx, lIdx, { contentUrl: url })}
                                             />
-                                            <small style={{display: 'block', marginTop: '4px'}}>Upload video mới để thay thế</small>
+                                            <small style={{display: 'block', marginTop: '8px', color: '#666'}}>
+                                              <i className="fas fa-info-circle"></i> Upload video mới để thay thế
+                                            </small>
                                           </div>
-                                          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                          <div className="edit-actions">
                                             <button 
                                               className="btn small primary" 
                                               onClick={finishEditingLecture}
                                             >
+                                              <i className="fas fa-check"></i>
                                               Hoàn thành
                                             </button>
                                             <button 
                                               className="btn small" 
                                               onClick={cancelEditingLecture}
                                             >
+                                              <i className="fas fa-times"></i>
                                               Hủy
                                             </button>
                                           </div>
                                         </div>
                                       ) : (
                                         // Chế độ xem
-                                        <>
+                                        <div className="lecture-info">
                                           <span>{lec.title}</span>
                                           {lec.contentUrl ? (
-                                            <video src={lec.contentUrl} controls width="200" style={{marginTop:4}} />
+                                            <video src={lec.contentUrl} controls width="200" />
                                           ) : (
-                                            <small className="file-name">Chưa upload video</small>
+                                            <small className="file-name">
+                                              <i className="fas fa-exclamation-triangle"></i> Chưa upload video
+                                            </small>
                                           )}
-                                          <div style={{ display: 'flex', gap: '4px', marginTop: '8px' }}>
+                                          <div className="lecture-actions">
                                             <button
                                               className="btn small"
                                               style={{ color: '#1eb2a6', background: 'none', border: 'none' }}
@@ -544,7 +620,7 @@ const CurriculumBuilder = ({ course, setCourse }) => {
                                               <i className="fas fa-trash"></i>
                                             </button>
                                           </div>
-                                        </>
+                                        </div>
                                       )}
                                     </div>
                                   </div>
