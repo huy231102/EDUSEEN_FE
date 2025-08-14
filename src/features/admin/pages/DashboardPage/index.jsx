@@ -185,10 +185,10 @@ const DashboardPage = () => {
               <FaUserPlus />
             </span>
             <div className="dashboard-stat-content">
-              <div className="dashboard-stat-number">
-                <CountUp end={totalRegistrations} duration={1.2} />
-              </div>
-              <div className="dashboard-stat-label">Lượt đăng ký</div>
+                             <div className="dashboard-stat-number">
+                 <CountUp end={totalRegistrations} duration={1.2} />
+               </div>
+               <div className="dashboard-stat-label">Lượt đăng ký</div>
             </div>
           </motion.div>
         </Grid>
@@ -203,10 +203,10 @@ const DashboardPage = () => {
               <FaRegStar />
             </span>
             <div className="dashboard-stat-content">
-              <div className="dashboard-stat-number">
-                <CountUp end={totalReviews} duration={1.2} />
-              </div>
-              <div className="dashboard-stat-label">Lượt đánh giá</div>
+                             <div className="dashboard-stat-number">
+                 <CountUp end={totalReviews} duration={1.2} />
+               </div>
+               <div className="dashboard-stat-label">Lượt đánh giá</div>
             </div>
           </motion.div>
         </Grid>
@@ -237,10 +237,10 @@ const DashboardPage = () => {
               <FaBookOpen />
             </span>
             <div className="dashboard-stat-content">
-              <div className="dashboard-stat-number">
-                <CountUp end={newCoursesThisMonth} duration={1.2} />
-              </div>
-              <div className="dashboard-stat-label">Khóa học mới tháng này</div>
+                             <div className="dashboard-stat-number">
+                 <CountUp end={newCoursesThisMonth} duration={1.2} />
+               </div>
+               <div className="dashboard-stat-label">Khóa học mới tháng này</div>
             </div>
           </motion.div>
         </Grid>

@@ -95,9 +95,6 @@ const ProfilePage = () => {
               {formData.first_name} {formData.last_name}
             </h2>
             <p>@{user.username}</p>
-            <Link to="/my-courses" className="primary-btn" style={{ marginBottom: '10px' }}>
-              Khóa học của tôi
-            </Link>
             <button
               type="button"
               className="primary-btn change-password-btn"

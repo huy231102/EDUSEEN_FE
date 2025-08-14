@@ -30,7 +30,7 @@ const MyCoursesPage = () => {
     return (
       <div className="mycourses-empty">
         <h2>Bạn chưa đăng ký khóa học nào.</h2>
-        <button className="primary-btn" onClick={() => navigate('/courses')}>Khám phá khóa học</button>
+        <button className="primary-btn" onClick={() => navigate('/courses', { state: { scrollTo: 'courses-section' } })}>Khám phá khóa học</button>
       </div>
     );
   }

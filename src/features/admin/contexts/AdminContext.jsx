@@ -116,24 +116,6 @@ export const AdminProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch all data
-  const fetchAllData = useCallback(async () => {
-    setLoading(true);
-    try {
-      await Promise.all([
-        fetchUsers(),
-        fetchCourses(),
-        fetchCategories(),
-        fetchUserStatistics(),
-        fetchCourseStatistics()
-      ]);
-    } catch (error) {
-      console.error('Error fetching admin data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchUsers, fetchCourses, fetchCategories, fetchUserStatistics, fetchCourseStatistics]);
-
   // Update user
   const updateUser = useCallback(async (userId, userData) => {
     try {
@@ -234,7 +216,7 @@ export const AdminProvider = ({ children }) => {
 
   useEffect(() => {
     fetchAllData();
-  }, []);
+  }, [fetchUsers, fetchCourses, fetchCategories, fetchUserStatistics, fetchCourseStatistics]);
 
   const value = {
     users,
