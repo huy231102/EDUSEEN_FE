@@ -39,6 +39,117 @@
   width: 150px;
 }
 
+/* Dropdown/Select Box Styles */
+.course-management-filter-select .MuiSelect-root {
+  background-color: #ffffff;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.course-management-filter-select .MuiSelect-root:hover {
+  background-color: #f5f5f5;
+}
+
+.course-management-filter-select .MuiSelect-root.Mui-focused {
+  background-color: #e3f2fd;
+}
+
+.course-management-filter-select .MuiSelect-select {
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.course-management-filter-select .MuiSelect-select:focus {
+  background-color: transparent;
+}
+
+.course-management-filter-select .MuiOutlinedInput-root {
+  border-radius: 4px;
+}
+
+.course-management-filter-select .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: #1eb2a6;
+}
+
+.course-management-filter-select .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #1eb2a6;
+  border-width: 2px;
+}
+
+.course-management-filter-select .MuiSelect-icon {
+  color: #666;
+  transition: color 0.2s ease-in-out;
+}
+
+.course-management-filter-select .MuiSelect-root:hover .MuiSelect-icon {
+  color: #1eb2a6;
+}
+
+.course-management-filter-select .MuiSelect-root.Mui-focused .MuiSelect-icon {
+  color: #1eb2a6;
+}
+
+/* Dropdown Menu Styles */
+.MuiMenu-paper {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+.MuiMenu-list {
+  padding: 8px 0 !important;
+}
+
+.MuiMenuItem-root {
+  padding: 10px 16px !important;
+  font-size: 0.875rem !important;
+  color: #333 !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.MuiMenuItem-root:hover {
+  background-color: #f5f5f5 !important;
+  color: #1eb2a6 !important;
+}
+
+.MuiMenuItem-root.Mui-selected {
+  background-color: #e3f2fd !important;
+  color: #1eb2a6 !important;
+  font-weight: 600 !important;
+}
+
+.MuiMenuItem-root.Mui-selected:hover {
+  background-color: #bbdefb !important;
+}
+
+/* Search Field Styles */
+.course-management-search-field .MuiOutlinedInput-root {
+  border-radius: 4px;
+}
+
+.course-management-search-field .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: #1eb2a6;
+}
+
+.course-management-search-field .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #1eb2a6;
+  border-width: 2px;
+}
+
+.course-management-search-field .MuiInputAdornment-root {
+  color: #666;
+}
+
+.course-management-search-field .MuiOutlinedInput-root:hover .MuiInputAdornment-root {
+  color: #1eb2a6;
+}
+
+.course-management-search-field .MuiOutlinedInput-root.Mui-focused .MuiInputAdornment-root {
+  color: #1eb2a6;
+}
+
 /* Table Styles */
 .course-management-table {
   border-radius: 8px;
