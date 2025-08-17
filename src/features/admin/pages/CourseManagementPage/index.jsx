@@ -15,18 +15,11 @@ import api from "services/api";
 // Import CSS
 import './style.css';
 
-const statusColor = {
-  "Đã duyệt": "#4caf50",
-  "Chờ duyệt": "#ff9800",
-  "Đã khóa": "#f44336",
-};
-
-import { useAdmin } from "../../contexts/AdminContext";
+import { useAdmin } from "../../contexts/AdminContext.jsx";
 
 const CourseManagementPage = () => {
   const { courses, loading, fetchCourses, deleteCourse, toggleCourseStatus } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(8);
@@ -35,8 +28,34 @@ const CourseManagementPage = () => {
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
-    fetchCourses();
-  }, []);
+    const loadData = async () => {
+      try {
+        console.log('Đang tải dữ liệu khóa học...');
+        await fetchCourses();
+        console.log('Dữ liệu khóa học đã được tải:', courses);
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu khóa học:', error);
+        setToast({ open: true, message: 'Lỗi khi tải dữ liệu khóa học!', severity: 'error' });
+      }
+    };
+    loadData();
+  }, [fetchCourses]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Courses state updated:', courses);
+    console.log('Loading state:', loading);
+  }, [courses, loading]);
+
+  // Auto-hide toast
+  useEffect(() => {
+    if (toast.open) {
+      const timer = setTimeout(() => {
+        setToast(prev => ({ ...prev, open: false }));
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.open]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -86,23 +105,13 @@ const CourseManagementPage = () => {
     const matchesSearch = course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.teacher.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || course.status === statusFilter;
     const matchesCategory = !categoryFilter || course.category === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
+    return matchesSearch && matchesCategory;
   });
 
   const paginatedCourses = filteredCourses.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const uniqueCategories = [...new Set(courses.map(course => course.category))];
-
-  const getStatusChipClass = (status) => {
-    switch (status) {
-      case "Đã duyệt": return "course-status-chip course-status-approved";
-      case "Chờ duyệt": return "course-status-chip course-status-pending";
-      case "Đã khóa": return "course-status-chip course-status-locked";
-      default: return "course-status-chip";
-    }
-  };
 
   return (
     <Box>
@@ -137,22 +146,7 @@ const CourseManagementPage = () => {
             className="course-management-search-field"
           />
           
-          <TextField
-            select
-            label="Trạng thái"
-            variant="outlined"
-            size="small"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="course-management-filter-select"
-          >
-            <option value="">Tất cả</option>
-            <option value="Đã duyệt">Đã duyệt</option>
-            <option value="Chờ duyệt">Chờ duyệt</option>
-            <option value="Đã khóa">Đã khóa</option>
-          </TextField>
-
-          <TextField
+                     <TextField
             select
             label="Danh mục"
             variant="outlined"
@@ -178,7 +172,6 @@ const CourseManagementPage = () => {
                 <TableCell>Khóa học</TableCell>
                 <TableCell>Giáo viên</TableCell>
                 <TableCell>Danh mục</TableCell>
-                <TableCell>Trạng thái</TableCell>
                 <TableCell>Học viên</TableCell>
                 <TableCell>Đánh giá</TableCell>
                 <TableCell>Ngày tạo</TableCell>
@@ -186,7 +179,29 @@ const CourseManagementPage = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedCourses.map((course) => (
+                             {loading ? (
+                 <TableRow>
+                   <TableCell colSpan={7} align="center">
+                     <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+                       <Typography variant="body1">Đang tải dữ liệu...</Typography>
+                     </Box>
+                   </TableCell>
+                 </TableRow>
+               ) : paginatedCourses.length === 0 ? (
+                 <TableRow>
+                   <TableCell colSpan={7} align="center">
+                     <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" py={4}>
+                       <Typography variant="body1" color="textSecondary">
+                         {courses.length === 0 ? 'Không có khóa học nào' : 'Không tìm thấy khóa học phù hợp'}
+                       </Typography>
+                       <Typography variant="caption" color="textSecondary" mt={1}>
+                         {courses.length === 0 ? 'Hãy thử làm mới trang hoặc kiểm tra kết nối mạng' : 'Thử thay đổi bộ lọc tìm kiếm'}
+                       </Typography>
+                     </Box>
+                   </TableCell>
+                 </TableRow>
+              ) : (
+                paginatedCourses.map((course) => (
                 <TableRow key={course.id} hover>
                   <TableCell>
                     <Box className="course-info-cell">
@@ -213,21 +228,14 @@ const CourseManagementPage = () => {
                       <Typography variant="body2">{course.teacher}</Typography>
                     </Box>
                   </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={course.category}
-                      size="small"
-                      className="course-category-chip"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={course.status}
-                      size="small"
-                      className={getStatusChipClass(course.status)}
-                    />
-                  </TableCell>
-                  <TableCell>
+                                     <TableCell>
+                     <Chip
+                       label={course.category}
+                       size="small"
+                       className="course-category-chip"
+                     />
+                   </TableCell>
+                   <TableCell>
                     <Box className="course-students-cell">
                       <Typography variant="body2" className="course-students-count">
                         {course.students}
@@ -283,7 +291,8 @@ const CourseManagementPage = () => {
                     </Box>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -325,18 +334,14 @@ const CourseManagementPage = () => {
                     {selectedCourse.description}
                   </Typography>
                   <Box className="course-detail-chips">
-                    <Chip
-                      label={selectedCourse.category}
-                      className="course-category-chip"
-                    />
-                    <Chip
-                      label={selectedCourse.level}
-                      className="course-level-chip"
-                    />
-                    <Chip
-                      label={selectedCourse.status}
-                      className={getStatusChipClass(selectedCourse.status)}
-                    />
+                                         <Chip
+                       label={selectedCourse.category}
+                       className="course-category-chip"
+                     />
+                     <Chip
+                       label={selectedCourse.level}
+                       className="course-level-chip"
+                     />
                   </Box>
                 </Box>
               </Box>
@@ -412,6 +417,24 @@ const CourseManagementPage = () => {
           <Button onClick={handleCloseDetail}>Đóng</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Toast Notification */}
+      {toast.open && (
+        <Box
+          position="fixed"
+          top={20}
+          right={20}
+          zIndex={9999}
+          bgcolor={toast.severity === 'success' ? '#4caf50' : '#f44336'}
+          color="white"
+          px={3}
+          py={2}
+          borderRadius={1}
+          boxShadow={3}
+        >
+          <Typography variant="body2">{toast.message}</Typography>
+        </Box>
+      )}
     </Box>
   );
 };

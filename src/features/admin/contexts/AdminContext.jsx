@@ -51,8 +51,13 @@ export const AdminProvider = ({ children }) => {
   // Fetch courses
   const fetchCourses = useCallback(async () => {
     try {
+      console.log('Đang gọi API /api/admin/course...');
+      console.log('Auth token:', localStorage.getItem('authToken'));
       const response = await api.get("/api/admin/course");
+      console.log('Response từ API:', response);
+      
       const data = Array.isArray(response) ? response : (response?.data || []);
+      console.log('Data sau khi xử lý:', data);
       
       if (Array.isArray(data) && data.length > 0) {
         const mappedCourses = data.map(course => ({
@@ -72,12 +77,15 @@ export const AdminProvider = ({ children }) => {
           reviewCount: course.reviewCount || 0,
           thumbnailUrl: course.thumbnailUrl
         }));
+        console.log('Mapped courses:', mappedCourses);
         setCourses(mappedCourses);
       } else {
+        console.log('Không có dữ liệu khóa học hoặc dữ liệu rỗng');
         setCourses([]);
       }
     } catch (error) {
       console.error('Lỗi khi tải danh sách khóa học:', error);
+      console.error('Error details:', error.message);
       setCourses([]);
     }
   }, []);
@@ -214,9 +222,27 @@ export const AdminProvider = ({ children }) => {
     }
   }, [fetchCategories]);
 
+  // Fetch all data
+  const fetchAllData = useCallback(async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchUsers(),
+        fetchCourses(),
+        fetchCategories(),
+        fetchUserStatistics(),
+        fetchCourseStatistics()
+      ]);
+    } catch (error) {
+      console.error('Lỗi khi tải dữ liệu:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchUsers, fetchCourses, fetchCategories, fetchUserStatistics, fetchCourseStatistics]);
+
   useEffect(() => {
     fetchAllData();
-  }, [fetchUsers, fetchCourses, fetchCategories, fetchUserStatistics, fetchCourseStatistics]);
+  }, [fetchAllData]);
 
   const value = {
     users,
@@ -238,6 +264,7 @@ export const AdminProvider = ({ children }) => {
     createCategory: createCategoryHandler,
     updateCategory: updateCategoryHandler,
     deleteCategory: deleteCategoryHandler,
+    fetchAllData,
     refreshAll: fetchAllData
   };
 
