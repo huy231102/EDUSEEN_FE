@@ -37,8 +37,8 @@ const CategoriesList = () => {
               <Link to={`/category/${val.id}`} key={val.id}>
                 <div className='box'>
                   <div className='img'>
-                    <img src={`/images/courses/online/${val.cover}`} alt='' />
-                    <img src={`/images/courses/online/${val.hoverCover}`} alt='' className='show' />
+                    <img src={`${val.cover}`} alt='' />
+                    <img src={`${val.hoverCover}`} alt='' className='show' />
                   </div>
                   <h1>{val.name}</h1>
                   <span>{val.courseCount} khóa học</span>
