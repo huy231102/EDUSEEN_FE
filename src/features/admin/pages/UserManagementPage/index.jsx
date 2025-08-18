@@ -39,7 +39,7 @@ const UserManagementPage = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+  }, []);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -111,10 +111,52 @@ const UserManagementPage = () => {
   };
 
   const handleQuickToggleStatus = async (user) => {
+    // Business logic validation
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+    const isCurrentUser = user.id === currentUser.userId;
+    const isAdmin = user.role === "Quản trị viên";
+    const activeAdmins = users.filter(u => u.role === "Quản trị viên" && u.status === "Hoạt động").length;
+    
+    // Kiểm tra quy tắc khóa admin
+    if (isAdmin) {
+      // Không cho phép khóa chính mình
+      if (isCurrentUser) {
+        setToast({ 
+          open: true, 
+          message: 'Bạn không thể khóa tài khoản của chính mình!', 
+          severity: 'warning' 
+        });
+        return;
+      }
+      
+      // Kiểm tra nếu đây là admin cuối cùng
+      if (user.status === "Hoạt động" && activeAdmins <= 1) {
+        setToast({ 
+          open: true, 
+          message: 'Không thể khóa admin cuối cùng trong hệ thống!', 
+          severity: 'error' 
+        });
+        return;
+      }
+      
+      // Xác nhận đặc biệt khi khóa admin
+      const confirmMessage = user.status === "Hoạt động" 
+        ? `Bạn có chắc chắn muốn khóa tài khoản admin "${user.name}"? Hành động này có thể ảnh hưởng đến quyền quản trị hệ thống.`
+        : `Bạn có chắc chắn muốn mở khóa tài khoản admin "${user.name}"?`;
+      
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+    }
+    
     const result = await updateUser(user.id, { IsActive: user.status !== "Hoạt động" });
     if (result.success) {
       fetchUsers();
-      setToast({ open: true, message: 'Cập nhật trạng thái thành công!', severity: 'success' });
+      setToast({ 
+        open: true, 
+        message: `Cập nhật trạng thái ${user.status === "Hoạt động" ? "khóa" : "mở khóa"} thành công!`, 
+        severity: 'success' 
+      });
     } else {
       setToast({ open: true, message: 'Cập nhật trạng thái thất bại!', severity: 'error' });
     }
@@ -154,6 +196,14 @@ const UserManagementPage = () => {
     <Box>
       {/* Header Section */}
       <Box className="user-management-header">
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Quản lý người dùng
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            {users.filter(u => u.role === "Quản trị viên" && u.status === "Hoạt động").length} admin đang hoạt động
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<Refresh />}
@@ -265,7 +315,7 @@ const UserManagementPage = () => {
                   </TableCell>
                   <TableCell>
                     {user.lastActive !== "Chưa đăng nhập" 
-                      ? format(new Date(user.lastActive), 'dd/MM/yyyy HH:mm')
+                      ? format(new Date(user.lastActive), 'dd/MM/yyyy')
                       : user.lastActive
                     }
                   </TableCell>
@@ -289,12 +339,23 @@ const UserManagementPage = () => {
                           <Edit />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title={user.status === "Hoạt động" ? "Khóa tài khoản" : "Mở khóa tài khoản"}>
+                      <Tooltip title={
+                        user.role === "Quản trị viên" && user.status === "Hoạt động" 
+                          ? "Khóa tài khoản admin (Cần xác nhận đặc biệt)" 
+                          : user.status === "Hoạt động" 
+                            ? "Khóa tài khoản" 
+                            : "Mở khóa tài khoản"
+                      }>
                         <IconButton
                           size="small"
                           onClick={() => handleQuickToggleStatus(user)}
                           className={`user-action-btn ${user.status === "Hoạt động" ? 'lock' : 'unlock'}`}
-                          style={{ color: user.status === "Hoạt động" ? "#f44336" : "#4caf50" }}
+                          style={{ 
+                            color: user.status === "Hoạt động" ? "#f44336" : "#4caf50",
+                            opacity: user.role === "Quản trị viên" ? 0.8 : 1
+                          }}
+                          disabled={user.role === "Quản trị viên" && user.status === "Hoạt động" && 
+                                   users.filter(u => u.role === "Quản trị viên" && u.status === "Hoạt động").length <= 1}
                         >
                           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" fill="currentColor"/>
@@ -366,14 +427,14 @@ const UserManagementPage = () => {
                 <Box className="user-detail-field">
                   <Typography variant="subtitle2" className="user-detail-label">Ngày tham gia</Typography>
                   <Typography>
-                    {selectedUser.joined ? format(new Date(selectedUser.joined), 'dd/MM/yyyy HH:mm') : 'N/A'}
+                    {selectedUser.joined ? format(new Date(selectedUser.joined), 'dd/MM/yyyy') : 'N/A'}
                   </Typography>
                 </Box>
                 <Box className="user-detail-field">
                   <Typography variant="subtitle2" className="user-detail-label">Hoạt động cuối</Typography>
                   <Typography>
                     {selectedUser.lastActive !== "Chưa đăng nhập" 
-                      ? format(new Date(selectedUser.lastActive), 'dd/MM/yyyy HH:mm')
+                      ? format(new Date(selectedUser.lastActive), 'dd/MM/yyyy')
                       : selectedUser.lastActive
                     }
                   </Typography>

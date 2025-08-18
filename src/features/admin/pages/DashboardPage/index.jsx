@@ -10,7 +10,6 @@ import { Info } from "@material-ui/icons";
 import './style.css';
 
 import { useAdmin } from "../../contexts/AdminContext";
-import api from "services/api";
 
 const DashboardPage = () => {
   const { users, courses, userStatistics, courseStatistics } = useAdmin();
@@ -29,21 +28,19 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
-    const fetchChartData = async () => {
+    const processChartData = () => {
       try {
-        // Lấy user statistics
-        const userStats = await api.get('/api/admin/user/statistics');
-        // Lấy course statistics  
-        const courseStats = await api.get('/api/admin/course/statistics');
-        // Lấy danh sách courses từ API
-        const coursesList = await api.get('/api/admin/course');
+        // Sử dụng data từ AdminContext thay vì gọi API lại
+        const userStats = userStatistics;
+        const courseStats = courseStatistics;
+        const coursesList = courses;
         
         console.log('userStats:', userStats);
         console.log('courseStats:', courseStats);
         console.log('coursesList:', coursesList);
         
         // Xử lý dữ liệu phân bố vai trò user
-        const roleDistribution = userStats.usersByRole || [];
+        const roleDistribution = userStats?.usersByRole || [];
         const pieData = roleDistribution.map(role => {
           // Map tên vai trò từ tiếng Anh sang tiếng Việt
           let roleName = role.roleName;
@@ -66,10 +63,10 @@ const DashboardPage = () => {
         ];
         
         // Map dữ liệu user (nếu không có UserRegistrationsByMonth thì dùng mock hoặc 0)
-        const userByMonth = userStats.UserRegistrationsByMonth || userStats.userRegistrationsByMonth || [];
+        const userByMonth = userStats?.UserRegistrationsByMonth || userStats?.userRegistrationsByMonth || [];
         
-        // Map dữ liệu course từ monthlyStats
-        const courseByMonth = courseStats.monthlyStats || courseStats.MonthlyStats || [];
+        // Tính toán số khóa học mới theo tháng từ danh sách courses
+        const currentYear = new Date().getFullYear();
         
         // Tạo chart data
         const chartData = months.map(m => {
@@ -83,21 +80,13 @@ const DashboardPage = () => {
             userCount = userData ? (userData.Count || userData.count || 0) : 0;
           }
           
-          // Tìm course count cho tháng này
-          let courseCount = 0;
-          if (courseByMonth.length > 0) {
-            // Map tháng T1-T12 sang format 2025-01, 2025-02, etc.
-            const currentYear = new Date().getFullYear();
-            const monthNumber = m.substring(1); // Lấy số từ T1 -> 1
-            const backendMonthFormat = `${currentYear}-${monthNumber.padStart(2, '0')}`;
-            
-            const courseData = courseByMonth.find(c => 
-              (c.Month || c.month) === backendMonthFormat ||
-              (c.Month || c.month) === m ||
-              (c.Month || c.month) === `Th${monthNumber}`
-            );
-            courseCount = courseData ? (courseData.NewCourses || courseData.newCourses || 0) : 0;
-          }
+          // Tính số khóa học mới trong tháng này từ danh sách courses
+          const monthNumber = parseInt(m.substring(1)); // Lấy số từ T1 -> 1
+          const courseCount = coursesList.filter(course => {
+            if (!course.createdAt) return false;
+            const courseDate = new Date(course.createdAt);
+            return courseDate.getMonth() + 1 === monthNumber && courseDate.getFullYear() === currentYear;
+          }).length;
           
           return {
             name: m,
@@ -109,12 +98,12 @@ const DashboardPage = () => {
         console.log('chartData:', chartData);
         setChartData(chartData);
         
-        // Top courses từ API
+        // Top courses từ data đã có
         const sortedCourses = [...coursesList]
           .map(c => ({
             ...c,
-            studentCount: c.studentCount || 0,
-            courseName: c.title || c.name || ''
+            studentCount: c.students || 0,
+            courseName: c.name || ''
           }))
           .sort((a, b) => b.studentCount - a.studentCount)
           .slice(0, 5);
@@ -122,17 +111,36 @@ const DashboardPage = () => {
         console.log('sortedCourses:', sortedCourses);
         setTopCourses(sortedCourses);
       } catch (err) {
-        console.error('Error fetching chart data:', err);
+        console.error('Error processing chart data:', err);
         setChartData([]);
         setTopCourses([]);
         setUserRoleData([]);
       }
     };
-    fetchChartData();
-  }, []);
+    
+    // Chỉ xử lý data khi có đủ data từ AdminContext
+    if (userStatistics && courseStatistics && courses) {
+      processChartData();
+    }
+  }, [userStatistics, courseStatistics, courses]);
 
   const newUsersThisMonth = userStatistics?.newUsersThisMonth || 0;
   const pendingCourses = courseStatistics?.pendingCourses || 0;
+  
+  // Tính tổng số đánh giá từ danh sách courses
+  const totalReviews = courses.reduce((total, course) => total + (course.reviewCount || 0), 0);
+  
+  // Tính tổng số lượt đăng ký từ danh sách courses
+  const totalRegistrations = courses.reduce((total, course) => total + (course.students || 0), 0);
+  
+  // Tính số khóa học mới trong tháng này
+  const currentMonth = new Date().getMonth() + 1; // Tháng hiện tại (1-12)
+  const currentYear = new Date().getFullYear();
+  const newCoursesThisMonth = courses.filter(course => {
+    if (!course.createdAt) return false;
+    const courseDate = new Date(course.createdAt);
+    return courseDate.getMonth() + 1 === currentMonth && courseDate.getFullYear() === currentYear;
+  }).length;
 
   return (
     <Box className="dashboard-container">
@@ -177,10 +185,10 @@ const DashboardPage = () => {
               <FaUserPlus />
             </span>
             <div className="dashboard-stat-content">
-              <div className="dashboard-stat-number">
-                <CountUp end={3} duration={1.2} />
-              </div>
-              <div className="dashboard-stat-label">Lượt đăng ký</div>
+                             <div className="dashboard-stat-number">
+                 <CountUp end={totalRegistrations} duration={1.2} />
+               </div>
+               <div className="dashboard-stat-label">Lượt đăng ký</div>
             </div>
           </motion.div>
         </Grid>
@@ -195,10 +203,10 @@ const DashboardPage = () => {
               <FaRegStar />
             </span>
             <div className="dashboard-stat-content">
-              <div className="dashboard-stat-number">
-                <CountUp end={0} duration={1.2} />
-              </div>
-              <div className="dashboard-stat-label">Lượt đánh giá</div>
+                             <div className="dashboard-stat-number">
+                 <CountUp end={totalReviews} duration={1.2} />
+               </div>
+               <div className="dashboard-stat-label">Lượt đánh giá</div>
             </div>
           </motion.div>
         </Grid>
@@ -229,10 +237,10 @@ const DashboardPage = () => {
               <FaBookOpen />
             </span>
             <div className="dashboard-stat-content">
-              <div className="dashboard-stat-number">
-                <CountUp end={pendingCourses} duration={1.2} />
-              </div>
-              <div className="dashboard-stat-label">Khóa học mới tháng này</div>
+                             <div className="dashboard-stat-number">
+                 <CountUp end={newCoursesThisMonth} duration={1.2} />
+               </div>
+               <div className="dashboard-stat-label">Khóa học mới tháng này</div>
             </div>
           </motion.div>
         </Grid>
