@@ -37,7 +37,7 @@ const MyCoursesPage = () => {
 
   // Tính progress % dựa vào 2 trường mới
   const progressMap = Object.fromEntries(
-    myCourses.map((c) => [c.courseId, c.totalLectures > 0 ? Math.round((c.completedLectures / c.totalLectures) * 100) : 0])
+    myCourses.map((c) => [c.courseId, c.TotalLectures > 0 ? Math.round((c.CompletedLectures / c.TotalLectures) * 100) : 0])
   );
 
   // Nếu muốn hiển thị danh sách yêu thích, cần fetch thêm từ API khác
