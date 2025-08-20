@@ -50,10 +50,19 @@ const VideoS3Upload = ({ onUploaded, defaultUrl }) => {
 
   return (
     <div>
-      <input type="file" accept="video/*" onChange={handleFileInput} />
-      {progress > 0 && progress < 100 && <div>Đang upload: {progress}%</div>}
-      {videoUrl && (
-        <video src={videoUrl} controls width="400" style={{marginTop: 8}} />
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
+        <input
+          type="file"
+          accept="video/*"
+          onChange={handleFileInput}
+          style={{ flexGrow: 0, width: 300, marginBottom: 0 }}
+        />
+        {videoUrl && (
+          <video src={videoUrl} controls width="620" />
+        )}
+      </div>
+      {progress > 0 && progress < 100 && (
+        <div style={{ marginTop: 8 }}>Đang upload: {progress}%</div>
       )}
     </div>
   );

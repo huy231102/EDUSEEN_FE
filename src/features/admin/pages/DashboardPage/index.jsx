@@ -269,62 +269,63 @@ const DashboardPage = () => {
         </Paper>
       </Box>
 
-      {/* Pie Chart: Phân bố vai trò user */}
-      <Box className="dashboard-pie-chart-section">
-        <Paper className="dashboard-pie-chart-card">
-          <Typography className="dashboard-pie-chart-title">
-            <FaUserAlt className="dashboard-pie-chart-icon" />
-            Phân bố vai trò người dùng
-          </Typography>
-          <Box className="dashboard-chart-container">
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={userRoleData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percentage }) => `${name}: ${percentage.toFixed(1)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {userRoleData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={roleColors[entry.name] || ['#1eb2a6', '#ff9800', '#f44336', '#9c27b0'][index % 4]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value, name) => [value, name]} />
-              </PieChart>
-            </ResponsiveContainer>
-          </Box>
-        </Paper>
-      </Box>
+      {/* Pie Chart + Top Courses on one row */}
+      <Box className="dashboard-charts-row">
+        <Box className="dashboard-chart-col">
+          <Paper className="dashboard-pie-chart-card">
+            <Typography className="dashboard-pie-chart-title">
+              <FaUserAlt className="dashboard-pie-chart-icon" />
+              Phân bố vai trò người dùng
+            </Typography>
+            <Box className="dashboard-chart-container">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={userRoleData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percentage }) => `${name}: ${percentage.toFixed(1)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {userRoleData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={roleColors[entry.name] || ['#1eb2a6', '#ff9800', '#f44336', '#9c27b0'][index % 4]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value, name) => [value, name]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </Box>
+          </Paper>
+        </Box>
 
-      {/* Bar Chart: Top 5 khóa học đông học viên nhất */}
-      <Box className="dashboard-top-courses">
-        <Paper className="dashboard-top-courses-card">
-          <Typography className="dashboard-top-courses-title">
-            <FaBookOpen className="dashboard-top-courses-icon" />
-            Top 5 khóa học đông học viên nhất
-          </Typography>
-          <Box className="dashboard-chart-container">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={topCourses.map(c => ({
-                  name: c.courseName,
-                  soHocVien: c.studentCount
-                }))}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" />
-                <Tooltip />
-                <Bar dataKey="soHocVien" fill="#1eb2a6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Box>
-        </Paper>
+        <Box className="dashboard-chart-col">
+          <Paper className="dashboard-top-courses-card">
+            <Typography className="dashboard-top-courses-title">
+              <FaBookOpen className="dashboard-top-courses-icon" />
+              Top 5 khóa học đông học viên nhất
+            </Typography>
+            <Box className="dashboard-chart-container">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={topCourses.map(c => ({
+                    name: c.courseName,
+                    soHocVien: c.studentCount
+                  }))}
+                  layout="vertical"
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" />
+                  <Tooltip />
+                  <Bar dataKey="soHocVien" fill="#1eb2a6" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </Paper>
+        </Box>
       </Box>
     </Box>
   );
