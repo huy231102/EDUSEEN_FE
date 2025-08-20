@@ -31,7 +31,7 @@ const MyCourseCardItem = ({ course, progress }) => {
           <div className='details'>
             <div className='box'>
               <div className='dimg'>
-                <img src={course.teacherAvatarUrl || "/images/team/t1.webp"} alt={course.teacherName} />
+                <img src={course.teacherAvatarUrl} alt={course.teacherName} />
               </div>
               <div className='para'>
                 <h4>{course.teacherName}</h4>
@@ -39,15 +39,15 @@ const MyCourseCardItem = ({ course, progress }) => {
             </div>
             <span>{course.totalTime} giờ</span>
           </div>
+          {/* Hiển thị số bài giảng đã hoàn thành */}
+          <div style={{marginTop: 8, fontSize: 14}}>
+            {typeof course.CompletedLectures === 'number' && typeof course.TotalLectures === 'number' && (
+              <span>Bài giảng đã hoàn thành: {course.CompletedLectures}/{course.TotalLectures}</span>
+            )}
+          </div>
         </div>
       </div>
       <div className='progress-display'>
-        {/* Hiển thị số bài giảng đã hoàn thành */}
-        <div style={{marginBottom: 8, fontSize: 14}}>
-            {typeof course.completedLectures === 'number' && typeof course.totalLectures === 'number' && (
-              <span class="progress-text">Bài giảng đã hoàn thành: {course.completedLectures}/{course.totalLectures}</span>
-            )}
-          </div>
         <div className='progress-bar-bg'>
           <div
             className='progress-bar-fill'
