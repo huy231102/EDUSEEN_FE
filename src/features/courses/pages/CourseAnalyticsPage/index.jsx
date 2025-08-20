@@ -89,7 +89,8 @@ const CourseAnalyticsPage = () => {
   };
 
   return (
-    <div className="analytics-page course-analytics-page">
+    <section className="course-analytics-page">
+      <div className="analytics-container">
       <Link to="/teacher/dashboard" className="back-link">
         <i className="fas fa-arrow-left"></i> Quay lại bảng điều khiển
       </Link>
@@ -216,6 +217,7 @@ const CourseAnalyticsPage = () => {
         assignmentGrades={selectedStudent?.assignmentGrades}
       />
     </div>
+    </section>
   );
 };
 
