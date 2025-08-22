@@ -305,7 +305,6 @@ const CourseDetailPage = () => {
               </div>
               <div className='stat-item'>
                 <i className='fa fa-clock-o'></i>
-                <span>{course.totalTime} giờ</span>
               </div>
             </div>
 

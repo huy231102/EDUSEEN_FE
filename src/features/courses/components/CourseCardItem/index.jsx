@@ -68,7 +68,6 @@ const CourseCardItem = ({ course }) => {
                 <h4>{course.trainerName}</h4>
               </div>
             </div>
-            <span>{course.totalTime} giờ</span>
           </div>
         </div>
       </div>

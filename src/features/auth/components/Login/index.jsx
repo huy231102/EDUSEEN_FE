@@ -84,7 +84,7 @@ const LoginForm = ({ onForgotPassword }) => {
 
   return (
     <form className="auth-form" onSubmit={handleLogin}>
-      <div className="form-group">
+      <div>
         <input
           type="email"
           placeholder="Email"
@@ -94,7 +94,7 @@ const LoginForm = ({ onForgotPassword }) => {
           autoComplete="off"
         />
       </div>
-      <div className="form-group password-group">
+      <div className="password-group">
         <input
           type={showPassword ? 'text' : 'password'}
           placeholder="Mật khẩu"

@@ -78,11 +78,8 @@ const CourseListPage = () => {
       case 'rating_desc':
         sorted.sort((a, b) => b.rating - a.rating);
         break;
-      case 'duration_desc':
-        sorted.sort((a, b) => b.totalTime - a.totalTime);
-        break;
-      case 'duration_asc':
-        sorted.sort((a, b) => a.totalTime - b.totalTime);
+      case 'rating_asc':
+        sorted.sort((a, b) => a.rating - b.rating);
         break;
       default:
         sorted.sort((a, b) => a.id - b.id);

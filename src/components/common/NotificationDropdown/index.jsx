@@ -19,8 +19,7 @@ const NotificationDropdown = () => {
     markAllAsRead,
     deleteNotification,
     deleteMultipleNotifications,
-    deleteAllNotifications,
-    createTestData
+    deleteAllNotifications
   } = useNotifications();
   
   const [isOpen, setIsOpen] = useState(false);
@@ -80,16 +79,6 @@ const NotificationDropdown = () => {
   // Ngăn chặn dropdown đóng khi click bên trong
   const handleDropdownClick = (e) => {
     e.stopPropagation();
-  };
-
-  const handleCreateTestData = async () => {
-    try {
-      await createTestData();
-      showToastMessage('Đã tạo dữ liệu test thành công', 'success');
-    } catch (error) {
-      console.error('Lỗi khi tạo dữ liệu test:', error);
-      showToastMessage('Lỗi khi tạo dữ liệu test', 'error');
-    }
   };
 
   const handleMarkAsRead = async (notificationId) => {
@@ -234,15 +223,6 @@ const NotificationDropdown = () => {
                 )}
               </div>
               <div className="notification-actions">
-                {notifications.length === 0 && (
-                  <button 
-                    className="action-btn test-data-btn"
-                    onClick={handleCreateTestData}
-                    title="Tạo dữ liệu test"
-                  >
-                    <i className="fa fa-plus"></i>
-                  </button>
-                )}
                 {notifications.length > 0 && (
                   <>
                     {hasSelectedUnread && (
@@ -275,12 +255,6 @@ const NotificationDropdown = () => {
               <div className="notification-empty">
                 <i className="fa fa-bell-slash"></i>
                 <span>Không có thông báo</span>
-                <button 
-                  className="create-test-data-btn"
-                  onClick={handleCreateTestData}
-                >
-                  Tạo dữ liệu test
-                </button>
               </div>
             ) : (
               <div className="notification-list">
