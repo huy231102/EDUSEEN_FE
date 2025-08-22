@@ -35,9 +35,8 @@ const CoursesList = ({
                   <div className="sort-control">
                     <select value={sortOption} onChange={(e) => setSortOption(e.target.value)}>
                       <option value="default">Sắp xếp mặc định</option>
-                      <option value="rating_desc">Đánh giá cao nhất</option>
-                      <option value="duration_desc">Thời lượng: Nhiều nhất</option>
-                      <option value="duration_asc">Thời lượng: Ít nhất</option>
+                      <option value="rating_desc">Đánh giá từ cao đến thấp</option>
+                      <option value="rating_asc">Đánh giá từ thấp đến cao</option>
                     </select>
                   </div>
                 </div>

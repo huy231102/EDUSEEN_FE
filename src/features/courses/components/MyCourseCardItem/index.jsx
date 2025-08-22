@@ -37,7 +37,6 @@ const MyCourseCardItem = ({ course, progress }) => {
                 <h4>{course.teacherName}</h4>
               </div>
             </div>
-            <span>{course.totalTime} giờ</span>
           </div>
           {/* Hiển thị số bài giảng đã hoàn thành */}
           <div style={{marginTop: 8, fontSize: 14}}>

@@ -139,7 +139,7 @@ const RegisterForm = () => {
 
   return (
     <form className="auth-form" onSubmit={handleRegister}>
-      <div className="form-group">
+      <div>
         <input
           type="text"
           placeholder="Tên người dùng"
@@ -149,7 +149,7 @@ const RegisterForm = () => {
           autoComplete="off"
         />
       </div>
-      <div className="form-group">
+      <div>
         <input
           type="email"
           placeholder="Email"
@@ -159,7 +159,7 @@ const RegisterForm = () => {
           autoComplete="off"
         />
       </div>
-      <div className="form-group password-group">
+      <div className="password-group">
         <input
           type={showPassword ? 'text' : 'password'}
           placeholder="Mật khẩu"
@@ -173,7 +173,7 @@ const RegisterForm = () => {
           onClick={() => setShowPassword(!showPassword)}
         ></i>
       </div>
-      <div className="form-group password-group">
+      <div className="password-group">
         <input
           type={showConfirmPassword ? 'text' : 'password'}
           placeholder="Nhập lại mật khẩu"

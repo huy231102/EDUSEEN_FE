@@ -34,6 +34,7 @@ const CourseContentPage = () => {
   const [assignmentLoading, setAssignmentLoading] = useState(false);
   const [submissionDetail, setSubmissionDetail] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [showCompletionNotice, setShowCompletionNotice] = useState(true);
 
   useEffect(() => {
     if (!course) {
@@ -152,6 +153,7 @@ const CourseContentPage = () => {
             dueDate: data.dueDate,
             maxScore: 10, // Giá trị mặc định, có thể cập nhật sau
             score: data.grade,
+            feedback: data.feedback,
             attachments: [], // Có thể cập nhật sau nếu có attachment
             comments: [],
             // Thêm các trường mới từ API response
@@ -225,6 +227,14 @@ const CourseContentPage = () => {
 
   const closeImagePreview = () => {
     setPreviewImage(null);
+  };
+
+  // Hàm kiểm tra xem bài tập có quá hạn hay không
+  const isAssignmentOverdue = () => {
+    if (!assignment?.dueDate) return false;
+    const now = new Date();
+    const dueDate = new Date(assignment.dueDate);
+    return now > dueDate;
   };
 
   const handleSubmit = async () => {
@@ -367,7 +377,7 @@ const CourseContentPage = () => {
                       src={currentLecture.contentUrl}
                       controls
                       width="100%"
-                      style={{ maxHeight: 400, background: '#000' }}
+                      style={{ height: '100%', background: '#000' }}
                       onEnded={() => {
                         setVideoCompleted(true);
                         // Chỉ tự động chuyển sang bài tập nếu lecture chưa hoàn thành
@@ -418,7 +428,7 @@ const CourseContentPage = () => {
                       
                       <div className="assignment-description">
                         <h3><i className="fa fa-info-circle"></i> Yêu cầu bài tập</h3>
-                        <p>{assignment?.description || 'Đang tải mô tả bài tập...'}</p>
+                        <p>{assignment?.description || 'Không có mô tả cho bài tập này'}</p>
                         
                         {/* Thông tin bổ sung về bài tập */}
                         {assignment && (
@@ -487,6 +497,11 @@ const CourseContentPage = () => {
                             <div className="submission-disabled-notice">
                               <i className="fa fa-lock"></i>
                               <span>Không thể nộp bài vì bài tập đã được chấm điểm</span>
+                            </div>
+                          ) : isAssignmentOverdue() ? (
+                            <div className="submission-disabled-notice">
+                              <i className="fa fa-clock-o"></i>
+                              <span>Không thể nộp bài vì đã quá hạn nộp bài tập</span>
                             </div>
                           ) : (
                             <button
@@ -613,12 +628,12 @@ const CourseContentPage = () => {
                               </div>
                             )}
                             {/* Nhận xét của giáo viên */}
-                            {submissionDetail?.feedback && (
+                            {(submissionDetail?.feedback || assignment?.feedback) && (
                               <div className="teacher-comment">
-                                <i className="fa fa-comments"></i> Nhận xét của giáo viên: <span>{submissionDetail.feedback}</span>
+                                <i className="fa fa-comments"></i> Nhận xét của giáo viên: <span>{submissionDetail?.feedback || assignment?.feedback}</span>
                               </div>
                             )}
-                            {!submissionDetail?.feedback && assignment.submissionStatus === 'Đã chấm điểm' && (
+                            {!submissionDetail?.feedback && !assignment?.feedback && assignment.submissionStatus === 'Đã chấm điểm' && (
                               <div className="teacher-comment no-feedback">
                                 <i className="fa fa-comments"></i> Giáo viên chưa để lại nhận xét
                               </div>
@@ -648,15 +663,19 @@ const CourseContentPage = () => {
         )}
 
         {/* Hiển thị thông báo hoàn thành khóa học nếu tất cả lecture đã hoàn thành */}
-        {currentLecture && location.state?.nextLecture?.isCompleted && (
+        {currentLecture && location.state?.nextLecture?.isCompleted && showCompletionNotice && (
           <div className="course-completion-notice">
             <div className="completion-content">
+              <button 
+                className="close-completion-btn" 
+                onClick={() => setShowCompletionNotice(false)}
+                title="Đóng thông báo"
+              >
+                <i className="fa fa-times" style={{color:'#ed4545', animation:'none', fontSize: '30px'}}></i>
+              </button>
               <i className="fa fa-trophy"></i>
               <h3>Chúc mừng!</h3>
               <p>Bạn đã hoàn thành tất cả bài giảng trong khóa học này.</p>
-              <Link to={`/courses/${courseId}`} className="back-to-course-btn">
-                <i className="fa fa-arrow-left"></i> Quay lại trang chi tiết khóa học
-              </Link>
             </div>
           </div>
         )}
