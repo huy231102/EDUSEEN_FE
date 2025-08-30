@@ -2,6 +2,11 @@ body, html, #root {
   overflow-x: hidden !important;
 }
 
+/* Lớp khóa cuộn toàn trang */
+.no-scroll {
+  overflow: hidden !important;
+}
+
 /* General Layout */
 .course-content-page {
   display: flex;

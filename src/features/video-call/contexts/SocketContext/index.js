@@ -1,266 +1,130 @@
 import React, { createContext, useState, useRef, useEffect } from 'react';
-import { io } from 'socket.io-client';
-import Peer from 'simple-peer';
+import io from 'socket.io-client';
 
-const SocketContext = createContext();
+// Khởi tạo Context
+export const SocketContext = createContext();
 
-const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000';
+// Xác định protocol và host cho Socket.IO (HTTPS/WSS hoặc HTTP/WS)
+const defaultProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+const socketHost = process.env.REACT_APP_SOCKET_HOST || window.location.hostname;
+const socketPort = process.env.REACT_APP_SOCKET_PORT || '5000';
+const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL || `${defaultProtocol}://${socketHost}:${socketPort}`;
+console.log(`SocketContext: connecting to Socket.IO at ${SOCKET_SERVER_URL}`);
 
-const peerConfig = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-  ],
-};
-
-const ContextProvider = ({ children }) => {
+export const ContextProvider = ({ children }) => {
+  // State
+  const [socket, setSocket] = useState(null);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [me, setMe] = useState('');
+  const [name, setName] = useState('');
+  const [stream, setStream] = useState();
   const [callAccepted, setCallAccepted] = useState(false);
   const [callEnded, setCallEnded] = useState(false);
-  const [stream, setStream] = useState();
-  const [name, setName] = useState('');
   const [call, setCall] = useState({});
-  const [me, setMe] = useState('');
   const [partnerName, setPartnerName] = useState('');
-  const [callPartnerId, setCallPartnerId] = useState('');
   const [subtitles, setSubtitles] = useState('');
-  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
-  const callAcceptedCallback = useRef();
-  const socketAIRef = useRef(null);
-  const socketRef = useRef(null);
 
-  // Khởi tạo socket connection chỉ khi cần thiết
+  // Khởi tạo socket khi cần
   const initializeSocket = () => {
-    if (!socketRef.current) {
-      socketRef.current = io(serverUrl);
-      
-      socketRef.current.on('connect', () => {
+    if (!socket) {
+      const newSocket = io(SOCKET_SERVER_URL, {
+        transports: ['websocket'],
+      });
+      setSocket(newSocket);
+
+      newSocket.on('connect', () => {
         setIsSocketConnected(true);
+        setMe(newSocket.id);
       });
 
-      socketRef.current.on('disconnect', () => {
+      newSocket.on('disconnect', () => {
         setIsSocketConnected(false);
       });
 
-      socketRef.current.on('me', (id) => {
-        setMe(id);
-      });
-
-      socketRef.current.on('callUser', ({ from, name: callerName, signal }) => {
+      // Lắng nghe sự kiện cuộc gọi đến
+      newSocket.on('callUser', ({ from, name: callerName, signal }) => {
         setCall({ isReceivingCall: true, from, name: callerName, signal });
       });
-
-      socketRef.current.on('callAccepted', (data) => {
-        if (callAcceptedCallback.current) {
-          callAcceptedCallback.current(data);
-        }
-      });
-
-      socketRef.current.on('callEnded', () => {
-        leaveCall();
-      });
-
-      socketRef.current.on('iceCandidateReceived', ({ candidate }) => {
-        if (connectionRef.current) {
-          connectionRef.current.signal({ candidate });
-        }
-      });
     }
-    return socketRef.current;
   };
 
-  // Cleanup socket connection
+  // Thêm hàm ngắt kết nối WebSocket/Socket.IO
   const cleanupSocket = () => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
+    if (socket) {
+      socket.disconnect();
+      setSocket(null);
       setIsSocketConnected(false);
     }
   };
 
-  const leaveCall = () => {
-    setCallEnded(true);
-    setCallAccepted(false);
-    setCall({});
-    setPartnerName('');
-
-    if (callPartnerId && socketRef.current) {
-      socketRef.current.emit('hangup', { to: callPartnerId });
-    }
-
-    callAcceptedCallback.current = null;
-    setCallPartnerId('');
-
-    if (connectionRef.current) {
-      connectionRef.current.destroy();
-    }
-
-    if (userVideo.current) {
-      userVideo.current.srcObject = null;
-    }
-  };
-
-  // Chỉ khởi tạo media stream khi component mount
+  // Yêu cầu quyền truy cập camera + mic
   useEffect(() => {
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then((currentStream) => {
         setStream(currentStream);
-
         if (myVideo.current) {
-            myVideo.current.srcObject = currentStream;
+          myVideo.current.srcObject = currentStream;
         }
       })
-      .catch((err) => {
-        // console.error('Error getting media devices.', err);
-        // alert('You denied access to your camera and microphone. Please allow access to use the video chat.');
-      });
-
-    // Cleanup khi component unmount
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      cleanupSocket();
-    };
+      .catch((err) => console.error('getUserMedia error:', err));
   }, []);
-
-  // Khởi tạo AI WebSocket chỉ khi cần thiết
-  useEffect(() => {
-    socketAIRef.current = new WebSocket('ws://localhost:8001/ws/translate');
-
-    socketAIRef.current.onopen = () => {
-      // console.log('AI WebSocket connection established');
-    };
-
-    socketAIRef.current.onmessage = (event) => {
-      setSubtitles(event.data);
-    };
-
-    socketAIRef.current.onerror = (error) => {
-      // console.error('AI WebSocket error:', error);
-      setSubtitles('AI Server Connection Error');
-    };
-
-    socketAIRef.current.onclose = () => {
-      // console.log('AI WebSocket connection closed');
-    };
-
-    return () => {
-      if (socketAIRef.current) {
-        socketAIRef.current.close();
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    let frameSender;
-
-    if (stream) {
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      
-      frameSender = setInterval(() => {
-        if (myVideo.current && myVideo.current.readyState === 4 && socketAIRef.current && socketAIRef.current.readyState === WebSocket.OPEN) {
-          canvas.width = myVideo.current.videoWidth;
-          canvas.height = myVideo.current.videoHeight;
-          
-          if (canvas.width > 0 && canvas.height > 0) {
-            context.drawImage(myVideo.current, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL('image/jpeg', 0.5); 
-            socketAIRef.current.send(imageData);
-          }
-        }
-      }, 500);
-    }
-
-    return () => {
-      if (frameSender) {
-        clearInterval(frameSender);
-      }
-    };
-  }, [stream]);
 
   const answerCall = () => {
-    const socket = initializeSocket();
     setCallAccepted(true);
-    setCallEnded(false);
-    setPartnerName(call.name);
-    setCallPartnerId(call.from);
-
-    const peer = new Peer({ initiator: false, trickle: true, stream, config: peerConfig });
-
-    peer.on('signal', (data) => {
-      if (data.type === 'answer') {
-        socket.emit('answerCall', { signal: data, to: call.from, name });
-      } else if (data.candidate) {
-        socket.emit('sendIceCandidate', { to: call.from, candidate: data });
-      }
-    });
-
-    peer.on('stream', (currentStream) => {
-      userVideo.current.srcObject = currentStream;
-    });
-
-    peer.signal(call.signal);
-
-    connectionRef.current = peer;
+    // Ở đây bạn có thể thêm logic peer connection
   };
 
-  const callUser = (id, currentUserName) => {
-    const socket = initializeSocket();
-    const peer = new Peer({ initiator: true, trickle: true, stream, config: peerConfig });
-    setCallEnded(false);
-    setCallPartnerId(id);
-
-    peer.on('signal', (data) => {
-      if (data.type === 'offer') {
-        socket.emit('callUser', { userToCall: id, signalData: data, from: me, name: currentUserName });
-      } else if (data.candidate) {
-        socket.emit('sendIceCandidate', { to: id, candidate: data });
-      }
-    });
-
-    peer.on('stream', (currentStream) => {
-      userVideo.current.srcObject = currentStream;
-    });
-
-    callAcceptedCallback.current = (data) => {
-      setCallAccepted(true);
-      setPartnerName(data.name);
-      peer.signal(data.signal);
-      callAcceptedCallback.current = null;
-    };
-
-    connectionRef.current = peer;
+  const leaveCall = () => {
+    setCallEnded(true);
+    if (connectionRef.current) connectionRef.current.close();
+    window.location.reload();
   };
+
+  const callUser = (id, callerName) => {
+    if (!socket) initializeSocket();
+    if (!socket) return;
+
+    setPartnerName(callerName);
+    // Gửi sự kiện gọi tới người nhận
+    socket.emit('callUser', { userToCall: id, signalData: {}, from: socket.id, name: callerName });
+  };
+
+  // Tự động kết nối khi mount và hủy kết nối khi unmount
+  useEffect(() => {
+    initializeSocket();
+    return () => cleanupSocket();
+  }, []);
 
   return (
-    <SocketContext.Provider value={{
-      call,
-      callAccepted,
-      myVideo,
-      userVideo,
-      stream,
-      name,
-      setName,
-      callEnded,
-      me,
-      callUser,
-      leaveCall,
-      answerCall,
-      partnerName,
-      subtitles,
-      isSocketConnected,
-      initializeSocket,
-      cleanupSocket,
-    }}
+    <SocketContext.Provider
+      value={{
+        socket,
+        isSocketConnected,
+        initializeSocket,
+        cleanupSocket,  // expose cleanupSocket
+        me,
+        setMe,
+        name,
+        setName,
+        callAccepted,
+        myVideo,
+        userVideo,
+        callEnded,
+        stream,
+        call,
+        partnerName,
+        subtitles,
+        setSubtitles,
+        answerCall,
+        leaveCall,
+        callUser,
+      }}
     >
       {children}
     </SocketContext.Provider>
   );
 };
-
-export { ContextProvider, SocketContext }; 

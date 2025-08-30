@@ -29,6 +29,7 @@ import PersonalCalendar from '../../components/PersonalCalendar';
 import ConnectionStatus from '../../components/ConnectionStatus';
 import LazyVideoCallWrapper from '../../components/LazyVideoCallWrapper';
 import { SessionsProvider } from '../../contexts/SessionsContext';
+import { ContextProvider as SocketContextProvider } from '../../contexts/SocketContext';
 import { useAuth } from 'features/auth/contexts/AuthContext';
 import { useToast } from 'components/common/Toast';
 import api from 'services/api';
@@ -366,6 +367,11 @@ const VideoCallPage = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
+  // Thêm hàm handleVideoCallLoad
+  const handleVideoCallLoad = () => {
+    console.log('Video call component loaded successfully');
+  };
+
   return (
     <SessionsProvider>
       <div className={`${classes.wrapper} video-call-wrapper`}>
@@ -410,7 +416,7 @@ const VideoCallPage = () => {
           </Tabs>
 
           <TabPanel value={tabValue} index={0} className={classes.tabPanel}>
-            <LazyVideoCallWrapper onLoad={handleVideoCallLoad}>
+            <SocketContextProvider>
               <div className={classes.videoCallContent}>
                 <AppBar className={classes.appBar} position="static" color="inherit">
                   <Typography variant="h4" align="center">Trò chuyện video</Typography>
@@ -424,7 +430,7 @@ const VideoCallPage = () => {
                   <Notifications />
                 </Sidebar>
               </div>
-            </LazyVideoCallWrapper>
+            </SocketContextProvider>
           </TabPanel>
 
           <TabPanel value={tabValue} index={1} className={classes.tabPanel}>

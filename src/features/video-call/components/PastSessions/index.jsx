@@ -274,10 +274,18 @@ const PastSessions = () => {
       setSessions(allSessions);
     } catch (error) {
       console.error('Error fetching call history:', error);
-      if (error.message.includes('401')) {
+      
+      // Kiểm tra response status từ error object
+      const status = error.response?.status || error.status;
+      
+      if (status === 401) {
         showToast('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!', 'error');
-      } else if (error.message.includes('403')) {
+      } else if (status === 403) {
         showToast('Bạn không có quyền truy cập lịch sử cuộc gọi!', 'error');
+      } else if (status === 404) {
+        showToast('Không tìm thấy dữ liệu lịch sử cuộc gọi!', 'error');
+      } else if (status >= 500) {
+        showToast('Lỗi máy chủ. Vui lòng thử lại sau!', 'error');
       } else {
         showToast('Lỗi tải lịch sử cuộc gọi!', 'error');
       }

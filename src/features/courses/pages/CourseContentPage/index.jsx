@@ -36,6 +36,25 @@ const CourseContentPage = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [showCompletionNotice, setShowCompletionNotice] = useState(true);
 
+  // Ngăn cuộn trang khi hiển thị thông báo hoàn thành
+  useEffect(() => {
+    const shouldLock = showCompletionNotice && location.state?.nextLecture?.isCompleted;
+
+    const scrollContainers = document.querySelectorAll('.content-main');
+
+    scrollContainers.forEach(el => {
+      if (shouldLock) {
+        el.classList.add('no-scroll');
+      } else {
+        el.classList.remove('no-scroll');
+      }
+    });
+
+    return () => {
+      scrollContainers.forEach(el => el.classList.remove('no-scroll'));
+    };
+  }, [showCompletionNotice, location.state?.nextLecture?.isCompleted]);
+
   useEffect(() => {
     if (!course) {
       setLoading(true);
