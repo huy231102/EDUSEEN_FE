@@ -10,12 +10,13 @@ const CourseReviewsPage = () => {
   const [replyTexts, setReplyTexts] = useState({});
   const [localReviews, setLocalReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sendingReplies, setSendingReplies] = useState({});
 
   useEffect(() => {
     const fetchCourse = async () => {
       try {
         setLoading(true);
-        const c = await api.get(`/api/teacher/course/${courseId}`);
+        const c = await api.get(`/api/teacher/course/${courseId}/reviews`);
         setCourseData({
           id: c.courseId,
           name: c.title,
@@ -42,15 +43,22 @@ const CourseReviewsPage = () => {
     setReplyTexts({ ...replyTexts, [id]: text });
   };
 
-  const sendReply = (id) => {
-    // ở đây chỉ mock, thực tế sẽ gọi API
+  const sendReply = async (id) => {
     const text = replyTexts[id];
     if (!text?.trim()) return;
-    const updated = localReviews.map((r) =>
-      r.id === id ? { ...r, teacherReply: text.trim() } : r
-    );
-    setLocalReviews(updated);
-    setReplyTexts({ ...replyTexts, [id]: '' });
+    setSendingReplies({ ...sendingReplies, [id]: true });
+    try {
+      await api.post(`/api/teacher/course/review/${id}/reply`, { responseText: text.trim() });
+      const updated = localReviews.map((r) =>
+        r.id === id ? { ...r, teacherReply: text.trim() } : r
+      );
+      setLocalReviews(updated);
+      setReplyTexts({ ...replyTexts, [id]: '' });
+    } catch (err) {
+      console.error('Send reply error', err);
+    } finally {
+      setSendingReplies({ ...sendingReplies, [id]: false });
+    }
   };
 
   if (loading) {
@@ -132,9 +140,9 @@ const CourseReviewsPage = () => {
                     <button
                       className="reply-send-btn"
                       onClick={() => sendReply(r.id)}
-                      disabled={!replyTexts[r.id]?.trim()}
+                      disabled={!replyTexts[r.id]?.trim() || sendingReplies[r.id]}
                     >
-                      <i className="fa fa-paper-plane"></i> Gửi
+                      <i className="fa fa-paper-plane"></i> {sendingReplies[r.id] ? 'Đang gửi...' : 'Gửi'}
                     </button>
                   </div>
                 </div>
