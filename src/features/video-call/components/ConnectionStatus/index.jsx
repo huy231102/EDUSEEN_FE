@@ -1,8 +1,8 @@
 import React, { useContext } from 'react';
 import { Button, Typography, makeStyles, Chip } from '@material-ui/core';
-import { Wifi, WifiOff, Refresh } from '@material-ui/icons';
+import { CheckCircle, Cancel, Refresh } from '@material-ui/icons';
 
-import { SocketContext } from 'features/video-call/contexts/SocketContext';
+import { SocketContext } from 'features/video-call/contexts/SocketContext/index.js';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -49,7 +49,7 @@ const ConnectionStatus = () => {
     <div className={classes.container}>
       {isSocketConnected ? (
         <>
-          <Wifi color="primary" />
+          <CheckCircle color="primary" />
           <Typography variant="body2" className={classes.statusText}>
             Đã kết nối với máy chủ
           </Typography>
@@ -64,14 +64,14 @@ const ConnectionStatus = () => {
             size="small"
             className={classes.disconnectButton}
             onClick={handleDisconnect}
-            startIcon={<WifiOff />}
+            startIcon={<Cancel />}
           >
             Ngắt kết nối
           </Button>
         </>
       ) : (
         <>
-          <WifiOff color="error" />
+          <Cancel color="error" />
           <Typography variant="body2" className={classes.statusText}>
             Chưa kết nối với máy chủ
           </Typography>

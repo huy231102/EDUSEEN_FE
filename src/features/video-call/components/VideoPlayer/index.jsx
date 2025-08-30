@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { Grid, Typography, Paper, makeStyles } from '@material-ui/core';
 
 import { SocketContext } from 'features/video-call/contexts/SocketContext';
+import useSignLanguage from '../../hooks/useSignLanguage';
 import SubtitleDisplay from '../SubtitleDisplay';
 
 const useStyles = makeStyles((theme) => ({
@@ -31,18 +32,22 @@ const useStyles = makeStyles((theme) => ({
 const VideoPlayer = () => {
   const { name, callAccepted, myVideo, userVideo, callEnded, stream, call, partnerName, subtitles } = useContext(SocketContext);
   const classes = useStyles();
+  const { setSubtitles } = useContext(SocketContext);
+
+  // Kết nối AI để nhận phụ đề ngôn ngữ ký hiệu
+  useSignLanguage(myVideo, setSubtitles);
+
+  // console.log('VideoPlayer render - stream:', stream, 'myVideo ref:', myVideo);
 
   return (
     <Grid container className={classes.gridContainer}>
-      {stream && (
-        <Paper elevation={0} className={classes.paper}>
-          <Grid item xs={12} md={6}>
-            <Typography variant="h5" gutterBottom>{name || 'Bạn'}</Typography>
-            <video playsInline muted ref={myVideo} autoPlay className={classes.video} />
-            <SubtitleDisplay text={subtitles} />
-          </Grid>
-        </Paper>
-      )}
+      <Paper elevation={0} className={classes.paper}>
+        <Grid item xs={12} md={6}>
+          <Typography variant="h5" gutterBottom>{name || 'Bạn'}</Typography>
+          <video playsInline muted ref={myVideo} autoPlay className={classes.video} />
+          <SubtitleDisplay text={subtitles} />
+        </Grid>
+      </Paper>
       {callAccepted && !callEnded && (
         <Paper elevation={0} className={classes.paper}>
           <Grid item xs={12} md={6}>

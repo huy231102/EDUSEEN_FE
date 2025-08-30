@@ -27,7 +27,7 @@ const Hero = () => {
             <Heading subtitle='Chào mừng đến với Eduseen' title='Phá Vỡ Rào Cản, Vươn Tới Tương Lai' />
             <p style={{ marginBottom: '30px' }}>Nền tảng học trực tuyến dành riêng cho người khiếm thính, với các khóa học được thiết kế đặc biệt cùng ngôn ngữ ký hiệu và phụ đề chi tiết.</p>
             <button className='primary-btn' onClick={handleButtonClick}>
-              {isLoggedIn ? 'HỌC NGAY' : 'ĐĂNG NHẬP / ĐĂNG KÝ'} <i className='fa fa-long-arrow-alt-right'></i>
+              {isLoggedIn ? 'HỌC NGAY' : 'ĐĂNG NHẬP / ĐĂNG KÝ'}&ensp;<i className='fa fa-long-arrow-alt-right'></i>
             </button>
           </div>
         </div>
