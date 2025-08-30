@@ -68,6 +68,11 @@
   text-decoration: underline;
 }
 
+/* Đảm bảo phần tử chứa input mật khẩu đặt làm vị trí tham chiếu */
+.password-group {
+  position: relative;
+}
+/* Nếu có thêm lớp form-group thì cũng giữ nguyên chức năng */
 .form-group.password-group {
   position: relative;
 }

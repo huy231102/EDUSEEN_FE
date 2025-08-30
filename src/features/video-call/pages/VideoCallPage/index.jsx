@@ -143,17 +143,21 @@ const useStyles = makeStyles((theme) => ({
 
 // TabPanel component
 function TabPanel(props) {
-  const { children, value, index, ...other } = props;
+  const { children, value, index, className, ...other } = props;
+
+  if (value !== index) {
+    // Không render gì khi tab không active để tránh khoảng trống
+    return null;
+  }
 
   return (
     <div
       role="tabpanel"
-      style={{ display: value === index ? 'block' : 'none' }}
       id={`video-tabpanel-${index}`}
       aria-labelledby={`video-tab-${index}`}
       {...other}
     >
-      <Box>{children}</Box>
+      <Box className={className}>{children}</Box>
     </div>
   );
 }
@@ -416,21 +420,24 @@ const VideoCallPage = () => {
           </Tabs>
 
           <TabPanel value={tabValue} index={0} className={classes.tabPanel}>
-            <SocketContextProvider>
-              <div className={classes.videoCallContent}>
-                <AppBar className={classes.appBar} position="static" color="inherit">
-                  <Typography variant="h4" align="center">Trò chuyện video</Typography>
-                </AppBar>
-                
-                {/* Thêm ConnectionStatus component */}
-                <ConnectionStatus />
-                
-                <VideoPlayer />
-                <Sidebar>
-                  <Notifications />
-                </Sidebar>
-              </div>
-            </SocketContextProvider>
+            {/* Chỉ khởi tạo SocketContextProvider khi tab "Video Call" đang được chọn */}
+            {tabValue === 0 && (
+              <SocketContextProvider>
+                <div className={classes.videoCallContent}>
+                  <AppBar className={classes.appBar} position="static" color="inherit">
+                    <Typography variant="h4" align="center">Trò chuyện video</Typography>
+                  </AppBar>
+
+                  {/* Trạng thái kết nối */}
+                  <ConnectionStatus />
+
+                  <VideoPlayer />
+                  <Sidebar>
+                    <Notifications />
+                  </Sidebar>
+                </div>
+              </SocketContextProvider>
+            )}
           </TabPanel>
 
           <TabPanel value={tabValue} index={1} className={classes.tabPanel}>
