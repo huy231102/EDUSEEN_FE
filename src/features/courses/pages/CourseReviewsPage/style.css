@@ -208,4 +208,11 @@
 
 .btn i {
   margin-right: 6px;
+}
+
+/* Rating star colors */
+.review-header i.fa-star,
+.review-header i.fa-star-half-alt,
+.review-header i.fa-star-half-alt:before {
+  color: #fbc02d; /* Vàng */
 } 
