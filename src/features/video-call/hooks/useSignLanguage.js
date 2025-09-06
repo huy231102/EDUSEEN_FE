@@ -5,6 +5,12 @@ import { useEffect, useRef } from 'react';
  * @param {Object} videoRef - React ref đến video element
  * @param {Function} setSubtitle - hàm cập nhật phụ đề
  */
+// Hằng số cấu hình – có thể đưa vào .env sau này
+const FPS = 6; // số khung hình gửi mỗi giây
+const INTERVAL = 1000 / FPS;
+const RESOLUTION_SCALE = 1; // 1 = giữ nguyên, 0.5 = giảm một nửa
+const JPEG_QUALITY = 0.6;  // tăng chất lượng để AI dễ nhận diện
+
 const useSignLanguage = (videoRef, setSubtitle) => {
   const wsRef = useRef(null);
   const canvas = useRef(document.createElement('canvas'));
@@ -22,16 +28,23 @@ const useSignLanguage = (videoRef, setSubtitle) => {
     return () => wsRef.current && wsRef.current.close();
   }, [setSubtitle]);
 
+  // Gửi khung hình định kỳ ở FPS cố định
   useEffect(() => {
     let rafId;
-    const sendFrame = () => {
+    let lastTime = 0;
+    const sendFrame = (now) => {
       const video = videoRef.current;
-      if (video && wsRef.current?.readyState === WebSocket.OPEN) {
+      if (now - lastTime >= INTERVAL && video && wsRef.current?.readyState === WebSocket.OPEN) {
+        lastTime = now;
         const ctx = canvas.current.getContext('2d');
-        canvas.current.width = video.videoWidth;
-        canvas.current.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-        const dataUrl = canvas.current.toDataURL('image/jpeg', 0.6);
+        // Thay đổi độ phân giải theo RESOLUTION_SCALE
+        const width = video.videoWidth * RESOLUTION_SCALE;
+        const height = video.videoHeight * RESOLUTION_SCALE;
+        canvas.current.width = width;
+        canvas.current.height = height;
+        ctx.drawImage(video, 0, 0, width, height);
+        // Mã hóa JPEG với chất lượng đã cấu hình
+        const dataUrl = canvas.current.toDataURL('image/jpeg', JPEG_QUALITY);
         wsRef.current.send(dataUrl);
       }
       rafId = requestAnimationFrame(sendFrame);
@@ -39,6 +52,17 @@ const useSignLanguage = (videoRef, setSubtitle) => {
     rafId = requestAnimationFrame(sendFrame);
     return () => cancelAnimationFrame(rafId);
   }, [videoRef]);
+
+  // Gửi tín hiệu STOP khi tab bị ẩn nhằm giảm tải server
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        wsRef.current?.send('STOP');
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
 };
 
 export default useSignLanguage;
