@@ -28,6 +28,7 @@ const useSignLanguage = (videoRef, setSubtitle, enabled = true) => {
     wsRef.current.onmessage = e => {
       const text = e.data;
       setSubtitle(text);      // Cập nhật cho chính mình
+      console.log('[AI] subtitle:', text);
       sendSubtitle(text);     // Gửi cho người đối diện
     };
     wsRef.current.onopen = () => console.log('AI WebSocket connected:', path);

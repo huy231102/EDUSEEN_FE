@@ -30,6 +30,7 @@ export const ContextProvider = ({ children }) => {
   // Hàm gửi phụ đề tới người đối diện
   const sendSubtitle = (text) => {
     if (socket) {
+      console.log('[Socket] emit subtitle:', text);
       socket.emit('subtitle', text);
     }
   };
@@ -62,6 +63,7 @@ export const ContextProvider = ({ children }) => {
 
       // Lắng nghe phụ đề đến từ người đối diện
       newSocket.on('subtitle', (text) => {
+        console.log('[Socket] received partner subtitle:', text);
         setPartnerSubtitles(text);
       });
 
