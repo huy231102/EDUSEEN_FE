@@ -24,25 +24,14 @@ const useStyles = makeStyles((theme) => ({
       backgroundColor: '#45a049',
     },
   },
-  disconnectButton: {
-    backgroundColor: '#f44336',
-    color: 'white',
-    '&:hover': {
-      backgroundColor: '#da190b',
-    },
-  },
 }));
 
 const ConnectionStatus = () => {
-  const { isSocketConnected, initializeSocket, cleanupSocket } = useContext(SocketContext);
+  const { isSocketConnected, initializeSocket } = useContext(SocketContext);
   const classes = useStyles();
 
   const handleConnect = () => {
     initializeSocket();
-  };
-
-  const handleDisconnect = () => {
-    cleanupSocket();
   };
 
   return (
@@ -59,15 +48,6 @@ const ConnectionStatus = () => {
             size="small" 
             variant="outlined"
           />
-          <Button
-            variant="contained"
-            size="small"
-            className={classes.disconnectButton}
-            onClick={handleDisconnect}
-            startIcon={<Cancel />}
-          >
-            Ngắt kết nối
-          </Button>
         </>
       ) : (
         <>

@@ -53,6 +53,7 @@ const VideoPlayer = () => {
           <Grid item xs={12} md={6}>
             <Typography variant="h5" gutterBottom>{partnerName || call.name || 'Người tham gia'}</Typography>
             <video playsInline ref={userVideo} autoPlay className={classes.video} />
+            <SubtitleDisplay text={subtitles} />
           </Grid>
         </Paper>
       )}

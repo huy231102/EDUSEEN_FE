@@ -1,4 +1,5 @@
 import React, { createContext, useState, useRef, useEffect } from 'react';
+import Peer from 'simple-peer';
 import io from 'socket.io-client';
 
 // Khởi tạo Context
@@ -24,6 +25,13 @@ export const ContextProvider = ({ children }) => {
   const [partnerName, setPartnerName] = useState('');
   const [subtitles, setSubtitles] = useState('');
 
+  // Hàm gửi phụ đề tới người đối diện
+  const sendSubtitle = (text) => {
+    if (socket) {
+      socket.emit('subtitle', text);
+    }
+  };
+
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
@@ -48,6 +56,11 @@ export const ContextProvider = ({ children }) => {
       // Lắng nghe sự kiện cuộc gọi đến
       newSocket.on('callUser', ({ from, name: callerName, signal }) => {
         setCall({ isReceivingCall: true, from, name: callerName, signal });
+      });
+
+      // Lắng nghe phụ đề đến từ người đối diện
+      newSocket.on('subtitle', (text) => {
+        setSubtitles(text);
       });
     }
   };
@@ -75,12 +88,31 @@ export const ContextProvider = ({ children }) => {
 
   const answerCall = () => {
     setCallAccepted(true);
-    // Ở đây bạn có thể thêm logic peer connection
+
+    // Tạo peer ở phía người NHẬN cuộc gọi (initiator: false)
+    const peer = new Peer({ initiator: false, trickle: false, stream });
+
+    // Khi peer tạo ra signal => gửi lên server để chuyển cho người GỌI
+    peer.on('signal', (data) => {
+      socket.emit('answerCall', { signal: data, to: call.from });
+    });
+
+    // Khi nhận được stream từ người GỌI => hiển thị lên video
+    peer.on('stream', (currentStream) => {
+      if (userVideo.current) {
+        userVideo.current.srcObject = currentStream;
+      }
+    });
+
+    // Tiếp nhận signal của người GỌI đã gửi kèm trong sự kiện 'callUser'
+    peer.signal(call.signal);
+
+    connectionRef.current = peer;
   };
 
   const leaveCall = () => {
     setCallEnded(true);
-    if (connectionRef.current) connectionRef.current.close();
+    if (connectionRef.current) connectionRef.current.destroy();
     window.location.reload();
   };
 
@@ -88,9 +120,32 @@ export const ContextProvider = ({ children }) => {
     if (!socket) initializeSocket();
     if (!socket) return;
 
-    setPartnerName(callerName);
-    // Gửi sự kiện gọi tới người nhận
-    socket.emit('callUser', { userToCall: id, signalData: {}, from: socket.id, name: callerName });
+    setPartnerName(''); // reset tên đối tác, sẽ cập nhật sau khi kết nối thành công
+
+    // Tạo peer ở phía NGƯỜI GỌI (initiator: true)
+    const peer = new Peer({ initiator: true, trickle: false, stream });
+
+    // Khi peer sinh ra signal => gửi kèm trong sự kiện callUser tới server
+    peer.on('signal', (data) => {
+      socket.emit('callUser', { userToCall: id, signalData: data, from: socket.id, name: callerName });
+    });
+
+    // Khi nhận stream từ người nhận => hiển thị
+    peer.on('stream', (currentStream) => {
+      if (userVideo.current) {
+        userVideo.current.srcObject = currentStream;
+      }
+    });
+
+    // Lắng nghe sự kiện khi cuộc gọi được chấp nhận
+    socket.on('callAccepted', (signal) => {
+      setCallAccepted(true);
+      // Cập nhật tên đối tác (nếu server gửi kèm, ở đây dùng luôn id)
+      setPartnerName(id);
+      peer.signal(signal);
+    });
+
+    connectionRef.current = peer;
   };
 
   // Tự động kết nối khi mount và hủy kết nối khi unmount
@@ -119,6 +174,7 @@ export const ContextProvider = ({ children }) => {
         partnerName,
         subtitles,
         setSubtitles,
+        sendSubtitle,
         answerCall,
         leaveCall,
         callUser,
