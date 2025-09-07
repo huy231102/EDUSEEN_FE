@@ -16,6 +16,7 @@ console.log(`SocketContext: connecting to Socket.IO at ${SOCKET_SERVER_URL}`);
 export const ContextProvider = ({ children }) => {
   // State
   const [socket, setSocket] = useState(null);
+  const socketRef = useRef(null);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [me, setMe] = useState('');
   const [name, setName] = useState('');
@@ -29,14 +30,14 @@ export const ContextProvider = ({ children }) => {
 
   // Hàm gửi phụ đề tới người đối diện
   const sendSubtitle = (text) => {
-    console.log('[Socket] muốn gửi subtitle:', text, 'socket?', !!socket);
-    if (!socket) {
+    console.log('[Socket] muốn gửi subtitle:', text, 'socket?', !!socketRef.current);
+    if (!socketRef.current) {
       console.warn('[Socket] Chưa có kết nối, thử initializeSocket');
       initializeSocket();
     }
-    if (socket) {
+    if (socketRef.current) {
       console.log('[Socket] emit subtitle:', text);
-      socket.emit('subtitle', text);
+      socketRef.current.emit('subtitle', text);
     } else {
       console.error('[Socket] Không thể gửi subtitle – socket vẫn null');
     }
@@ -48,10 +49,11 @@ export const ContextProvider = ({ children }) => {
 
   // Khởi tạo socket khi cần
   const initializeSocket = () => {
-    if (!socket) {
+    if (!socketRef.current) {
       const newSocket = io(SOCKET_SERVER_URL, {
         transports: ['websocket'],
       });
+      socketRef.current = newSocket;
       setSocket(newSocket);
 
       newSocket.on('connect', () => {
@@ -84,8 +86,9 @@ export const ContextProvider = ({ children }) => {
 
   // Thêm hàm ngắt kết nối WebSocket/Socket.IO
   const cleanupSocket = () => {
-    if (socket) {
-      socket.disconnect();
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
       setSocket(null);
       setIsSocketConnected(false);
     }
@@ -111,7 +114,7 @@ export const ContextProvider = ({ children }) => {
 
     // Khi peer tạo ra signal => gửi lên server để chuyển cho người GỌI
     peer.on('signal', (data) => {
-      socket.emit('answerCall', { signal: data, to: call.from, name });
+      socketRef.current.emit('answerCall', { signal: data, to: call.from, name });
     });
 
     // Khi nhận được stream từ người GỌI => hiển thị lên video
@@ -132,8 +135,8 @@ export const ContextProvider = ({ children }) => {
 
   const leaveCall = () => {
     // Thông báo cho server biết người dùng chủ động kết thúc cuộc gọi
-    if (socket) {
-      socket.emit('endCall');
+    if (socketRef.current) {
+      socketRef.current.emit('endCall');
     }
 
     // Kết thúc peer connection
@@ -155,8 +158,8 @@ export const ContextProvider = ({ children }) => {
   };
 
   const callUser = (id, callerName) => {
-    if (!socket) initializeSocket();
-    if (!socket) return;
+    if (!socketRef.current) initializeSocket();
+    if (!socketRef.current) return;
 
     setPartnerName(''); // reset tên đối tác, sẽ cập nhật sau khi kết nối thành công
 
@@ -165,7 +168,7 @@ export const ContextProvider = ({ children }) => {
 
     // Khi peer sinh ra signal => gửi kèm trong sự kiện callUser tới server
     peer.on('signal', (data) => {
-      socket.emit('callUser', { userToCall: id, signalData: data, from: socket.id, name: callerName });
+      socketRef.current.emit('callUser', { userToCall: id, signalData: data, from: socketRef.current.id, name: callerName });
     });
 
     // Khi nhận stream từ người nhận => hiển thị
@@ -176,7 +179,7 @@ export const ContextProvider = ({ children }) => {
     });
 
     // Lắng nghe sự kiện khi cuộc gọi được chấp nhận
-    socket.on('callAccepted', ({ signal, name: calleeName }) => {
+    socketRef.current.on('callAccepted', ({ signal, name: calleeName }) => {
       setCallAccepted(true);
       // Cập nhật tên đối tác nếu backend gửi, fallback id
       setPartnerName(calleeName || id);
@@ -195,7 +198,7 @@ export const ContextProvider = ({ children }) => {
   return (
     <SocketContext.Provider
       value={{
-        socket,
+        socket: socketRef.current,
         isSocketConnected,
         initializeSocket,
         cleanupSocket,  // expose cleanupSocket
