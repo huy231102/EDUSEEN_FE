@@ -94,7 +94,7 @@ export const ContextProvider = ({ children }) => {
 
     // Khi peer tạo ra signal => gửi lên server để chuyển cho người GỌI
     peer.on('signal', (data) => {
-      socket.emit('answerCall', { signal: data, to: call.from });
+      socket.emit('answerCall', { signal: data, to: call.from, name });
     });
 
     // Khi nhận được stream từ người GỌI => hiển thị lên video
@@ -106,6 +106,9 @@ export const ContextProvider = ({ children }) => {
 
     // Tiếp nhận signal của người GỌI đã gửi kèm trong sự kiện 'callUser'
     peer.signal(call.signal);
+
+    // Lưu tên đối tác (người gọi)
+    setPartnerName(call.name);
 
     connectionRef.current = peer;
   };
@@ -138,10 +141,10 @@ export const ContextProvider = ({ children }) => {
     });
 
     // Lắng nghe sự kiện khi cuộc gọi được chấp nhận
-    socket.on('callAccepted', (signal) => {
+    socket.on('callAccepted', ({ signal, name: calleeName }) => {
       setCallAccepted(true);
-      // Cập nhật tên đối tác (nếu server gửi kèm, ở đây dùng luôn id)
-      setPartnerName(id);
+      // Cập nhật tên đối tác nếu backend gửi, fallback id
+      setPartnerName(calleeName || id);
       peer.signal(signal);
     });
 
