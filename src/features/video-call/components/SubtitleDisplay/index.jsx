@@ -18,10 +18,11 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-const SubtitleDisplay = ({ text }) => {
+const SubtitleDisplay = ({ text, enabled = true }) => {
   const classes = useStyles();
 
-  if (!text) {
+  // Ẩn phụ đề khi tắt chức năng hoặc khi không có nội dung
+  if (!enabled || !text) {
     return null;
   }
 
