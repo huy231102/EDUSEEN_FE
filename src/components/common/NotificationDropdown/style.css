@@ -44,6 +44,10 @@
   box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
 }
 
+button i {
+  margin: 0px !important;
+}
+
 .notification-dropdown {
   position: absolute;
   top: 100%;

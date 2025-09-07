@@ -288,6 +288,7 @@ const CourseDetailPage = () => {
               <img src={course.cover} alt={course.name} />
               <button
                 className={`primary-btn start-learning-btn ${user && course.isEnrolled ? 'continue-learning' : ''}`}
+                style={{ marginBottom: course.reviews?.length > 0 ? '0px' : '30px' }}
                 onClick={handleStartOrContinue}
               >
                 {user && course.isEnrolled ? 'Tiếp tục học' : 'Bắt đầu học'}
