@@ -14,14 +14,12 @@ const useStyles = makeStyles(() => ({
 }));
 
 const Notifications = () => {
-  const { answerCall, call, callAccepted, isSocketConnected, initializeSocket } = useContext(SocketContext);
+  const { answerCall, call, callAccepted, isSocketConnected, initializeSocket, name } = useContext(SocketContext);
   const classes = useStyles();
 
   const handleAnswerCall = () => {
     // Validate: yêu cầu người dùng nhập tên trước khi trả lời
-    const nameInput = document.querySelector('input[label="Tên"], input[placeholder="Tên"], input[name="name"]');
-    const currentName = (nameInput && nameInput.value) || '';
-    if (!currentName.trim()) {
+    if (!name || !name.trim()) {
       alert('Vui lòng nhập tên của bạn trước khi trả lời cuộc gọi');
       return;
     }

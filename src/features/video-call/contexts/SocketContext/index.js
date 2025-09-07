@@ -6,7 +6,8 @@ import io from 'socket.io-client';
 export const SocketContext = createContext();
 
 // Xác định protocol và host cho Socket.IO (HTTPS/WSS hoặc HTTP/WS)
-const defaultProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+// Sử dụng http/https cho Socket.IO thay vì ws/wss
+const defaultProtocol = window.location.protocol === 'https:' ? 'https' : 'http';
 const socketHost = process.env.REACT_APP_SOCKET_HOST || window.location.hostname;
 const socketPort = process.env.REACT_APP_SOCKET_PORT || '5000';
 const SOCKET_SERVER_URL = process.env.REACT_APP_SOCKET_SERVER_URL || `${defaultProtocol}://${socketHost}:${socketPort}`;
@@ -62,6 +63,12 @@ export const ContextProvider = ({ children }) => {
       newSocket.on('subtitle', (text) => {
         setSubtitles(text);
       });
+
+      // Lắng nghe sự kiện kết thúc cuộc gọi từ server
+      newSocket.on('callEnded', () => {
+        setCallEnded(true);
+        if (connectionRef.current) connectionRef.current.destroy();
+      });
     }
   };
 
@@ -114,8 +121,16 @@ export const ContextProvider = ({ children }) => {
   };
 
   const leaveCall = () => {
+    // Thông báo cho server biết người dùng chủ động kết thúc cuộc gọi
+    if (socket) {
+      socket.emit('endCall');
+    }
+
     setCallEnded(true);
+
     if (connectionRef.current) connectionRef.current.destroy();
+
+    // Tuỳ UX có thể không cần reload toàn trang, chỉ reset state
     window.location.reload();
   };
 
