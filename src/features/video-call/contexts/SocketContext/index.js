@@ -29,9 +29,16 @@ export const ContextProvider = ({ children }) => {
 
   // Hàm gửi phụ đề tới người đối diện
   const sendSubtitle = (text) => {
+    console.log('[Socket] muốn gửi subtitle:', text, 'socket?', !!socket);
+    if (!socket) {
+      console.warn('[Socket] Chưa có kết nối, thử initializeSocket');
+      initializeSocket();
+    }
     if (socket) {
       console.log('[Socket] emit subtitle:', text);
       socket.emit('subtitle', text);
+    } else {
+      console.error('[Socket] Không thể gửi subtitle – socket vẫn null');
     }
   };
 
