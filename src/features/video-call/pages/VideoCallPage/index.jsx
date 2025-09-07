@@ -28,6 +28,7 @@ import PastSessions from '../../components/PastSessions';
 import PersonalCalendar from '../../components/PersonalCalendar';
 import ConnectionStatus from '../../components/ConnectionStatus';
 import AiConnectionStatus from '../../components/AiConnectionStatus';
+import FeatureToggleSwitch from '../../components/FeatureToggleSwitch';
 import LazyVideoCallWrapper from '../../components/LazyVideoCallWrapper';
 import { SessionsProvider } from '../../contexts/SessionsContext';
 import { ContextProvider as SocketContextProvider } from '../../contexts/SocketContext';
@@ -168,6 +169,10 @@ const VideoCallPage = () => {
   const [tabValue, setTabValue] = useState(0);
   const { user } = useAuth();
   const { showToast } = useToast();
+
+  // State điều khiển tính năng
+  const [signLanguageEnabled, setSignLanguageEnabled] = useState(true);
+  const [subtitleEnabled, setSubtitleEnabled] = useState(true);
 
   // Thêm log để debug state dialog
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
@@ -433,7 +438,24 @@ const VideoCallPage = () => {
                   <ConnectionStatus />
                   <AiConnectionStatus />
 
-                  <VideoPlayer />
+                  {/* Switch điều khiển tính năng */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <FeatureToggleSwitch
+                      label="Nhận diện ngôn ngữ ký hiệu"
+                      checked={signLanguageEnabled}
+                      onChange={() => setSignLanguageEnabled((prev) => !prev)}
+                    />
+                    <FeatureToggleSwitch
+                      label="Hiển thị phụ đề"
+                      checked={subtitleEnabled}
+                      onChange={() => setSubtitleEnabled((prev) => !prev)}
+                    />
+                  </div>
+
+                  <VideoPlayer 
+                    signLanguageEnabled={signLanguageEnabled} 
+                    subtitleEnabled={subtitleEnabled} 
+                  />
                   <Notifications />
                   <Sidebar>
                   </Sidebar>

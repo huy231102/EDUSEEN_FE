@@ -12,12 +12,13 @@ const INTERVAL = 1000 / FPS;
 const RESOLUTION_SCALE = 1; // 1 = giữ nguyên, 0.5 = giảm một nửa
 const JPEG_QUALITY = 0.6;  // tăng chất lượng để AI dễ nhận diện
 
-const useSignLanguage = (videoRef, setSubtitle) => {
+const useSignLanguage = (videoRef, setSubtitle, enabled = true) => {
   const { sendSubtitle } = useContext(SocketContext);
   const wsRef = useRef(null);
   const canvas = useRef(document.createElement('canvas'));
 
   useEffect(() => {
+    if (!enabled) return; // Không khởi tạo WS nếu tắt
     // Xác định URL WebSocket AI
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const host = process.env.REACT_APP_AI_HOST || window.location.hostname;
@@ -32,10 +33,11 @@ const useSignLanguage = (videoRef, setSubtitle) => {
     wsRef.current.onopen = () => console.log('AI WebSocket connected:', path);
     wsRef.current.onerror = err => console.error('AI WebSocket error:', err);
     return () => wsRef.current && wsRef.current.close();
-  }, [setSubtitle]);
+  }, [setSubtitle, enabled]);
 
   // Gửi khung hình định kỳ ở FPS cố định
   useEffect(() => {
+    if (!enabled) return;
     let rafId;
     let lastTime = 0;
     const sendFrame = (now) => {
@@ -57,10 +59,11 @@ const useSignLanguage = (videoRef, setSubtitle) => {
     };
     rafId = requestAnimationFrame(sendFrame);
     return () => cancelAnimationFrame(rafId);
-  }, [videoRef]);
+  }, [videoRef, enabled]);
 
   // Gửi tín hiệu STOP khi tab bị ẩn nhằm giảm tải server
   useEffect(() => {
+    if (!enabled) return;
     const handleVisibility = () => {
       if (document.hidden) {
         wsRef.current?.send('STOP');
@@ -68,7 +71,7 @@ const useSignLanguage = (videoRef, setSubtitle) => {
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, []);
+  }, [enabled]);
 };
 
 export default useSignLanguage;
