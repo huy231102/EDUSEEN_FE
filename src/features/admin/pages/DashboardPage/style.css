@@ -8,7 +8,7 @@
 /* Stats Cards */
 .dashboard-stats-grid {
   margin-bottom: 48px;
-  gap: 30px;
+  gap: 25px;
 }
 
 /* Override Material-UI Grid classes to set max-width to 30% */
