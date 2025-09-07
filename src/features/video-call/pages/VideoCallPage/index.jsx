@@ -27,6 +27,7 @@ import Notifications from '../../components/Notifications';
 import PastSessions from '../../components/PastSessions';
 import PersonalCalendar from '../../components/PersonalCalendar';
 import ConnectionStatus from '../../components/ConnectionStatus';
+import AiConnectionStatus from '../../components/AiConnectionStatus';
 import LazyVideoCallWrapper from '../../components/LazyVideoCallWrapper';
 import { SessionsProvider } from '../../contexts/SessionsContext';
 import { ContextProvider as SocketContextProvider } from '../../contexts/SocketContext';
@@ -430,10 +431,11 @@ const VideoCallPage = () => {
 
                   {/* Trạng thái kết nối */}
                   <ConnectionStatus />
+                  <AiConnectionStatus />
 
                   <VideoPlayer />
+                  <Notifications />
                   <Sidebar>
-                    <Notifications />
                   </Sidebar>
                 </div>
               </SocketContextProvider>

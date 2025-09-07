@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useContext } from 'react';
+import { SocketContext } from 'features/video-call/contexts/SocketContext';
 
 /**
  * Hook gửi khung hình từ videoRef lên AI server WebSocket để nhận phụ đề.
@@ -12,6 +13,7 @@ const RESOLUTION_SCALE = 1; // 1 = giữ nguyên, 0.5 = giảm một nửa
 const JPEG_QUALITY = 0.6;  // tăng chất lượng để AI dễ nhận diện
 
 const useSignLanguage = (videoRef, setSubtitle) => {
+  const { sendSubtitle } = useContext(SocketContext);
   const wsRef = useRef(null);
   const canvas = useRef(document.createElement('canvas'));
 
@@ -22,7 +24,11 @@ const useSignLanguage = (videoRef, setSubtitle) => {
     const port = process.env.REACT_APP_AI_PORT || '8001';
     const path = process.env.REACT_APP_AI_SERVER_URL || `${proto}://${host}:${port}/ws/translate`;
     wsRef.current = new WebSocket(path);
-    wsRef.current.onmessage = e => setSubtitle(e.data);
+    wsRef.current.onmessage = e => {
+      const text = e.data;
+      setSubtitle(text);      // Cập nhật cho chính mình
+      sendSubtitle(text);     // Gửi cho người đối diện
+    };
     wsRef.current.onopen = () => console.log('AI WebSocket connected:', path);
     wsRef.current.onerror = err => console.error('AI WebSocket error:', err);
     return () => wsRef.current && wsRef.current.close();
