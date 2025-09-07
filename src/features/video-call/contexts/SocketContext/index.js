@@ -126,12 +126,22 @@ export const ContextProvider = ({ children }) => {
       socket.emit('endCall');
     }
 
-    setCallEnded(true);
-
+    // Kết thúc peer connection
     if (connectionRef.current) connectionRef.current.destroy();
 
-    // Tuỳ UX có thể không cần reload toàn trang, chỉ reset state
-    window.location.reload();
+    // Dừng stream local (tắt camera/mic)
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
+
+    // Reset các state liên quan
+    setCallEnded(true);
+    setCallAccepted(false);
+    setPartnerName('');
+    setCall({});
+
+    // Ngắt socket
+    cleanupSocket();
   };
 
   const callUser = (id, callerName) => {
