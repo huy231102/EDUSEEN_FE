@@ -30,12 +30,10 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const VideoPlayer = ({ signLanguageEnabled = true, subtitleEnabled = true }) => {
-  const { name, callAccepted, myVideo, userVideo, callEnded, stream, call, partnerName, subtitles } = useContext(SocketContext);
+  const { name, callAccepted, myVideo, userVideo, callEnded, stream, call, partnerName, mySubtitles, partnerSubtitles, setMySubtitles } = useContext(SocketContext);
   const classes = useStyles();
-  const { setSubtitles } = useContext(SocketContext);
-
-  // Luôn gọi hook nhưng truyền tham số kích hoạt
-  useSignLanguage(myVideo, setSubtitles, signLanguageEnabled);
+  // Kết nối AI, cập nhật phụ đề của chính mình và gửi cho partner
+  useSignLanguage(myVideo, setMySubtitles, signLanguageEnabled);
 
   // console.log('VideoPlayer render - stream:', stream, 'myVideo ref:', myVideo);
 
@@ -46,7 +44,7 @@ const VideoPlayer = ({ signLanguageEnabled = true, subtitleEnabled = true }) => 
           <Typography variant="h5" gutterBottom>{name || 'Bạn'}</Typography>
           <video playsInline muted ref={myVideo} autoPlay className={classes.video} />
           {/* Phụ đề cho chính mình – bật/tắt theo switch */}
-          <SubtitleDisplay text={subtitles} enabled={subtitleEnabled} />
+          <SubtitleDisplay text={mySubtitles} enabled={subtitleEnabled} />
         </Grid>
       </Paper>
       {callAccepted && !callEnded && (
@@ -55,7 +53,7 @@ const VideoPlayer = ({ signLanguageEnabled = true, subtitleEnabled = true }) => 
             <Typography variant="h5" gutterBottom>{partnerName || call.name || 'Người tham gia'}</Typography>
             <video playsInline ref={userVideo} autoPlay className={classes.video} />
             {/* Luôn hiển thị phụ đề đối tác để mình đọc */}
-            <SubtitleDisplay text={subtitles} enabled={true} />
+            <SubtitleDisplay text={partnerSubtitles} enabled={true} />
           </Grid>
         </Paper>
       )}

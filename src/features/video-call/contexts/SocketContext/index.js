@@ -24,7 +24,8 @@ export const ContextProvider = ({ children }) => {
   const [callEnded, setCallEnded] = useState(false);
   const [call, setCall] = useState({});
   const [partnerName, setPartnerName] = useState('');
-  const [subtitles, setSubtitles] = useState('');
+  const [mySubtitles, setMySubtitles] = useState('');
+  const [partnerSubtitles, setPartnerSubtitles] = useState('');
 
   // Hàm gửi phụ đề tới người đối diện
   const sendSubtitle = (text) => {
@@ -61,7 +62,7 @@ export const ContextProvider = ({ children }) => {
 
       // Lắng nghe phụ đề đến từ người đối diện
       newSocket.on('subtitle', (text) => {
-        setSubtitles(text);
+        setPartnerSubtitles(text);
       });
 
       // Lắng nghe sự kiện kết thúc cuộc gọi từ server
@@ -200,8 +201,10 @@ export const ContextProvider = ({ children }) => {
         stream,
         call,
         partnerName,
-        subtitles,
-        setSubtitles,
+        mySubtitles,
+        setMySubtitles,
+        partnerSubtitles,
+        setPartnerSubtitles,
         sendSubtitle,
         answerCall,
         leaveCall,
