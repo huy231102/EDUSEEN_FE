@@ -26,3 +26,4 @@ yarn-error.log*
 check-ssl.js
 certs1/192.168.0.104-key.pem
 certs1/192.168.0.104.pem
+package-lock.json
