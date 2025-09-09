@@ -51,7 +51,7 @@ const Testimonal = ({ items, subtitle, title }) => {
                     </div>
                   </div>
                 </div>
-                <p>{val.courseDescription || ''}</p>
+                <p>{val.comment || ''}</p>
               </div>
             ))}
           </div>
