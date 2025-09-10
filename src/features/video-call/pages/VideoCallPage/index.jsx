@@ -296,6 +296,12 @@ const VideoCallPage = () => {
       if (selectedDate < today) {
         errors.push('Không thể đặt lịch cho ngày trong quá khứ');
       }
+      // Giới hạn tối đa 6 tháng tới
+      const sixMonthsLater = new Date();
+      sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
+      if (selectedDate > sixMonthsLater) {
+        errors.push('Chỉ được phép đặt lịch trong vòng 6 tháng tới');
+      }
     }
 
     // 4. Kiểm tra thời gian hợp lệ
@@ -315,9 +321,21 @@ const VideoCallPage = () => {
           errors.push('Thời lượng cuộc gọi phải ít nhất 15 phút');
         }
         
-        if (durationMinutes > 480) { // 8 giờ
-          errors.push('Thời lượng cuộc gọi không được quá 8 giờ');
+        if (durationMinutes > 240) { // 4 giờ
+          errors.push('Thời lượng cuộc gọi không được quá 4 giờ');
         }
+      }
+    }
+
+    // 5. Kiểm tra giờ bắt đầu phải sau hiện tại tối thiểu 30 phút nếu đặt lịch trong ngày hôm nay
+    if (newSession.date === todayStr && newSession.startTime) {
+      const now = new Date();
+      const nowPlus30 = new Date(now.getTime() + 30 * 60000);
+      const start = new Date(`2000-01-01T${newSession.startTime}`);
+      // Ghép ngày hiện tại vào start
+      start.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
+      if (start < nowPlus30) {
+        errors.push('Giờ bắt đầu phải sau thời điểm hiện tại ít nhất 30 phút');
       }
     }
 
@@ -381,6 +399,17 @@ const VideoCallPage = () => {
   const handleVideoCallLoad = () => {
     console.log('Video call component loaded successfully');
   };
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const maxDate = new Date();
+  maxDate.setMonth(maxDate.getMonth() + 6);
+  const maxDateStr = maxDate.toISOString().split('T')[0];
+
+  // Tính min time cho startTime & endTime
+  const getTimeString = (dateObj) => dateObj.toISOString().slice(11, 16);
+  const nowPlus30 = new Date(Date.now() + 30 * 60000);
+  const minStartTime = (newSession.date === todayStr) ? getTimeString(nowPlus30) : '00:00';
+  const minEndTime = newSession.startTime ? getTimeString(new Date(`2000-01-01T${newSession.startTime}`.slice(0,16))) : '00:15';
 
   return (
     <SessionsProvider>
@@ -499,6 +528,10 @@ const VideoCallPage = () => {
                   onChange={e => handleNewSessionChange('date', e.target.value)}
                   margin="dense"
                   required
+                  inputProps={{
+                    min: todayStr,
+                    max: maxDateStr,
+                  }}
                 />
               </Grid>
               <Grid item xs={6} sm={3}>
@@ -511,6 +544,9 @@ const VideoCallPage = () => {
                   onChange={e => handleNewSessionChange('startTime', e.target.value)}
                   margin="dense"
                   required
+                  inputProps={{
+                    min: minStartTime,
+                  }}
                 />
               </Grid>
               <Grid item xs={6} sm={3}>
@@ -523,6 +559,9 @@ const VideoCallPage = () => {
                   onChange={e => handleNewSessionChange('endTime', e.target.value)}
                   margin="dense"
                   required
+                  inputProps={{
+                    min: minEndTime,
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -533,6 +572,7 @@ const VideoCallPage = () => {
                   onChange={e => handleNewSessionChange('caller', e.target.value)}
                   margin="dense"
                   InputLabelProps={{ shrink: true }}
+                  required
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -555,6 +595,7 @@ const VideoCallPage = () => {
                   onChange={e => handleNewSessionChange('calleeEmail', e.target.value)}
                   margin="dense"
                   type="email"
+                  required
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
@@ -565,7 +606,7 @@ const VideoCallPage = () => {
                   value={newSession.duration || ''}
                   margin="dense"
                   disabled
-                  helperText="Tự động tính toán từ thời gian bắt đầu và kết thúc"
+                  helperText="Thời lượng cuộc gọi phải kéo dài ít nhất 15 phút"
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
