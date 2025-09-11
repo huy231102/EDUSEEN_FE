@@ -20,6 +20,7 @@ import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import VideoCallIcon from '@material-ui/icons/VideoCall';
 import HistoryIcon from '@material-ui/icons/History';
 import EventIcon from '@material-ui/icons/Event';
+import SchoolIcon from '@material-ui/icons/School';
 
 import VideoPlayer from '../../components/VideoPlayer';
 import Sidebar from '../../components/Sidebar';
@@ -383,7 +384,7 @@ const VideoCallPage = () => {
         meetingLink: '',
       });
       // Chuyển sang tab Lịch cá nhân để xem lịch mới
-      setTabValue(2);
+      setTabValue(3);
       // Trigger refresh dữ liệu trong PersonalCalendar
       setRefreshTrigger(prev => prev + 1);
     } catch (err) {
@@ -435,28 +436,56 @@ const VideoCallPage = () => {
             centered
           >
             <Tab 
-              icon={<VideoCallIcon />} 
-              label="Video Call" 
+              icon={<SchoolIcon />} 
+              label="Practice Alphabet" 
               id="video-tab-0"
               aria-controls="video-tabpanel-0"
             />
             <Tab 
-              icon={<HistoryIcon />} 
-              label="Lịch sử" 
+              icon={<VideoCallIcon />} 
+              label="Video Call" 
               id="video-tab-1"
               aria-controls="video-tabpanel-1"
             />
             <Tab 
-              icon={<EventIcon />} 
-              label="Lịch cá nhân" 
+              icon={<HistoryIcon />} 
+              label="Lịch sử" 
               id="video-tab-2"
               aria-controls="video-tabpanel-2"
+            />
+            <Tab 
+              icon={<EventIcon />} 
+              label="Lịch cá nhân" 
+              id="video-tab-3"
+              aria-controls="video-tabpanel-3"
             />
           </Tabs>
 
           <TabPanel value={tabValue} index={0} className={classes.tabPanel}>
-            {/* Chỉ khởi tạo SocketContextProvider khi tab "Video Call" đang được chọn */}
+            {/* Practice Alphabet content */}
             {tabValue === 0 && (
+              <SocketContextProvider>
+                <div className={classes.videoCallContent}>
+                  <AppBar className={classes.appBar} position="static" color="inherit">
+                    <Typography variant="h4" align="center">Luyện tập bảng chữ cái</Typography>
+                  </AppBar>
+
+                  {/* Trạng thái kết nối */}
+                  <ConnectionStatus />
+                  <AiConnectionStatus />
+
+                  <VideoPlayer 
+                    signLanguageEnabled={true} 
+                    subtitleEnabled={true} 
+                  />
+                </div>
+              </SocketContextProvider>
+            )}
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={1} className={classes.tabPanel}>
+            {/* Chỉ khởi tạo SocketContextProvider khi tab "Video Call" đang được chọn */}
+            {tabValue === 1 && (
               <SocketContextProvider>
                 <div className={classes.videoCallContent}>
                   <AppBar className={classes.appBar} position="static" color="inherit">
@@ -493,13 +522,13 @@ const VideoCallPage = () => {
             )}
           </TabPanel>
 
-          <TabPanel value={tabValue} index={1} className={classes.tabPanel}>
+          <TabPanel value={tabValue} index={2} className={classes.tabPanel}>
             <PastSessions />
           </TabPanel>
 
-          <TabPanel value={tabValue} index={2} className={classes.tabPanel}>
+          <TabPanel value={tabValue} index={3} className={classes.tabPanel}>
             <PersonalCalendar 
-              onSwitchToVideoCall={() => setTabValue(0)}
+              onSwitchToVideoCall={() => setTabValue(1)}
               openCreateDialog={openCreateDialog}
               handleOpenCreateDialog={handleOpenCreateDialog}
               handleCloseCreateDialog={handleCloseCreateDialog}
