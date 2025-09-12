@@ -471,7 +471,6 @@ const VideoCallPage = () => {
                   </AppBar>
 
                   {/* Trạng thái kết nối */}
-                  <ConnectionStatus />
                   <AiConnectionStatus />
 
                   <VideoPlayer 
