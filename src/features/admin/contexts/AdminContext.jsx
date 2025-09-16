@@ -75,7 +75,7 @@ export const AdminProvider = ({ children }) => {
           lectureCount: course.lectureCount || 0,
           averageRating: course.averageRating,
           reviewCount: course.reviewCount || 0,
-          thumbnailUrl: course.thumbnailUrl
+          thumbnailUrl: course.thumbnailUrl || course.thumbnail || course.cover || course.imageUrl
         }));
         console.log('Mapped courses:', mappedCourses);
         setCourses(mappedCourses);
