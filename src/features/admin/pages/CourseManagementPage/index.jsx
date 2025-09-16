@@ -5,6 +5,7 @@ import {
   DialogContent, DialogActions, TablePagination, Avatar, InputAdornment, 
   Chip, Button, Grid
 } from "@material-ui/core";
+const DEFAULT_COURSE_IMG = '/images/default-avatar-profile.jpg';
 import { 
   Search, Info, Edit, Delete, Refresh, PlayArrow, AccessTime, 
   TrendingUp, CheckCircle, Block, School, Person 
@@ -16,6 +17,14 @@ import api from "services/api";
 import './style.css';
 
 import { useAdmin } from "../../contexts/AdminContext.jsx";
+const API_BASE = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_BACKEND_URL || '';
+
+const resolveThumbnail = (url) => {
+  if (!url) return DEFAULT_COURSE_IMG;
+  if (url.startsWith('http')) return url;
+  // Ensure no double slash
+  return `${API_BASE.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
+};
 
 const CourseManagementPage = () => {
   const { courses, loading, fetchCourses, deleteCourse, toggleCourseStatus } = useAdmin();
@@ -206,7 +215,7 @@ const CourseManagementPage = () => {
                   <TableCell>
                     <Box className="course-info-cell">
                       <Avatar 
-                        src={course.thumbnailUrl} 
+                        src={resolveThumbnail(course.thumbnailUrl || course.thumbnail || course.imageUrl)} 
                         variant="rounded"
                         className="course-avatar"
                       >
@@ -320,7 +329,7 @@ const CourseManagementPage = () => {
             <Box>
               <Box className="course-detail-header">
                 <Avatar 
-                  src={selectedCourse.thumbnailUrl} 
+                  src={resolveThumbnail(selectedCourse.thumbnailUrl)} 
                   variant="rounded"
                   className="course-detail-cover"
                 >
