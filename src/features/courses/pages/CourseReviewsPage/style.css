@@ -215,4 +215,100 @@
 .review-header i.fa-star-half-alt,
 .review-header i.fa-star-half-alt:before {
   color: #fbc02d; /* Vàng */
+}
+
+/* Reply actions */
+.reply-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.reply-action-btn {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reply-action-btn.edit {
+  background: #17a2b8;
+  color: white;
+}
+
+.reply-action-btn.edit:hover {
+  background: #138496;
+}
+
+.reply-action-btn.delete {
+  background: #dc3545;
+  color: white;
+}
+
+.reply-action-btn.delete:hover {
+  background: #c82333;
+}
+
+.reply-action-btn:disabled {
+  background: #e9ecef;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Edit mode */
+.edit-reply-form {
+  margin-top: 8px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.edit-reply-form textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+  min-height: 60px;
+}
+
+.edit-reply-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+.edit-reply-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-reply-btn.save {
+  background: #28a745;
+  color: white;
+}
+
+.edit-reply-btn.save:hover {
+  background: #218838;
+}
+
+.edit-reply-btn.cancel {
+  background: #6c757d;
+  color: white;
+}
+
+.edit-reply-btn.cancel:hover {
+  background: #5a6268;
 } 

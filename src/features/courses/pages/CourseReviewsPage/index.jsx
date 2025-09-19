@@ -11,6 +11,10 @@ const CourseReviewsPage = () => {
   const [localReviews, setLocalReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sendingReplies, setSendingReplies] = useState({});
+  const [editingReply, setEditingReply] = useState(null);
+  const [editReplyText, setEditReplyText] = useState('');
+  const [updatingReply, setUpdatingReply] = useState(false);
+  const [deletingReply, setDeletingReply] = useState({});
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -48,9 +52,9 @@ const CourseReviewsPage = () => {
     if (!text?.trim()) return;
     setSendingReplies({ ...sendingReplies, [id]: true });
     try {
-      await api.post(`/api/teacher/course/review/${id}/reply`, { responseText: text.trim() });
+      const response = await api.post(`/api/teacher/course/review/${id}/reply`, { responseText: text.trim() });
       const updated = localReviews.map((r) =>
-        r.id === id ? { ...r, teacherReply: text.trim() } : r
+        r.id === id ? { ...r, teacherReply: text.trim(), responseId: response.responseId } : r
       );
       setLocalReviews(updated);
       setReplyTexts({ ...replyTexts, [id]: '' });
@@ -58,6 +62,50 @@ const CourseReviewsPage = () => {
       console.error('Send reply error', err);
     } finally {
       setSendingReplies({ ...sendingReplies, [id]: false });
+    }
+  };
+
+  const startEditReply = (reviewId, currentReply) => {
+    setEditingReply(reviewId);
+    setEditReplyText(currentReply);
+  };
+
+  const cancelEditReply = () => {
+    setEditingReply(null);
+    setEditReplyText('');
+  };
+
+  const updateReply = async (reviewId, responseId) => {
+    if (!editReplyText?.trim()) return;
+    setUpdatingReply(true);
+    try {
+      await api.put(`/api/teacher/course/review/response/${responseId}`, { responseText: editReplyText.trim() });
+      const updated = localReviews.map((r) =>
+        r.id === reviewId ? { ...r, teacherReply: editReplyText.trim() } : r
+      );
+      setLocalReviews(updated);
+      setEditingReply(null);
+      setEditReplyText('');
+    } catch (err) {
+      console.error('Update reply error', err);
+    } finally {
+      setUpdatingReply(false);
+    }
+  };
+
+  const deleteReply = async (reviewId, responseId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa phản hồi này?')) return;
+    setDeletingReply({ ...deletingReply, [reviewId]: true });
+    try {
+      await api.delete(`/api/teacher/course/review/response/${responseId}`);
+      const updated = localReviews.map((r) =>
+        r.id === reviewId ? { ...r, teacherReply: null, responseId: null } : r
+      );
+      setLocalReviews(updated);
+    } catch (err) {
+      console.error('Delete reply error', err);
+    } finally {
+      setDeletingReply({ ...deletingReply, [reviewId]: false });
     }
   };
 
@@ -122,7 +170,51 @@ const CourseReviewsPage = () => {
                     <div className="comment-avatar"><i className="fa fa-chalkboard-teacher"></i></div>
                     <div className="comment-content">
                       <span className="comment-author">Giáo viên</span>
-                      <p className="comment-text">{r.teacherReply}</p>
+                      {editingReply === r.id ? (
+                        <div className="edit-reply-form">
+                          <textarea
+                            value={editReplyText}
+                            onChange={(e) => setEditReplyText(e.target.value)}
+                            placeholder="Chỉnh sửa phản hồi..."
+                          />
+                          <div className="edit-reply-actions">
+                            <button
+                              className="edit-reply-btn save"
+                              onClick={() => updateReply(r.id, r.responseId)}
+                              disabled={!editReplyText?.trim() || updatingReply}
+                            >
+                              {updatingReply ? 'Đang lưu...' : 'Lưu'}
+                            </button>
+                            <button
+                              className="edit-reply-btn cancel"
+                              onClick={cancelEditReply}
+                              disabled={updatingReply}
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="comment-text">{r.teacherReply}</p>
+                          <div className="reply-actions">
+                            <button
+                              className="reply-action-btn edit"
+                              onClick={() => startEditReply(r.id, r.teacherReply)}
+                              disabled={deletingReply[r.id]}
+                            >
+                              <i className="fa fa-edit"></i> Chỉnh sửa
+                            </button>
+                            <button
+                              className="reply-action-btn delete"
+                              onClick={() => deleteReply(r.id, r.responseId)}
+                              disabled={deletingReply[r.id]}
+                            >
+                              <i className="fa fa-trash"></i> {deletingReply[r.id] ? 'Đang xóa...' : 'Xóa'}
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
