@@ -64,7 +64,35 @@ const AssignmentGradingPage = () => {
     }
   }, [selectedIdx, submissions]);
 
+  const handleScoreChange = (e) => {
+    const value = e.target.value;
+    
+    // Cho phép chuỗi rỗng
+    if (value === '') {
+      setScore('');
+      return;
+    }
+    
+    // Chỉ cho phép số
+    if (!/^\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
+    const numValue = parseFloat(value);
+    
+    // Kiểm tra giá trị trong khoảng 0-10
+    if (numValue >= 0 && numValue <= 10) {
+      setScore(value);
+    }
+  };
+
   const handleSave = async () => {
+    // Validate điểm số trước khi lưu
+    if (score !== '' && (isNaN(Number(score)) || Number(score) < 0 || Number(score) > 10)) {
+      alert('Điểm số phải từ 0 đến 10');
+      return;
+    }
+
     const updated = [...submissions];
     updated[selectedIdx] = {
       ...updated[selectedIdx],
@@ -175,8 +203,16 @@ const AssignmentGradingPage = () => {
           {/* Grading form */}
           <div className="grading-form">
             <div className="form-row">
-              <label>Điểm</label>
-              <input type="number" value={score} onChange={e => setScore(e.target.value)} placeholder="__/" />
+              <label>Điểm (0-10)</label>
+              <input 
+                type="text" 
+                value={score} 
+                onChange={handleScoreChange} 
+                placeholder="Nhập điểm từ 0 đến 10"
+                min="0"
+                max="10"
+                step="0.1"
+              />
             </div>
             <div className="form-row">
               <label>Feedback</label>
