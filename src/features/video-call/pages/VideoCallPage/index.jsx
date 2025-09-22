@@ -171,11 +171,13 @@ const VideoCallPage = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
 
-  // State điều khiển tính năng
-  const [signLanguageEnabled, setSignLanguageEnabled] = useState(true);
-  const [subtitleEnabled, setSubtitleEnabled] = useState(true);
+  // State điều khiển tính năng (tách riêng cho từng tab)
+  const [signLangPractice, setSignLangPractice] = useState(true);
+  const [subtitlePractice, setSubtitlePractice] = useState(true);
 
-  // Thêm log để debug state dialog
+  const [signLangCall, setSignLangCall] = useState(true);
+  const [subtitleCall,  setSubtitleCall]  = useState(true);
+  
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   console.log("VideoCallPage render, openCreateDialog:", openCreateDialog);
   
@@ -471,12 +473,30 @@ const VideoCallPage = () => {
                   </AppBar>
 
                   {/* Trạng thái kết nối */}
+                  <ConnectionStatus />
                   <AiConnectionStatus />
 
+                  {/* Switch điều khiển tính năng */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <FeatureToggleSwitch
+                      label="Nhận diện ngôn ngữ ký hiệu"
+                      checked={signLangPractice}
+                      onChange={() => setSignLangPractice((prev) => !prev)}
+                    />
+                    <FeatureToggleSwitch
+                      label="Hiển thị phụ đề"
+                      checked={subtitlePractice}
+                      onChange={() => setSubtitlePractice((prev) => !prev)}
+                    />
+                  </div>
+
                   <VideoPlayer 
-                    signLanguageEnabled={true} 
-                    subtitleEnabled={true} 
+                    signLanguageEnabled={signLangPractice} 
+                    subtitleEnabled={subtitlePractice} 
                   />
+                  <Notifications />
+                  <Sidebar>
+                  </Sidebar>
                 </div>
               </SocketContextProvider>
             )}
@@ -499,19 +519,19 @@ const VideoCallPage = () => {
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <FeatureToggleSwitch
                       label="Nhận diện ngôn ngữ ký hiệu"
-                      checked={signLanguageEnabled}
-                      onChange={() => setSignLanguageEnabled((prev) => !prev)}
+                      checked={signLangCall}
+                      onChange={() => setSignLangCall((prev) => !prev)}
                     />
                     <FeatureToggleSwitch
                       label="Hiển thị phụ đề"
-                      checked={subtitleEnabled}
-                      onChange={() => setSubtitleEnabled((prev) => !prev)}
+                      checked={subtitleCall}
+                      onChange={() => setSubtitleCall((prev) => !prev)}
                     />
                   </div>
 
                   <VideoPlayer 
-                    signLanguageEnabled={signLanguageEnabled} 
-                    subtitleEnabled={subtitleEnabled} 
+                    signLanguageEnabled={signLangCall} 
+                    subtitleEnabled={subtitleCall} 
                   />
                   <Notifications />
                   <Sidebar>
