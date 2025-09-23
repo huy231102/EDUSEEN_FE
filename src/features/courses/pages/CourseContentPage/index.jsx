@@ -248,13 +248,13 @@ const CourseContentPage = () => {
     setPreviewImage(null);
   };
 
-  // Hàm kiểm tra xem bài tập có quá hạn hay không
-  const isAssignmentOverdue = () => {
-    if (!assignment?.dueDate) return false;
-    const now = new Date();
-    const dueDate = new Date(assignment.dueDate);
-    return now > dueDate;
-  };
+  // [DISABLED] Hàm kiểm tra xem bài tập có quá hạn hay không
+  // const isAssignmentOverdue = () => {
+  //   if (!assignment?.dueDate) return false;
+  //   const now = new Date();
+  //   const dueDate = new Date(assignment.dueDate);
+  //   return now > dueDate;
+  // };
 
   const handleSubmit = async () => {
     if (assignmentFiles.length === 0) {
@@ -438,9 +438,12 @@ const CourseContentPage = () => {
                             <span className="points">
                               <i className="fa fa-star"></i> {assignment?.maxScore || 10} điểm
                             </span>
+                            {/* [DISABLED] Hiển thị hạn nộp */}
+                            {/**
                             <span className="due-date">
                               <i className="fa fa-calendar"></i> Đến hạn {assignment?.dueDate ? new Date(assignment.dueDate).toLocaleString('vi-VN') : 'Chưa có'}
                             </span>
+                            */}
                           </div>
                         </div>
                       </div>
@@ -516,11 +519,6 @@ const CourseContentPage = () => {
                             <div className="submission-disabled-notice">
                               <i className="fa fa-lock"></i>
                               <span>Không thể nộp bài vì bài tập đã được chấm điểm</span>
-                            </div>
-                          ) : isAssignmentOverdue() ? (
-                            <div className="submission-disabled-notice">
-                              <i className="fa fa-clock-o"></i>
-                              <span>Không thể nộp bài vì đã quá hạn nộp bài tập</span>
                             </div>
                           ) : (
                             <button

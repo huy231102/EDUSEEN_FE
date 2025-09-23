@@ -16,7 +16,7 @@ const AssignmentEditPage = () => {
   const [form, setForm] = useState({
     title: '',
     description: '',
-    dueDate: '',
+    // dueDate: '', // [DISABLED] Tạm bỏ hạn nộp
   });
   const [errors, setErrors] = useState({});
 
@@ -34,7 +34,7 @@ const AssignmentEditPage = () => {
         setForm({
           title: assignmentData.title || '',
           description: assignmentData.description || '',
-          dueDate: assignmentData.dueDate ? assignmentData.dueDate.slice(0, 16) : '', // Format cho datetime-local
+          // dueDate: assignmentData.dueDate ? assignmentData.dueDate.slice(0, 16) : '', // [DISABLED]
         });
         // Detect section / lecture indices
         if (courseData?.sections) {
@@ -81,16 +81,17 @@ const AssignmentEditPage = () => {
       newErrors.title = 'Vui lòng nhập tiêu đề bài tập';
     }
     
-    if (!form.dueDate) {
-      newErrors.dueDate = 'Vui lòng chọn hạn nộp bài tập';
-    } else {
-      // Kiểm tra hạn nộp không được trong quá khứ
-      const selectedDate = new Date(form.dueDate);
-      const now = new Date();
-      if (selectedDate <= now) {
-        newErrors.dueDate = 'Hạn nộp phải sau thời gian hiện tại';
-      }
-    }
+    // [DISABLED] Validate hạn nộp
+    // if (!form.dueDate) {
+    //   newErrors.dueDate = 'Vui lòng chọn hạn nộp bài tập';
+    // } else {
+    //   // Kiểm tra hạn nộp không được trong quá khứ
+    //   const selectedDate = new Date(form.dueDate);
+    //   const now = new Date();
+    //   if (selectedDate <= now) {
+    //     newErrors.dueDate = 'Hạn nộp phải sau thời gian hiện tại';
+    //   }
+    // }
     
     // Nếu có lỗi, hiển thị và dừng
     if (Object.keys(newErrors).length > 0) {
@@ -105,7 +106,7 @@ const AssignmentEditPage = () => {
     const payload = {
       title: form.title.trim(),
       description: form.description.trim() || null,
-      dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
+      // dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null, // [DISABLED]
       lectureId: targetLecture.lectureId,
     };
 
@@ -157,6 +158,8 @@ const AssignmentEditPage = () => {
           <label>Mô tả</label>
           <textarea name="description" rows={5} value={form.description} onChange={handleChange}></textarea>
         </div>
+        {/* [DISABLED] Nhóm nhập hạn nộp */}
+        {/**
         <div className="form-group">
           <label>Hạn nộp <span className="required">*</span></label>
           <input 
@@ -169,6 +172,7 @@ const AssignmentEditPage = () => {
           />
           {errors.dueDate && <div className="error-message">{errors.dueDate}</div>}
         </div>
+        */}
 
         <div style={{ textAlign: 'right' }}>
           <button className="btn primary" onClick={handleSave}>Lưu thay đổi</button>
