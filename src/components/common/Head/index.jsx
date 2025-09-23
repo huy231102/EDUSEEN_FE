@@ -5,7 +5,13 @@ import NotificationDropdown from '../NotificationDropdown';
 import "./style.css"
 
 const Head = () => {
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, user } = useAuth()
+  
+  const isTeacher = user && (
+    Number(user.roleId) === 3 ||
+    (user.roleName && String(user.roleName).toLowerCase() === 'teacher') ||
+    (user.role && String(user.role).toLowerCase() === 'teacher')
+  )
 
   return (
     <>
@@ -21,7 +27,7 @@ const Head = () => {
               <i className='fa fa-video icon'></i>
             </Link>
             
-            {isLoggedIn && (
+            {isLoggedIn && !isTeacher && (
               <Link to='/my-courses' title="Khóa học của tôi">
                 <i className='fa fa-book icon'></i>
               </Link>
