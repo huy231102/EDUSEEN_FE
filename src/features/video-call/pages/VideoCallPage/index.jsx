@@ -174,8 +174,6 @@ const VideoCallPage = () => {
   // State điều khiển tính năng (tách riêng cho từng tab)
   const [signLangPractice, setSignLangPractice] = useState(true);
   const [subtitlePractice, setSubtitlePractice] = useState(true);
-  // URL WebSocket riêng cho từng chế độ – cấu hình qua biến môi trường
-  const CALL_WS_URL     = process.env.REACT_APP_AI_CALL_WS_URL     || null;
 
   const [signLangCall, setSignLangCall] = useState(true);
   const [subtitleCall,  setSubtitleCall]  = useState(true);
@@ -533,8 +531,7 @@ const VideoCallPage = () => {
 
                   <VideoPlayer 
                     signLanguageEnabled={signLangCall} 
-                    subtitleEnabled={subtitleCall} 
-                    wsUrl={CALL_WS_URL}
+                    subtitleEnabled={subtitleCall}
                   />
                   <Notifications />
                   <Sidebar>
