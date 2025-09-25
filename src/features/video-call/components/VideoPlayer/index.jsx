@@ -29,11 +29,11 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const VideoPlayer = ({ signLanguageEnabled = true, subtitleEnabled = true }) => {
+const VideoPlayer = ({ signLanguageEnabled = true, subtitleEnabled = true, wsUrl = null }) => {
   const { name, callAccepted, myVideo, userVideo, callEnded, stream, call, partnerName, mySubtitles, partnerSubtitles, setMySubtitles } = useContext(SocketContext);
   const classes = useStyles();
   // Kết nối AI, cập nhật phụ đề của chính mình và gửi cho partner
-  useSignLanguage(myVideo, setMySubtitles, signLanguageEnabled);
+  useSignLanguage(myVideo, setMySubtitles, signLanguageEnabled, wsUrl);
 
   // console.log('VideoPlayer render - stream:', stream, 'myVideo ref:', myVideo);
 

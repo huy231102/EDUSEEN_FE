@@ -12,7 +12,13 @@ const INTERVAL = 1000 / FPS;
 const RESOLUTION_SCALE = 1; // 1 = giữ nguyên, 0.5 = giảm một nửa
 const JPEG_QUALITY = 0.6;  // tăng chất lượng để AI dễ nhận diện
 
-const useSignLanguage = (videoRef, setSubtitle, enabled = true) => {
+/**
+ * @param {Object} videoRef
+ * @param {Function} setSubtitle
+ * @param {boolean} enabled
+ * @param {string|null} wsUrl - URL WebSocket tuỳ chọn. Nếu null → tự build từ env.
+ */
+const useSignLanguage = (videoRef, setSubtitle, enabled = true, wsUrl = null) => {
   const { sendSubtitle } = useContext(SocketContext);
   const wsRef = useRef(null);
   const canvas = useRef(document.createElement('canvas'));
@@ -20,10 +26,13 @@ const useSignLanguage = (videoRef, setSubtitle, enabled = true) => {
   useEffect(() => {
     if (!enabled) return; // Không khởi tạo WS nếu tắt
     // Xác định URL WebSocket AI
-    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const host = process.env.REACT_APP_AI_HOST || window.location.hostname;
-    const port = process.env.REACT_APP_AI_PORT || '8001';
-    const path = process.env.REACT_APP_AI_SERVER_URL || `${proto}://${host}:${port}/ws/translate`;
+    let path = wsUrl;
+    if (!path) {
+      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const host = process.env.REACT_APP_AI_HOST || window.location.hostname;
+      const port = process.env.REACT_APP_AI_PORT || '8001';
+      path = process.env.REACT_APP_AI_SERVER_URL || `${proto}://${host}:${port}/ws/translate`;
+    }
     wsRef.current = new WebSocket(path);
     wsRef.current.onmessage = e => {
       const text = e.data;
@@ -34,7 +43,7 @@ const useSignLanguage = (videoRef, setSubtitle, enabled = true) => {
     wsRef.current.onopen = () => console.log('AI WebSocket connected:', path);
     wsRef.current.onerror = err => console.error('AI WebSocket error:', err);
     return () => wsRef.current && wsRef.current.close();
-  }, [setSubtitle, enabled]);
+  }, [setSubtitle, enabled, wsUrl]);
 
   // Gửi khung hình định kỳ ở FPS cố định
   useEffect(() => {
@@ -60,7 +69,7 @@ const useSignLanguage = (videoRef, setSubtitle, enabled = true) => {
     };
     rafId = requestAnimationFrame(sendFrame);
     return () => cancelAnimationFrame(rafId);
-  }, [videoRef, enabled]);
+  }, [videoRef, enabled, wsUrl]);
 
   // Gửi tín hiệu STOP khi tab bị ẩn nhằm giảm tải server
   useEffect(() => {
@@ -72,7 +81,7 @@ const useSignLanguage = (videoRef, setSubtitle, enabled = true) => {
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [enabled]);
+  }, [enabled, wsUrl]);
 };
 
 export default useSignLanguage;
