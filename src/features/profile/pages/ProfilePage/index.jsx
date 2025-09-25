@@ -79,9 +79,27 @@ const ProfilePage = () => {
   return (
     <div className="profile-page-background">
       <div className="profile-card-container">
-        <Link to="/" className="back-icon" title="Back to Home">
+        <a
+          href="#!"
+          className="back-icon"
+          title="Back"
+          onClick={(e) => {
+            e.preventDefault();
+            if (
+              user && (
+                Number(user.roleId) === 3 ||
+                (user.roleName && String(user.roleName).toLowerCase() === 'teacher') ||
+                (user.role && String(user.role).toLowerCase() === 'teacher')
+              )
+            ) {
+              navigate('/teacher/dashboard');
+            } else {
+              navigate('/');
+            }
+          }}
+        >
           <i className="fa fa-arrow-left"></i>
-        </Link>
+        </a>
         <div className="profile-card-content">
           <div className="profile-card-left">
             <div className="avatar-container">

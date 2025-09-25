@@ -74,10 +74,12 @@ const AssignmentStatsPage = () => {
                 {data.averageGrade ? Number(data.averageGrade).toFixed(1) : "-"}
               </p>
             </div>
+            {/** [DISABLED] Ẩn hiển thị số bài nộp muộn
             <div className="overview-item stat-card">
               <h3>Số bài nộp muộn</h3>
               <p className="stat-number danger">{data.lateSubmissionCount}</p>
             </div>
+            */}
           </div>
           <div className="charts-grid">
             <div className="chart-card">
