@@ -175,7 +175,8 @@ const VideoCallPage = () => {
   const [signLangPractice, setSignLangPractice] = useState(true);
   const [subtitlePractice, setSubtitlePractice] = useState(true);
   // URL WebSocket riêng cho từng chế độ – cấu hình qua biến môi trường
-  const CALL_WS_URL     = process.env.REACT_APP_AI_CALL_WS_URL     || null;
+  const CALL_WS_URL = process.env.REACT_APP_AI_CALL_WS_URL || null;
+  const PRAC_WS_URL = process.env.REACT_APP_AI_PRAC_WS_URL || null;
 
   const [signLangCall, setSignLangCall] = useState(true);
   const [subtitleCall,  setSubtitleCall]  = useState(true);
@@ -476,7 +477,7 @@ const VideoCallPage = () => {
 
                   {/* Trạng thái kết nối */}
                   <ConnectionStatus />
-                  <AiConnectionStatus />
+                  <AiConnectionStatus wsUrl={PRAC_WS_URL} />
 
                   {/* Switch điều khiển tính năng */}
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -495,6 +496,7 @@ const VideoCallPage = () => {
                   <VideoPlayer 
                     signLanguageEnabled={signLangPractice} 
                     subtitleEnabled={subtitlePractice} 
+                    wsUrl={PRAC_WS_URL}
                   />
                   <Notifications />
                   <Sidebar>
@@ -515,7 +517,7 @@ const VideoCallPage = () => {
 
                   {/* Trạng thái kết nối */}
                   <ConnectionStatus />
-                  <AiConnectionStatus />
+                  <AiConnectionStatus wsUrl={CALL_WS_URL} />
 
                   {/* Switch điều khiển tính năng */}
                   <div style={{ display: 'flex', gap: '8px' }}>

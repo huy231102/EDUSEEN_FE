@@ -24,30 +24,22 @@ const useSignLanguage = (videoRef, setSubtitle, enabled = true, wsUrl = null) =>
   const canvas = useRef(document.createElement('canvas'));
 
   useEffect(() => {
-    if (!enabled) return; // Không khởi tạo WS nếu tắt
-    // Xác định URL WebSocket AI
-    let path = wsUrl;
-    if (!path) {
-      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      const host = process.env.REACT_APP_AI_HOST || window.location.hostname;
-      const port = process.env.REACT_APP_AI_PORT || '8001';
-      path = process.env.REACT_APP_AI_SERVER_URL || `${proto}://${host}:${port}/ws/translate`;
-    }
-    wsRef.current = new WebSocket(path);
+    if (!enabled || !wsUrl) return; // Không khởi tạo WS nếu tắt hoặc thiếu URL
+    wsRef.current = new WebSocket(wsUrl);
     wsRef.current.onmessage = e => {
       const text = e.data;
       setSubtitle(text);      // Cập nhật cho chính mình
       console.log('[AI] subtitle:', text);
       sendSubtitle(text);     // Gửi cho người đối diện
     };
-    wsRef.current.onopen = () => console.log('AI WebSocket connected:', path);
+    wsRef.current.onopen = () => console.log('AI WebSocket connected:', wsUrl);
     wsRef.current.onerror = err => console.error('AI WebSocket error:', err);
     return () => wsRef.current && wsRef.current.close();
   }, [setSubtitle, enabled, wsUrl]);
 
   // Gửi khung hình định kỳ ở FPS cố định
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !wsUrl) return;
     let rafId;
     let lastTime = 0;
     const sendFrame = (now) => {
@@ -73,7 +65,7 @@ const useSignLanguage = (videoRef, setSubtitle, enabled = true, wsUrl = null) =>
 
   // Gửi tín hiệu STOP khi tab bị ẩn nhằm giảm tải server
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !wsUrl) return;
     const handleVisibility = () => {
       if (document.hidden) {
         wsRef.current?.send('STOP');
