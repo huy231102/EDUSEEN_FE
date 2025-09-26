@@ -17,26 +17,35 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const AiConnectionStatus = () => {
+const AiConnectionStatus = ({ wsUrl }) => {
   const classes = useStyles();
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Xác định URL WebSocket AI – logic giống hook useSignLanguage
-    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const host = process.env.REACT_APP_AI_HOST || window.location.hostname;
-    const port = process.env.REACT_APP_AI_PORT || '8001';
-    const path = process.env.REACT_APP_AI_SERVER_URL || `${proto}://${host}:${port}/ws/translate`;
+    if (!wsUrl) {
+      setIsConnected(false);
+      return; // Không cố gắng kết nối nếu không truyền wsUrl
+    }
 
-    const ws = new WebSocket(path);
-    ws.onopen = () => setIsConnected(true);
-    ws.onclose = () => setIsConnected(false);
-    ws.onerror = () => setIsConnected(false);
+    const ws = new WebSocket(wsUrl);
+
+    let isSubscribed = true; // Cờ theo dõi mount/unmount để tránh memory-leak
+
+    ws.onopen = () => {
+      if (isSubscribed) setIsConnected(true);
+    };
+    ws.onclose = () => {
+      if (isSubscribed) setIsConnected(false);
+    };
+    ws.onerror = () => {
+      if (isSubscribed) setIsConnected(false);
+    };
 
     return () => {
+      isSubscribed = false;
       ws.close();
     };
-  }, []);
+  }, [wsUrl]);
 
   return (
     <div className={classes.container}>
