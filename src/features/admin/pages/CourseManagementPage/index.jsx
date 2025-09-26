@@ -5,10 +5,9 @@ import {
   DialogContent, DialogActions, TablePagination, Avatar, InputAdornment, 
   Chip, Button, Grid
 } from "@material-ui/core";
-const DEFAULT_COURSE_IMG = '/images/default-avatar-profile.jpg';
 import { 
   Search, Info, Edit, Delete, Refresh, PlayArrow, AccessTime, 
-  TrendingUp, CheckCircle, Block, School, Person 
+  TrendingUp, CheckCircle, School, Person 
 } from "@material-ui/icons";
 import { format } from 'date-fns';
 import api from "services/api";
@@ -19,15 +18,8 @@ import './style.css';
 import { useAdmin } from "../../contexts/AdminContext.jsx";
 const API_BASE = process.env.REACT_APP_API_BASE_URL || process.env.REACT_APP_BACKEND_URL || '';
 
-const resolveThumbnail = (url) => {
-  if (!url) return DEFAULT_COURSE_IMG;
-  if (url.startsWith('http')) return url;
-  // Ensure no double slash
-  return `${API_BASE.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
-};
-
 const CourseManagementPage = () => {
-  const { courses, loading, fetchCourses, deleteCourse, toggleCourseStatus } = useAdmin();
+  const { courses, loading, fetchCourses, deleteCourse } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [page, setPage] = useState(0);
@@ -97,18 +89,7 @@ const CourseManagementPage = () => {
     }
   };
 
-  const handleToggleCourseStatus = async (courseId, currentStatus) => {
-    try {
-      const result = await toggleCourseStatus(courseId, currentStatus);
-      if (result.success) {
-        setToast({ open: true, message: 'Cập nhật trạng thái thành công!', severity: 'success' });
-      } else {
-        setToast({ open: true, message: 'Cập nhật trạng thái thất bại!', severity: 'error' });
-      }
-    } catch (error) {
-      setToast({ open: true, message: 'Cập nhật trạng thái thất bại!', severity: 'error' });
-    }
-  };
+  // Removed toggle/approve action per requirement
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -213,22 +194,13 @@ const CourseManagementPage = () => {
                 paginatedCourses.map((course) => (
                 <TableRow key={course.id} hover>
                   <TableCell>
-                    <Box className="course-info-cell">
-                      <Avatar 
-                        src={resolveThumbnail(course.thumbnailUrl || course.thumbnail || course.imageUrl)} 
-                        variant="rounded"
-                        className="course-avatar"
-                      >
-                        <School />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle2" className="course-name">
-                          {course.name}
-                        </Typography>
-                        <Typography variant="caption" className="course-description">
-                          {course.description?.substring(0, 50)}...
-                        </Typography>
-                      </Box>
+                    <Box>
+                      <Typography variant="subtitle2" className="course-name">
+                        {course.name}
+                      </Typography>
+                      <Typography variant="caption" className="course-description">
+                        {course.description?.substring(0, 50)}...
+                      </Typography>
                     </Box>
                   </TableCell>
                   <TableCell>
@@ -279,15 +251,7 @@ const CourseManagementPage = () => {
                           <Info />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title={course.status === "Đã duyệt" ? "Hủy duyệt" : "Duyệt khóa học"}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleToggleCourseStatus(course.id, course.status)}
-                          className={`course-action-btn toggle ${course.status === "Đã duyệt" ? 'edit' : 'info'}`}
-                        >
-                          {course.status === "Đã duyệt" ? <Block /> : <CheckCircle />}
-                        </IconButton>
-                      </Tooltip>
+                      {/* Approve/Unapprove button removed as requested */}
                       <Tooltip title="Xóa khóa học">
                         <IconButton
                           size="small"
@@ -329,11 +293,9 @@ const CourseManagementPage = () => {
             <Box>
               <Box className="course-detail-header">
                 <Avatar 
-                  src={resolveThumbnail(selectedCourse.thumbnailUrl)} 
                   variant="rounded"
                   className="course-detail-cover"
                 >
-                  <School style={{ fontSize: 60 }} />
                 </Avatar>
                 <Box className="course-detail-info">
                   <Typography variant="h5" className="course-detail-title">
