@@ -60,7 +60,6 @@ const UserManagementPage = () => {
   const handleOpenEdit = (user) => {
     setSelectedUser(user);
     setEditForm({
-      name: user.name,
       email: user.email,
       role: user.role,
       status: user.status
@@ -76,18 +75,24 @@ const UserManagementPage = () => {
 
   const handleSaveEdit = async () => {
     try {
-      let userData = {};
-      // Xử lý vai trò
-      if (editForm.role !== selectedUser.role) {
-        userData.RoleId = editForm.role === "Học sinh" ? 1 : editForm.role === "Quản trị viên" ? 2 : 3;
-      }
-      // Xử lý trạng thái
-      if (editForm.status !== selectedUser.status) {
-        userData.IsActive = editForm.status === "Hoạt động";
-      }
+      // Map vai trò và trạng thái theo yêu cầu BE
+      const mappedRoleId = editForm.role === "Học sinh" ? 1 
+        : editForm.role === "Quản trị viên" ? 2 
+        : 3; // Giáo viên mặc định 3
+      const mappedIsActive = editForm.status === "Hoạt động";
+
+      // Gửi đầy đủ trường bắt buộc, kể cả khi không thay đổi
+      const userData = {
+        Email: editForm.email,
+        RoleId: mappedRoleId,
+        IsActive: mappedIsActive,
+      };
+
       const result = await updateUser(selectedUser.id, userData);
       if (result.success) {
         setToast({ open: true, message: 'Cập nhật thành công!', severity: 'success' });
+        // Tải lại danh sách để phản ánh tên mới
+        await fetchUsers();
         handleCloseEdit();
       } else {
         setToast({ open: true, message: 'Cập nhật thất bại!', severity: 'error' });
@@ -162,14 +167,13 @@ const UserManagementPage = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.username.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || user.status === statusFilter;
-    const matchesRole = !roleFilter || user.role === roleFilter;
-    return matchesSearch && matchesStatus && matchesRole;
-  });
+   const filteredUsers = users.filter(user => {
+     const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.username.toLowerCase().includes(searchTerm.toLowerCase());
+     const matchesStatus = !statusFilter || user.status === statusFilter;
+     const matchesRole = !roleFilter || user.role === roleFilter;
+     return matchesSearch && matchesStatus && matchesRole;
+   });
 
   const paginatedUsers = filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -266,35 +270,31 @@ const UserManagementPage = () => {
       <Paper elevation={2} className="user-management-table">
         <TableContainer>
           <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Người dùng</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Vai trò</TableCell>
-                <TableCell>Trạng thái</TableCell>
-                <TableCell>Ngày tham gia</TableCell>
-                <TableCell>Hoạt động cuối</TableCell>
-                <TableCell>Thao tác</TableCell>
-              </TableRow>
-            </TableHead>
+             <TableHead>
+               <TableRow>
+                 <TableCell>Người dùng</TableCell>
+                 <TableCell>Email</TableCell>
+                 <TableCell>Vai trò</TableCell>
+                 <TableCell>Trạng thái</TableCell>
+                 <TableCell>Ngày tham gia</TableCell>
+                 <TableCell>Thao tác</TableCell>
+               </TableRow>
+             </TableHead>
             <TableBody>
               {paginatedUsers.map((user) => (
                 <TableRow key={user.id} hover>
-                  <TableCell>
-                    <Box className="user-info-cell">
-                      <Avatar src={user.avatar} className="user-avatar">
-                        {user.name.charAt(0).toUpperCase()}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="subtitle2" className="user-name">
-                          {user.name}
-                        </Typography>
-                        <Typography variant="caption" className="user-username">
-                          @{user.username}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
+                   <TableCell>
+                     <Box className="user-info-cell">
+                       <Avatar src={user.avatar} className="user-avatar">
+                         {user.username.charAt(0).toUpperCase()}
+                       </Avatar>
+                       <Box>
+                         <Typography variant="subtitle2" className="user-username">
+                           @{user.username}
+                         </Typography>
+                       </Box>
+                     </Box>
+                   </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Chip
@@ -310,16 +310,10 @@ const UserManagementPage = () => {
                       className={getStatusChipClass(user.status)}
                     />
                   </TableCell>
-                  <TableCell>
-                    {user.joined ? format(new Date(user.joined), 'dd/MM/yyyy') : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    {user.lastActive !== "Chưa đăng nhập" 
-                      ? format(new Date(user.lastActive), 'dd/MM/yyyy')
-                      : user.lastActive
-                    }
-                  </TableCell>
-                  <TableCell>
+                   <TableCell>
+                     {user.joined ? format(new Date(user.joined), 'dd/MM/yyyy') : 'N/A'}
+                   </TableCell>
+                   <TableCell>
                     <Box className="user-action-buttons">
                       <Tooltip title="Xem chi tiết">
                         <IconButton
@@ -391,17 +385,14 @@ const UserManagementPage = () => {
         <DialogContent>
           {selectedUser && (
             <Box>
-              <Box className="user-detail-header">
-                <Avatar src={selectedUser.avatar} className="user-detail-avatar">
-                  {selectedUser.name.charAt(0).toUpperCase()}
-                </Avatar>
-                <Box>
-                  <Typography variant="h6">{selectedUser.name}</Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    @{selectedUser.username}
-                  </Typography>
-                </Box>
-              </Box>
+               <Box className="user-detail-header">
+                 <Avatar src={selectedUser.avatar} className="user-detail-avatar">
+                   {selectedUser.username.charAt(0).toUpperCase()}
+                 </Avatar>
+                 <Box>
+                   <Typography variant="h6">@{selectedUser.username}</Typography>
+                 </Box>
+               </Box>
               
               <Box className="user-detail-info">
                 <Box className="user-detail-field">
@@ -424,21 +415,12 @@ const UserManagementPage = () => {
                     className={getStatusChipClass(selectedUser.status)}
                   />
                 </Box>
-                <Box className="user-detail-field">
-                  <Typography variant="subtitle2" className="user-detail-label">Ngày tham gia</Typography>
-                  <Typography>
-                    {selectedUser.joined ? format(new Date(selectedUser.joined), 'dd/MM/yyyy') : 'N/A'}
-                  </Typography>
-                </Box>
-                <Box className="user-detail-field">
-                  <Typography variant="subtitle2" className="user-detail-label">Hoạt động cuối</Typography>
-                  <Typography>
-                    {selectedUser.lastActive !== "Chưa đăng nhập" 
-                      ? format(new Date(selectedUser.lastActive), 'dd/MM/yyyy')
-                      : selectedUser.lastActive
-                    }
-                  </Typography>
-                </Box>
+                 <Box className="user-detail-field">
+                   <Typography variant="subtitle2" className="user-detail-label">Ngày tham gia</Typography>
+                   <Typography>
+                     {selectedUser.joined ? format(new Date(selectedUser.joined), 'dd/MM/yyyy') : 'N/A'}
+                   </Typography>
+                 </Box>
               </Box>
             </Box>
           )}
@@ -453,13 +435,6 @@ const UserManagementPage = () => {
         <DialogTitle>Chỉnh sửa người dùng</DialogTitle>
         <DialogContent>
           <Box className="user-edit-form">
-            <TextField
-              label="Tên"
-              variant="outlined"
-              fullWidth
-              value={editForm.name || ''}
-              onChange={(e) => handleEditChange('name', e.target.value)}
-            />
             <TextField
               label="Email"
               variant="outlined"
