@@ -216,7 +216,7 @@ const CourseContentPage = () => {
 
   const handleLectureSelect = (lecture, sectionIndex, globalIndex) => {
     setCurrentLecture(lecture);
-    markLectureCompleted(course.id, lecture.title);
+    markLectureCompleted(course.id, lecture.id);
     // Đảm bảo section của bài giảng được chọn luôn mở
     if (!openSections.includes(sectionIndex)) {
       setOpenSections([...openSections, sectionIndex]);
@@ -315,8 +315,8 @@ const CourseContentPage = () => {
                   {section.lectures.map((lecture, lectureIndex) => (
                     <li 
                       key={lectureIndex}
-                      className={`lecture-item ${currentLecture?.title === lecture.title ? 'active' : ''}`}
-                      onClick={() => handleLectureSelect(lecture, sectionIndex, flattenedLectures.findIndex(l => l.title===lecture.title))}
+                      className={`lecture-item ${currentLecture?.id === lecture.id ? 'active' : ''}`}
+                      onClick={() => handleLectureSelect(lecture, sectionIndex, flattenedLectures.findIndex(l => l.id===lecture.id))}
                     >
                       <i className="fa fa-play-circle"></i> {lecture.title}
                     </li>
@@ -384,7 +384,7 @@ const CourseContentPage = () => {
                           setActiveTab('assignment');
                         }
                         if (!currentLecture.assignment) {
-                          const currentIdx = flattenedLectures.findIndex(l => l.title === currentLecture.title);
+                          const currentIdx = flattenedLectures.findIndex(l => l.id === currentLecture.id);
                           if (currentIdx === allowedIndex) {
                             setAllowedIndex(allowedIndex + 1);
                           }
@@ -404,7 +404,7 @@ const CourseContentPage = () => {
                           setActiveTab('assignment');
                         }
                         if (!currentLecture.assignment) {
-                          const currentIdx = flattenedLectures.findIndex(l => l.title === currentLecture.title);
+                          const currentIdx = flattenedLectures.findIndex(l => l.id === currentLecture.id);
                           if (currentIdx === allowedIndex) {
                             setAllowedIndex(allowedIndex + 1);
                           }

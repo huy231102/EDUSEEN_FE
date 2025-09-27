@@ -9,11 +9,16 @@ const CourseCardItem = ({ course }) => {
   const handleFavoriteClick = async (e) => {
     e.stopPropagation();
     e.preventDefault();
-    if (isFavorite || saving) return;
+    if (saving) return;
     try {
       setSaving(true);
-      await courseApi.saveFavorite(course.id);
-      setIsFavorite(true);
+      if (isFavorite) {
+        await courseApi.removeFavorite(course.id);
+        setIsFavorite(false);
+      } else {
+        await courseApi.saveFavorite(course.id);
+        setIsFavorite(true);
+      }
     } catch (err) {
       console.error(err);
       alert('Không thể lưu khóa học yêu thích. Vui lòng thử lại.');

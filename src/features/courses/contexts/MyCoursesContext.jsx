@@ -17,15 +17,15 @@ export const MyCoursesProvider = ({ children }) => {
     });
   };
 
-  const markLectureCompleted = (courseId, lectureTitle) => {
+  const markLectureCompleted = (courseId, lectureId) => {
     setEnrolledCourses((prev) =>
       prev.map((item) =>
         item.courseId === courseId
           ? {
               ...item,
-              completedLectures: item.completedLectures.includes(lectureTitle)
+              completedLectures: item.completedLectures.includes(lectureId)
                 ? item.completedLectures
-                : [...item.completedLectures, lectureTitle],
+                : [...item.completedLectures, lectureId],
             }
           : item
       )

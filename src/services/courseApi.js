@@ -5,6 +5,8 @@ export const courseApi = {
   getTopReviews: () => api.get('/api/course/top-review'),
   // Lưu khóa học yêu thích
   saveFavorite: (courseId) => api.post(`/api/course/favorite/${courseId}`),
+  // Bỏ lưu khóa học yêu thích
+  removeFavorite: (courseId) => api.delete(`/api/course/favorite/${courseId}`),
   // Lấy top courses
   getTopCourses: (count = 9) => api.get(`/api/course/top-courses?count=${count}`),
   // Lấy chi tiết khóa học
